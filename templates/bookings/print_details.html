@@ -1,0 +1,535 @@
+{% extends "layout.html" %} {% block title %}Booking Details | Rainbow Towers
+Conference Booking{% endblock %} {% block extra_css %}
+<style>
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+
+    body {
+      background-color: white !important;
+    }
+
+    .container {
+      max-width: 100% !important;
+      width: 100% !important;
+    }
+
+    .card {
+      border: none !important;
+      box-shadow: none !important;
+    }
+
+    .page-break {
+      page-break-after: always;
+    }
+  }
+
+  .booking-header {
+    border-left: 4px solid;
+    padding-left: 1rem;
+  }
+
+  .booking-tentative {
+    border-color: #f6c23e;
+  }
+  .booking-confirmed {
+    border-color: #1cc88a;
+  }
+  .booking-cancelled {
+    border-color: #e74a3b;
+  }
+
+  .detail-section {
+    margin-bottom: 25px;
+  }
+
+  .detail-section-title {
+    font-size: 18px;
+    color: #4e73df;
+    margin-bottom: 15px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid #e3e6f0;
+  }
+
+  .detail-label {
+    font-weight: bold;
+    color: #5a5c69;
+  }
+
+  .addon-badge {
+    background-color: #f8f9fc;
+    color: #4e73df;
+    border: 1px solid #e3e6f0;
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.25rem;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    display: inline-block;
+  }
+
+  .accommodation-details {
+    background-color: #f8f9fc;
+    border-left: 4px solid #4e73df;
+    padding: 15px;
+    margin-bottom: 20px;
+  }
+
+  .print-footer {
+    margin-top: 50px;
+    padding-top: 15px;
+    border-top: 1px solid #e3e6f0;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #666;
+  }
+
+  .confirmation-banner {
+    background-color: #1cc88a;
+    color: white;
+    padding: 15px;
+    margin-bottom: 25px;
+    border-radius: 5px;
+    text-align: center;
+  }
+
+  .tentative-banner {
+    background-color: #f6c23e;
+    color: white;
+    padding: 15px;
+    margin-bottom: 25px;
+    border-radius: 5px;
+    text-align: center;
+  }
+
+  .cancelled-banner {
+    background-color: #e74a3b;
+    color: white;
+    padding: 15px;
+    margin-bottom: 25px;
+    border-radius: 5px;
+    text-align: center;
+  }
+
+  .venue-map {
+    width: 100%;
+    height: 200px;
+    background-color: #f8f9fc;
+    border: 1px solid #e3e6f0;
+    margin-top: 15px;
+  }
+
+  .qr-code {
+    text-align: center;
+    margin-bottom: 20px;
+  }
+
+  .qr-code img {
+    max-width: 120px;
+  }
+</style>
+{% endblock %} {% block content %}
+<!-- Action Buttons (Not Printed) -->
+<div class="d-flex justify-content-between align-items-center mb-4 no-print">
+  <h1 class="booking-header booking-{{ booking.status }}">Booking Details</h1>
+  <div>
+    <a
+      href="{{ url_for('view_booking', id=booking.id) }}"
+      class="btn btn-outline-secondary me-2"
+    >
+      <i class="fas fa-arrow-left me-1"></i>Back to Booking
+    </a>
+    <button
+      type="button"
+      class="btn btn-outline-primary me-2"
+      onclick="window.print()"
+    >
+      <i class="fas fa-print me-1"></i>Print Details
+    </button>
+    <button type="button" class="btn btn-primary" id="downloadPdf">
+      <i class="fas fa-download me-1"></i>Download PDF
+    </button>
+  </div>
+</div>
+
+<!-- Printable Booking Details -->
+<div class="card shadow-sm border-0">
+  <div class="card-body p-4" id="booking-details-content">
+    <!-- Logo and Company Header -->
+    <div class="row mb-4">
+      <div class="col-md-6">
+        <h1>Rainbow Towers</h1>
+        <p>Hotel & Conference Centre</p>
+      </div>
+      <div class="col-md-6 text-md-end">
+        <img
+          src="/static/img/logo.png"
+          alt="Rainbow Towers Logo"
+          style="max-height: 80px"
+        />
+      </div>
+    </div>
+
+    <!-- Status Banner -->
+    {% if booking.status == 'confirmed' %}
+    <div class="confirmation-banner">
+      <h4 class="mb-0">
+        <i class="fas fa-check-circle me-2"></i>CONFIRMED BOOKING
+      </h4>
+    </div>
+    {% elif booking.status == 'tentative' %}
+    <div class="tentative-banner">
+      <h4 class="mb-0">
+        <i class="fas fa-exclamation-circle me-2"></i>TENTATIVE BOOKING
+      </h4>
+      <p class="mb-0 small">
+        This booking is tentative and requires confirmation.
+      </p>
+    </div>
+    {% else %}
+    <div class="cancelled-banner">
+      <h4 class="mb-0"><i class="fas fa-ban me-2"></i>CANCELLED BOOKING</h4>
+    </div>
+    {% endif %}
+
+    <!-- Event & QR Code -->
+    <div class="row mb-4">
+      <div class="col-md-8">
+        <h2 class="mb-1">{{ booking.title }}</h2>
+        <p class="lead mb-0">
+          Booking Reference: <strong>BK-{{ booking.id }}</strong>
+        </p>
+      </div>
+      <div class="col-md-4">
+        <div class="qr-code">
+          <img
+            src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=BK-{{ booking.id }}"
+            alt="Booking QR Code"
+          />
+          <div class="small text-muted mt-1">Scan for quick check-in</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Details -->
+    <div class="row">
+      <!-- Left Column -->
+      <div class="col-md-6">
+        <!-- Event Details -->
+        <div class="detail-section">
+          <h3 class="detail-section-title">
+            <i class="fas fa-calendar-alt me-2"></i>Event Details
+          </h3>
+          <div class="row mb-3">
+            <div class="col-sm-4 detail-label">Date:</div>
+            <div class="col-sm-8">
+              {{ booking.start_time.strftime('%A, %d %B %Y') }}
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-sm-4 detail-label">Time:</div>
+            <div class="col-sm-8">
+              {{ booking.start_time.strftime('%H:%M') }} - {{
+              booking.end_time.strftime('%H:%M') }}
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-sm-4 detail-label">Duration:</div>
+            <div class="col-sm-8">
+              {% set duration = (booking.end_time -
+              booking.start_time).total_seconds() / 3600 %} {{ duration|round(1)
+              }} hours {% if duration <= 4 %} (Hourly Rate) {% elif duration <=
+              6 %} (Half-day Rate) {% else %} (Full-day Rate) {% endif %}
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-sm-4 detail-label">Attendees:</div>
+            <div class="col-sm-8">
+              {{ booking.attendees or 'Not specified' }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Venue Details -->
+        <div class="detail-section">
+          <h3 class="detail-section-title">
+            <i class="fas fa-map-marker-alt me-2"></i>Venue Details
+          </h3>
+          <div class="row mb-3">
+            <div class="col-sm-4 detail-label">Room:</div>
+            <div class="col-sm-8">{{ booking.room.name }}</div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-sm-4 detail-label">Capacity:</div>
+            <div class="col-sm-8">{{ booking.room.capacity }} people</div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-sm-4 detail-label">Location:</div>
+            <div class="col-sm-8">
+              Rainbow Towers Hotel & Conference Centre<br />Harare, Zimbabwe
+            </div>
+          </div>
+          {% if booking.room.amenities %}
+          <div class="row mb-3">
+            <div class="col-sm-4 detail-label">Amenities:</div>
+            <div class="col-sm-8">
+              {% for amenity in booking.room.amenities_list %}
+              <div class="addon-badge">{{ amenity }}</div>
+              {% endfor %}
+            </div>
+          </div>
+          {% endif %}
+          <div class="venue-map">
+            <!-- You could replace this with a static map image of the hotel -->
+            <div
+              style="
+                width: 100%;
+                height: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background-color: #eaecf4;
+              "
+            >
+              <i class="fas fa-map fa-3x text-muted"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column -->
+      <div class="col-md-6">
+        <!-- Client Details -->
+        <div class="detail-section">
+          <h3 class="detail-section-title">
+            <i class="fas fa-user me-2"></i>Client Information
+          </h3>
+          <div class="row mb-3">
+            <div class="col-sm-4 detail-label">Organization:</div>
+            <div class="col-sm-8">
+              {{ booking.client.company_name or 'Individual Client' }}
+            </div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-sm-4 detail-label">Contact:</div>
+            <div class="col-sm-8">{{ booking.client.contact_person }}</div>
+          </div>
+          <div class="row mb-3">
+            <div class="col-sm-4 detail-label">Email:</div>
+            <div class="col-sm-8">{{ booking.client.email }}</div>
+          </div>
+          {% if booking.client.phone %}
+          <div class="row mb-3">
+            <div class="col-sm-4 detail-label">Phone:</div>
+            <div class="col-sm-8">{{ booking.client.phone }}</div>
+          </div>
+          {% endif %} {% if booking.client.address %}
+          <div class="row mb-3">
+            <div class="col-sm-4 detail-label">Address:</div>
+            <div class="col-sm-8">{{ booking.client.address|nl2br }}</div>
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Add-ons & Services -->
+        <div class="detail-section">
+          <h3 class="detail-section-title">
+            <i class="fas fa-plus-circle me-2"></i>Add-ons & Services
+          </h3>
+          {% if booking.addons %}
+          <div class="mb-3">
+            {% for addon in booking.addons %}
+            <div class="addon-badge">
+              <i class="fas fa-check text-success me-1"></i>
+              {{ addon.name }}
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <p class="text-muted">No add-ons selected for this booking.</p>
+          {% endif %}
+        </div>
+
+        <!-- Accommodation Details (if any) -->
+        {% if booking.accommodations %}
+        <div class="detail-section">
+          <h3 class="detail-section-title">
+            <i class="fas fa-bed me-2"></i>Accommodation
+          </h3>
+          {% for accommodation in booking.accommodations %}
+          <div class="accommodation-details">
+            <h5 class="mb-2">{{ accommodation.room_type|capitalize }} Room</h5>
+            <div class="row mb-2">
+              <div class="col-sm-4 detail-label">Check-in:</div>
+              <div class="col-sm-8">
+                {{ accommodation.check_in.strftime('%A, %d %B %Y') }}
+              </div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-sm-4 detail-label">Check-out:</div>
+              <div class="col-sm-8">
+                {{ accommodation.check_out.strftime('%A, %d %B %Y') }}
+              </div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-sm-4 detail-label">Duration:</div>
+              <div class="col-sm-8">
+                {{ (accommodation.check_out - accommodation.check_in).days }}
+                nights
+              </div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-sm-4 detail-label">Rooms:</div>
+              <div class="col-sm-8">{{ accommodation.number_of_rooms }}</div>
+            </div>
+            <div class="row mb-2">
+              <div class="col-sm-4 detail-label">Status:</div>
+              <div class="col-sm-8">
+                <span
+                  class="badge bg-{% if accommodation.status == 'confirmed' %}success{% elif accommodation.status == 'requested' %}warning{% else %}danger{% endif %}"
+                >
+                  {{ accommodation.status|capitalize }}
+                </span>
+              </div>
+            </div>
+            {% if accommodation.special_requests %}
+            <div class="row mb-0">
+              <div class="col-sm-4 detail-label">Requests:</div>
+              <div class="col-sm-8">{{ accommodation.special_requests }}</div>
+            </div>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Price Summary -->
+        <div class="detail-section">
+          <h3 class="detail-section-title">
+            <i class="fas fa-receipt me-2"></i>Price Summary
+          </h3>
+          <div class="row mb-2">
+            <div class="col-sm-8">Room Charges:</div>
+            <div class="col-sm-4 text-end">${{ booking.room_rate }}</div>
+          </div>
+          <div class="row mb-2">
+            <div class="col-sm-8">Add-ons:</div>
+            <div class="col-sm-4 text-end">${{ booking.addons_total }}</div>
+          </div>
+          {% if booking.discount > 0 %}
+          <div class="row mb-2">
+            <div class="col-sm-8">Discount:</div>
+            <div class="col-sm-4 text-end text-danger">
+              -${{ booking.discount }}
+            </div>
+          </div>
+          {% endif %}
+          <div class="row mb-0">
+            <div class="col-sm-8"><strong>Total Price:</strong></div>
+            <div class="col-sm-4 text-end">
+              <strong>${{ booking.total_price }}</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Notes Section -->
+    {% if booking.notes %}
+    <div class="detail-section">
+      <h3 class="detail-section-title">
+        <i class="fas fa-sticky-note me-2"></i>Notes
+      </h3>
+      <div class="p-3 bg-light rounded">{{ booking.notes|nl2br }}</div>
+    </div>
+    {% endif %}
+
+    <!-- Contact Information -->
+    <div class="detail-section">
+      <h3 class="detail-section-title">
+        <i class="fas fa-phone me-2"></i>Contact Information
+      </h3>
+      <div class="row">
+        <div class="col-md-6">
+          <div class="mb-2">
+            <strong>Bookings Department:</strong> +263-242-772633
+          </div>
+          <div class="mb-2">
+            <strong>Email:</strong> bookings@rainbowtowers.co.zw
+          </div>
+        </div>
+        <div class="col-md-6">
+          <div class="mb-2"><strong>24/7 Support:</strong> +263-242-772634</div>
+          <div class="mb-2">
+            <strong>Website:</strong> www.rainbowtowers.co.zw
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Terms and Conditions Summary -->
+    <div class="detail-section">
+      <h3 class="detail-section-title">
+        <i class="fas fa-file-contract me-2"></i>Terms & Conditions
+      </h3>
+      <ul class="mb-0 small">
+        <li>
+          Check-in for the venue is 30 minutes before the event start time.
+        </li>
+        <li>
+          Cancellations must be made at least 48 hours before the event to avoid
+          cancellation fees.
+        </li>
+        <li>
+          Full payment is due on arrival unless credit arrangements have been
+          made in advance.
+        </li>
+        <li>
+          Changes to add-ons may be made up to 24 hours before the event,
+          subject to availability.
+        </li>
+        <li>
+          The client is responsible for any damage to facilities or equipment
+          during the booking period.
+        </li>
+        <li>
+          For detailed terms and conditions, please visit our website or contact
+          our bookings department.
+        </li>
+      </ul>
+    </div>
+
+    <!-- Print Footer -->
+    <div class="print-footer">
+      <p>Thank you for choosing Rainbow Towers Hotel & Conference Centre!</p>
+      <p>Document generated on {{ now.strftime('%d %B %Y at %H:%M') }}</p>
+      <p>Booking ID: BK-{{ booking.id }}</p>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    document
+      .getElementById("downloadPdf")
+      .addEventListener("click", function () {
+        // Configure options
+        const options = {
+          margin: [10, 10, 10, 10],
+          filename: "booking-details-{{ booking.id }}.pdf",
+          image: { type: "jpeg", quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true },
+          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+        };
+
+        // Get the element to print
+        const element = document.getElementById("booking-details-content");
+
+        // Generate PDF
+        html2pdf().set(options).from(element).save();
+      });
+  });
+</script>
+{% endblock %}

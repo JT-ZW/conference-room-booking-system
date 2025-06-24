@@ -1,0 +1,502 @@
+{% extends "layout.html" %} {% block title %}{% if room %}Edit Conference Room{%
+else %}New Conference Room{% endif %} | Rainbow Towers Conference Booking{%
+endblock %} {% block extra_css %}
+<style>
+  .amenity-badge {
+    display: inline-block;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 0.25rem;
+    background-color: #f8f9fc;
+    border: 1px solid #e3e6f0;
+    font-size: 0.85rem;
+  }
+
+  .amenity-badge .remove-amenity {
+    margin-left: 0.5rem;
+    cursor: pointer;
+    color: #e74a3b;
+  }
+
+  .amenity-badge .remove-amenity:hover {
+    color: #be2617;
+  }
+
+  .image-preview {
+    width: 100%;
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+    border-radius: 0.35rem;
+    margin-top: 0.5rem;
+    border: 1px solid #e3e6f0;
+    position: relative;
+  }
+
+  .image-preview-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fc;
+    color: #858796;
+  }
+
+  .rate-card {
+    transition: all 0.2s;
+  }
+
+  .rate-card:hover {
+    border-color: #4e73df;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>
+    <i class="fas fa-door-open text-primary me-2"></i>
+    {% if room %}Edit Conference Room{% else %}New Conference Room{% endif %}
+  </h1>
+  <a href="{{ url_for('rooms') }}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-1"></i>Back to Rooms
+  </a>
+</div>
+
+<form method="POST">
+  {{ form.hidden_tag() }}
+
+  <div class="row">
+    <!-- Basic Details -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white">
+          <h5 class="mb-0 text-primary">
+            <i class="fas fa-info-circle me-2"></i>Basic Details
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row mb-3">
+            <div class="col-md-8">
+              <label class="form-label fw-bold">Room Name</label>
+              {{ form.name(class="form-control", placeholder="Enter room name")
+              }} {% if form.name.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.name.errors %} {{ error }} {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Capacity</label>
+              <div class="input-group">
+                {{ form.capacity(class="form-control", placeholder="Max number
+                of people") }}
+                <span class="input-group-text">people</span>
+              </div>
+              {% if form.capacity.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.capacity.errors %} {{ error }} {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Description</label>
+            {{ form.description(class="form-control", rows="4",
+            placeholder="Describe the conference room") }} {% if
+            form.description.errors %}
+            <div class="text-danger small mt-1">
+              {% for error in form.description.errors %} {{ error }} {% endfor
+              %}
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Status</label>
+            {{ form.status(class="form-select") }} {% if form.status.errors %}
+            <div class="text-danger small mt-1">
+              {% for error in form.status.errors %} {{ error }} {% endfor %}
+            </div>
+            {% endif %}
+            <div class="small text-muted mt-1">
+              <i class="fas fa-info-circle me-1"></i> Setting a room to "Under
+              Maintenance" will prevent new bookings.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pricing -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white">
+          <h5 class="mb-0 text-primary">
+            <i class="fas fa-dollar-sign me-2"></i>Pricing
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row">
+            <div class="col-md-4 mb-3">
+              <div class="card rate-card h-100">
+                <div class="card-body">
+                  <h6 class="card-title text-primary">Hourly Rate</h6>
+                  <p class="small mb-3">For bookings less than 4 hours</p>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    {{ form.hourly_rate(class="form-control",
+                    placeholder="0.00") }}
+                  </div>
+                  {% if form.hourly_rate.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.hourly_rate.errors %} {{ error }} {%
+                    endfor %}
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="card rate-card h-100">
+                <div class="card-body">
+                  <h6 class="card-title text-primary">Half-Day Rate</h6>
+                  <p class="small mb-3">For bookings 4-6 hours</p>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    {{ form.half_day_rate(class="form-control",
+                    placeholder="0.00") }}
+                  </div>
+                  {% if form.half_day_rate.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.half_day_rate.errors %} {{ error }} {%
+                    endfor %}
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+            <div class="col-md-4 mb-3">
+              <div class="card rate-card h-100">
+                <div class="card-body">
+                  <h6 class="card-title text-primary">Full-Day Rate</h6>
+                  <p class="small mb-3">For bookings over 6 hours</p>
+                  <div class="input-group">
+                    <span class="input-group-text">$</span>
+                    {{ form.full_day_rate(class="form-control",
+                    placeholder="0.00") }}
+                  </div>
+                  {% if form.full_day_rate.errors %}
+                  <div class="text-danger small mt-1">
+                    {% for error in form.full_day_rate.errors %} {{ error }} {%
+                    endfor %}
+                  </div>
+                  {% endif %}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Amenities -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white">
+          <h5 class="mb-0 text-primary">
+            <i class="fas fa-list-check me-2"></i>Amenities
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            Add amenities and features available in this conference room.
+          </p>
+
+          <div class="mb-3">
+            {{ form.amenities(class="form-control", rows="3", placeholder="Enter
+            amenities separated by commas (e.g., Projector, Sound System,
+            Whiteboard)", style="display: none;") }}
+
+            <div class="input-group mb-3">
+              <input
+                type="text"
+                class="form-control"
+                id="amenityInput"
+                placeholder="Add amenity (e.g., Projector)"
+              />
+              <button
+                class="btn btn-outline-primary"
+                type="button"
+                id="addAmenityBtn"
+              >
+                <i class="fas fa-plus me-1"></i>Add
+              </button>
+            </div>
+
+            <div id="amenitiesList" class="mb-3">
+              <!-- Amenities badges will be added here -->
+            </div>
+
+            {% if form.amenities.errors %}
+            <div class="text-danger small mt-1">
+              {% for error in form.amenities.errors %} {{ error }} {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="border rounded p-3 bg-light mb-2">
+            <h6 class="mb-2">Common Amenities</h6>
+            <div>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary mb-1 me-1 common-amenity"
+              >
+                Projector
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary mb-1 me-1 common-amenity"
+              >
+                Sound System
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary mb-1 me-1 common-amenity"
+              >
+                Whiteboard
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary mb-1 me-1 common-amenity"
+              >
+                Air Conditioning
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary mb-1 me-1 common-amenity"
+              >
+                Internet Access
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary mb-1 me-1 common-amenity"
+              >
+                Video Conferencing
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary mb-1 me-1 common-amenity"
+              >
+                Natural Light
+              </button>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-secondary mb-1 me-1 common-amenity"
+              >
+                Refreshment Service
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Image and Save Panel -->
+    <div class="col-lg-4">
+      <!-- Image Upload -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white">
+          <h5 class="mb-0 text-primary">
+            <i class="fas fa-image me-2"></i>Room Image
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label class="form-label fw-bold">Image URL</label>
+            {{ form.image_url(class="form-control", placeholder="https://...",
+            id="imageUrl") }} {% if form.image_url.errors %}
+            <div class="text-danger small mt-1">
+              {% for error in form.image_url.errors %} {{ error }} {% endfor %}
+            </div>
+            {% endif %}
+
+            <div
+              id="imagePreview"
+              class="image-preview image-preview-placeholder"
+            >
+              <i class="fas fa-image fa-3x"></i>
+            </div>
+
+            <div class="small text-muted mt-2">
+              <i class="fas fa-info-circle me-1"></i> Provide a URL to an image
+              of the conference room. Recommended size: 1200×800px.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Save Panel -->
+      <div class="card shadow-sm border-0 position-sticky" style="top: 1rem">
+        <div class="card-header bg-white">
+          <h5 class="mb-0 text-primary">
+            <i class="fas fa-save me-2"></i>Save Room
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            {% if room %} Update the conference room information or cancel to
+            discard changes. {% else %} Create a new conference room that will
+            be available for booking. {% endif %}
+          </p>
+
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-success">
+              <i class="fas fa-save me-1"></i>
+              {% if room %}Update Room{% else %}Create Room{% endif %}
+            </button>
+            <a href="{{ url_for('rooms') }}" class="btn btn-outline-secondary">
+              Cancel
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Image preview functionality
+    const imageUrlInput = document.getElementById("imageUrl");
+    const imagePreview = document.getElementById("imagePreview");
+
+    function updateImagePreview() {
+      const imageUrl = imageUrlInput.value.trim();
+      if (imageUrl) {
+        imagePreview.style.backgroundImage = `url('${imageUrl}')`;
+        imagePreview.classList.remove("image-preview-placeholder");
+        imagePreview.innerHTML = "";
+      } else {
+        imagePreview.style.backgroundImage = "";
+        imagePreview.classList.add("image-preview-placeholder");
+        imagePreview.innerHTML = '<i class="fas fa-image fa-3x"></i>';
+      }
+    }
+
+    // Initialize image preview
+    updateImagePreview();
+
+    // Update image preview when URL changes
+    imageUrlInput.addEventListener("input", updateImagePreview);
+    imageUrlInput.addEventListener("change", updateImagePreview);
+
+    // Amenities functionality
+    const amenitiesInput = document.querySelector('textarea[name="amenities"]');
+    const amenitiesList = document.getElementById("amenitiesList");
+    const amenityInput = document.getElementById("amenityInput");
+    const addAmenityBtn = document.getElementById("addAmenityBtn");
+    const commonAmenityBtns = document.querySelectorAll(".common-amenity");
+
+    // Parse initial amenities from the hidden textarea
+    function loadInitialAmenities() {
+      const amenitiesText = amenitiesInput.value;
+      if (amenitiesText) {
+        try {
+          // Remove quotes around the JSON string if present
+          const cleanedText = amenitiesText.replace(/^"(.*)"$/, "$1");
+          // Parse the JSON array or handle comma-separated list
+          let amenities = [];
+          try {
+            amenities = JSON.parse(cleanedText);
+          } catch (e) {
+            // If not valid JSON, treat as comma-separated list
+            amenities = cleanedText
+              .split(",")
+              .map((item) => item.trim())
+              .filter((item) => item);
+          }
+
+          // Add each amenity to the visual list
+          amenities.forEach((amenity) => {
+            addAmenityBadge(amenity);
+          });
+        } catch (e) {
+          console.error("Error parsing amenities:", e);
+        }
+      }
+    }
+
+    // Add a new amenity badge to the list
+    function addAmenityBadge(amenity) {
+      if (!amenity) return;
+
+      // Check if amenity already exists
+      const existingAmenities = getCurrentAmenities();
+      if (existingAmenities.includes(amenity)) return;
+
+      const badge = document.createElement("span");
+      badge.className = "amenity-badge";
+      badge.innerHTML = `
+        ${amenity}
+        <span class="remove-amenity"><i class="fas fa-times"></i></span>
+      `;
+
+      const removeBtn = badge.querySelector(".remove-amenity");
+      removeBtn.addEventListener("click", function () {
+        badge.remove();
+        updateAmenitiesInput();
+      });
+
+      amenitiesList.appendChild(badge);
+      updateAmenitiesInput();
+    }
+
+    // Get current amenities from the badges
+    function getCurrentAmenities() {
+      const badges = amenitiesList.querySelectorAll(".amenity-badge");
+      return Array.from(badges).map((badge) => {
+        // Get the text content without the remove button text
+        return badge.childNodes[0].textContent.trim();
+      });
+    }
+
+    // Update the hidden input with the current amenities
+    function updateAmenitiesInput() {
+      const amenities = getCurrentAmenities();
+      amenitiesInput.value = JSON.stringify(amenities);
+    }
+
+    // Add amenity when button is clicked
+    addAmenityBtn.addEventListener("click", function () {
+      const amenity = amenityInput.value.trim();
+      if (amenity) {
+        addAmenityBadge(amenity);
+        amenityInput.value = "";
+        amenityInput.focus();
+      }
+    });
+
+    // Add amenity when Enter is pressed
+    amenityInput.addEventListener("keypress", function (e) {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        addAmenityBtn.click();
+      }
+    });
+
+    // Add common amenities when clicking the quick-add buttons
+    commonAmenityBtns.forEach((btn) => {
+      btn.addEventListener("click", function () {
+        addAmenityBadge(this.textContent.trim());
+      });
+    });
+
+    // Initialize amenities list
+    loadInitialAmenities();
+
+    // Form submission validation
+    const form = document.querySelector("form");
+    form.addEventListener("submit", function (e) {
+      // Make sure amenities are updated before submitting
+      updateAmenitiesInput();
+    });
+  });
+</script>
+{% endblock %}

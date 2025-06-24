@@ -1,0 +1,574 @@
+{% extends "layout.html" %} {% block title %}{% if addon %}Edit Add-on{% else
+%}New Add-on{% endif %} | Rainbow Towers Conference Booking{% endblock %} {%
+block extra_css %}
+<style>
+  .price-types .card {
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .price-types .card:hover {
+    transform: translateY(-5px);
+  }
+
+  .price-types .card.selected {
+    border-color: #4e73df;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+  }
+
+  .price-types .card.selected .check-mark {
+    display: block;
+  }
+
+  .price-types .card .check-mark {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    color: #4e73df;
+    display: none;
+  }
+
+  .category-examples {
+    transition: height 0.3s ease-out;
+    overflow: hidden;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>
+    <i class="fas fa-plus-circle text-primary me-2"></i>
+    {% if addon %}Edit Add-on{% else %}New Add-on{% endif %}
+  </h1>
+  <a href="{{ url_for('addons') }}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-1"></i>Back to Add-ons
+  </a>
+</div>
+
+<div class="row">
+  <div class="col-lg-8">
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-white">
+        <h5 class="mb-0 text-primary">
+          <i class="fas fa-info-circle me-2"></i>Add-on Details
+        </h5>
+      </div>
+      <div class="card-body">
+        <form method="POST">
+          {{ form.hidden_tag() }}
+
+          <div class="row mb-3">
+            <div class="col-md-8">
+              <label class="form-label fw-bold">Add-on Name</label>
+              {{ form.name(class="form-control", placeholder="Enter add-on
+              name") }} {% if form.name.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.name.errors %} {{ error }} {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+            <div class="col-md-4">
+              <label class="form-label fw-bold">Price (USD)</label>
+              {{ form.price(class="form-control", placeholder="0.00") }} {% if
+              form.price.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.price.errors %} {{ error }} {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Description</label>
+            {{ form.description(class="form-control", rows="3",
+            placeholder="Enter add-on description") }} {% if
+            form.description.errors %}
+            <div class="text-danger small mt-1">
+              {% for error in form.description.errors %} {{ error }} {% endfor
+              %}
+            </div>
+            {% endif %}
+            <div class="small text-muted mt-1">
+              <i class="fas fa-info-circle me-1"></i> Clearly describe what this
+              add-on includes and any important details.
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Category</label>
+              {{ form.category_id(class="form-select") }} {% if
+              form.category_id.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.category_id.errors %} {{ error }} {% endfor
+                %}
+              </div>
+              {% endif %} {% if categories %}
+              <div
+                id="categoryExamples"
+                class="mt-2 category-examples"
+                style="height: 0px"
+              ></div>
+              <div class="mt-1">
+                <a href="#" id="showExamplesBtn" class="text-primary small">
+                  <i class="fas fa-lightbulb"></i> Show example add-ons for this
+                  category
+                </a>
+              </div>
+              {% endif %}
+
+              <div class="mt-2">
+                <a
+                  href="#"
+                  data-bs-toggle="modal"
+                  data-bs-target="#newCategoryModal"
+                  class="text-primary small"
+                >
+                  <i class="fas fa-folder-plus"></i> Add new category
+                </a>
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Status</label>
+              <div class="form-check form-switch mt-2">
+                {{ form.is_active(class="form-check-input") }}
+                <label class="form-check-label" for="is_active">Active</label>
+              </div>
+              {% if form.is_active.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.is_active.errors %} {{ error }} {% endfor
+                %}
+              </div>
+              {% endif %}
+              <div class="small text-muted mt-1">
+                <i class="fas fa-info-circle me-1"></i> Inactive add-ons won't
+                appear as options when creating bookings.
+              </div>
+            </div>
+          </div>
+
+          <div class="d-grid gap-2 col-md-6 mx-auto">
+            <button type="submit" class="btn btn-success">
+              <i class="fas fa-save me-1"></i>
+              {% if addon %}Update Add-on{% else %}Create Add-on{% endif %}
+            </button>
+            <a href="{{ url_for('addons') }}" class="btn btn-outline-secondary">
+              Cancel
+            </a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <!-- Price Guide Panel -->
+    <div class="card shadow-sm border-0 mb-4">
+      <div class="card-header bg-white">
+        <h5 class="mb-0 text-primary">
+          <i class="fas fa-dollar-sign me-2"></i>Pricing Guide
+        </h5>
+      </div>
+      <div class="card-body">
+        <p class="text-muted mb-3">
+          Common pricing approaches for conference add-ons:
+        </p>
+
+        <div class="price-types">
+          <div class="card mb-2 p-2">
+            <div class="card-body p-2">
+              <span class="check-mark"
+                ><i class="fas fa-check-circle"></i
+              ></span>
+              <h6 class="card-title">Per Event Pricing</h6>
+              <p class="card-text small text-muted mb-0">
+                Charge a flat fee for the entire event duration, regardless of
+                hours.
+              </p>
+            </div>
+          </div>
+
+          <div class="card mb-2 p-2">
+            <div class="card-body p-2">
+              <span class="check-mark"
+                ><i class="fas fa-check-circle"></i
+              ></span>
+              <h6 class="card-title">Per Person Pricing</h6>
+              <p class="card-text small text-muted mb-0">
+                Charge per attendee (common for food, beverages, or materials).
+              </p>
+            </div>
+          </div>
+
+          <div class="card mb-2 p-2">
+            <div class="card-body p-2">
+              <span class="check-mark"
+                ><i class="fas fa-check-circle"></i
+              ></span>
+              <h6 class="card-title">Per Hour Pricing</h6>
+              <p class="card-text small text-muted mb-0">
+                Charge an hourly rate (common for staff or equipment).
+              </p>
+            </div>
+          </div>
+
+          <div class="card mb-2 p-2">
+            <div class="card-body p-2">
+              <span class="check-mark"
+                ><i class="fas fa-check-circle"></i
+              ></span>
+              <h6 class="card-title">Per Item Pricing</h6>
+              <p class="card-text small text-muted mb-0">
+                Charge per individual item (microphones, projectors, etc.)
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="alert alert-info small mt-3">
+          <i class="fas fa-info-circle me-1"></i> Be clear about your pricing
+          model in the add-on description so clients understand what they're
+          paying for.
+        </div>
+      </div>
+    </div>
+
+    <!-- Add-on Examples -->
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white">
+        <h5 class="mb-0 text-primary">
+          <i class="fas fa-lightbulb me-2"></i>Popular Add-ons
+        </h5>
+      </div>
+      <div class="card-body">
+        <p class="text-muted small mb-3">
+          Click any example to use as a template:
+        </p>
+
+        <div class="list-group">
+          <button
+            type="button"
+            class="list-group-item list-group-item-action addon-example"
+            data-name="Premium PA System"
+            data-price="100.00"
+            data-description="High-quality sound system with wireless microphones, speakers, and mixer. Includes setup and basic technical support."
+          >
+            <div class="d-flex w-100 justify-content-between">
+              <h6 class="mb-1">Premium PA System</h6>
+              <span>$100.00</span>
+            </div>
+            <small class="text-muted">Audio/Visual Equipment</small>
+          </button>
+
+          <button
+            type="button"
+            class="list-group-item list-group-item-action addon-example"
+            data-name="Coffee Break Service"
+            data-price="12.00"
+            data-description="Coffee, tea, water, and assorted pastries. Priced per person. Includes setup and cleanup."
+          >
+            <div class="d-flex w-100 justify-content-between">
+              <h6 class="mb-1">Coffee Break Service</h6>
+              <span>$12.00</span>
+            </div>
+            <small class="text-muted">Food & Beverage</small>
+          </button>
+
+          <button
+            type="button"
+            class="list-group-item list-group-item-action addon-example"
+            data-name="Technical Assistant"
+            data-price="75.00"
+            data-description="Dedicated staff member to assist with audiovisual equipment, presentations, and technical troubleshooting. Charged per half-day."
+          >
+            <div class="d-flex w-100 justify-content-between">
+              <h6 class="mb-1">Technical Assistant</h6>
+              <span>$75.00</span>
+            </div>
+            <small class="text-muted">Technical Support</small>
+          </button>
+
+          <button
+            type="button"
+            class="list-group-item list-group-item-action addon-example"
+            data-name="Video Recording Package"
+            data-price="250.00"
+            data-description="Professional video recording of your event with one camera, basic editing, and digital file delivery within 1 week after the event."
+          >
+            <div class="d-flex w-100 justify-content-between">
+              <h6 class="mb-1">Video Recording Package</h6>
+              <span>$250.00</span>
+            </div>
+            <small class="text-muted">Event Services</small>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- New Category Modal -->
+<div class="modal fade" id="newCategoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">New Category</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <form
+        action="{{ url_for('new_addon_category') }}"
+        method="POST"
+        id="newCategoryForm"
+      >
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="categoryName" class="form-label">Category Name</label>
+            <input
+              type="text"
+              class="form-control"
+              id="categoryName"
+              name="name"
+              placeholder="e.g., Audio/Visual Equipment"
+              required
+            />
+          </div>
+          <div class="mb-3">
+            <label for="categoryDescription" class="form-label"
+              >Description</label
+            >
+            <textarea
+              class="form-control"
+              id="categoryDescription"
+              name="description"
+              rows="3"
+              placeholder="Describe the category..."
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">Create Category</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Handle new category form submission via AJAX
+    const newCategoryForm = document.getElementById("newCategoryForm");
+    const categorySelect = document.getElementById("category_id");
+
+    if (newCategoryForm && categorySelect) {
+      newCategoryForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        const formData = new FormData(newCategoryForm);
+
+        fetch('{{ url_for("new_addon_category") }}', {
+          method: "POST",
+          body: formData,
+          headers: {
+            "X-Requested-With": "XMLHttpRequest",
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              // Add the new category to the dropdown
+              const option = document.createElement("option");
+              option.value = data.category.id;
+              option.text = data.category.name;
+              option.selected = true;
+              categorySelect.appendChild(option);
+
+              // Close the modal
+              const modal = bootstrap.Modal.getInstance(
+                document.getElementById("newCategoryModal")
+              );
+              modal.hide();
+
+              // Show success message
+              alert("Category created successfully!");
+
+              // Reset the form
+              newCategoryForm.reset();
+            } else {
+              alert("Error: " + data.message);
+            }
+          })
+          .catch((error) => {
+            console.error("Error:", error);
+            alert("An error occurred. Please try again.");
+          });
+      });
+    }
+
+    // Handle price type selection
+    const priceTypeCards = document.querySelectorAll(".price-types .card");
+    priceTypeCards.forEach((card) => {
+      card.addEventListener("click", function () {
+        priceTypeCards.forEach((c) => c.classList.remove("selected"));
+        this.classList.add("selected");
+      });
+    });
+
+    // Handle addon examples
+    const addonExamples = document.querySelectorAll(".addon-example");
+    const nameInput = document.getElementById("name");
+    const priceInput = document.getElementById("price");
+    const descriptionInput = document.getElementById("description");
+
+    if (addonExamples.length && nameInput && priceInput && descriptionInput) {
+      addonExamples.forEach((example) => {
+        example.addEventListener("click", function () {
+          const name = this.dataset.name;
+          const price = this.dataset.price;
+          const description = this.dataset.description;
+
+          nameInput.value = name;
+          priceInput.value = price;
+          descriptionInput.value = description;
+
+          // Scroll to top of form
+          document
+            .querySelector(".card")
+            .scrollIntoView({ behavior: "smooth" });
+        });
+      });
+    }
+
+    // Category examples
+    const categorySelect = document.getElementById("category_id");
+    const categoryExamples = document.getElementById("categoryExamples");
+    const showExamplesBtn = document.getElementById("showExamplesBtn");
+
+    if (categorySelect && categoryExamples && showExamplesBtn) {
+      // Example add-ons by category
+      const categoryAddons = {
+        // Adjust these based on your expected category IDs
+        // Or use data attributes on the select options to store example data
+        1: [
+          {
+            name: "Wireless Microphone",
+            price: 25.0,
+            description: "Professional-grade wireless microphone.",
+          },
+          {
+            name: "LCD Projector",
+            price: 75.0,
+            description: "High-resolution projector with screen.",
+          },
+        ],
+        2: [
+          {
+            name: "Lunch Buffet",
+            price: 35.0,
+            description: "Per person lunch buffet with a variety of options.",
+          },
+          {
+            name: "Open Bar (2 Hours)",
+            price: 50.0,
+            description: "Open bar service for 2 hours, charged per person.",
+          },
+        ],
+        3: [
+          {
+            name: "Flower Arrangements",
+            price: 85.0,
+            description: "Fresh flower centerpieces for tables.",
+          },
+          {
+            name: "Corporate Backdrop",
+            price: 150.0,
+            description: "Branded backdrop with company logo.",
+          },
+        ],
+        4: [
+          {
+            name: "IT Support Specialist",
+            price: 50.0,
+            description: "On-call technical support, hourly rate.",
+          },
+          {
+            name: "Full A/V Support",
+            price: 350.0,
+            description: "Comprehensive support for all audiovisual needs.",
+          },
+        ],
+      };
+
+      showExamplesBtn.addEventListener("click", function (e) {
+        e.preventDefault();
+
+        const categoryId = categorySelect.value;
+        const examples = categoryAddons[categoryId];
+
+        if (examples && examples.length) {
+          let html = '<div class="alert alert-light p-3">';
+          html += '<h6 class="alert-heading">Examples in this category:</h6>';
+          html += '<ul class="mb-0">';
+
+          examples.forEach((example) => {
+            html += `<li><strong>${
+              example.name
+            }</strong> - $${example.price.toFixed(2)}<br>
+                     <small class="text-muted">${
+                       example.description
+                     }</small></li>`;
+          });
+
+          html += "</ul></div>";
+
+          categoryExamples.innerHTML = html;
+          categoryExamples.style.height = "auto";
+          showExamplesBtn.innerHTML =
+            '<i class="fas fa-chevron-up"></i> Hide examples';
+
+          // Toggle functionality
+          if (categoryExamples.classList.contains("expanded")) {
+            categoryExamples.style.height = "0px";
+            categoryExamples.classList.remove("expanded");
+            showExamplesBtn.innerHTML =
+              '<i class="fas fa-lightbulb"></i> Show example add-ons for this category';
+          } else {
+            categoryExamples.classList.add("expanded");
+          }
+        } else {
+          categoryExamples.innerHTML =
+            '<div class="alert alert-info">No examples available for this category.</div>';
+          categoryExamples.style.height = "auto";
+          categoryExamples.classList.add("expanded");
+          showExamplesBtn.innerHTML =
+            '<i class="fas fa-chevron-up"></i> Hide examples';
+        }
+      });
+
+      // Update examples when category changes
+      categorySelect.addEventListener("change", function () {
+        if (categoryExamples.classList.contains("expanded")) {
+          // If already expanded, update content
+          showExamplesBtn.click();
+        }
+
+        // Reset to collapsed state
+        categoryExamples.style.height = "0px";
+        categoryExamples.classList.remove("expanded");
+        showExamplesBtn.innerHTML =
+          '<i class="fas fa-lightbulb"></i> Show example add-ons for this category';
+      });
+    }
+  });
+</script>
+{% endblock %}

@@ -1,0 +1,938 @@
+{% extends "layout.html" %} {% block title %}Booking Calendar | Rainbow Towers
+Conference Booking{% endblock %} {% block extra_css %}
+<!-- FullCalendar CSS -->
+<link
+  href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css"
+  rel="stylesheet"
+/>
+<style>
+  #calendar {
+    height: 700px;
+  }
+
+  .filter-card {
+    border-left: 4px solid #4e73df;
+  }
+
+  .fc-event {
+    cursor: pointer;
+  }
+
+  /* Status colors */
+  .event-tentative {
+    background-color: #f6c23e !important;
+    border-color: #f6c23e !important;
+  }
+  .event-confirmed {
+    background-color: #1cc88a !important;
+    border-color: #1cc88a !important;
+  }
+  .event-cancelled {
+    background-color: #e74a3b !important;
+    border-color: #e74a3b !important;
+  }
+
+  /* Room legend */
+  .room-legend {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+  }
+  .room-legend-item {
+    display: flex;
+    align-items: center;
+  }
+  .room-legend-color {
+    width: 15px;
+    height: 15px;
+    margin-right: 5px;
+    border-radius: 3px;
+  }
+
+  /* Custom loading indicator */
+  .calendar-loading {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 5;
+  }
+
+  .calendar-loading.hidden {
+    display: none;
+  }
+
+  /* Responsive fixes */
+  @media (max-width: 768px) {
+    #calendar {
+      height: 600px;
+    }
+
+    .fc-header-toolbar {
+      flex-direction: column;
+    }
+
+    .fc-toolbar-chunk {
+      margin-bottom: 0.5rem;
+    }
+  }
+</style>
+{% endblock %} {% block content %}
+<h1 class="mb-4">
+  <i class="fas fa-calendar-alt text-primary me-2"></i>Booking Calendar
+</h1>
+
+<div class="row mb-4">
+  <!-- Filters -->
+  <div class="col-lg-3 mb-4">
+    <div class="card shadow border-0 filter-card h-100">
+      <div class="card-header bg-white">
+        <h5 class="m-0 font-weight-bold text-primary">
+          <i class="fas fa-filter me-2"></i>Filters
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="mb-3">
+          <label class="form-label fw-bold">View</label>
+          <div class="btn-group w-100" role="group">
+            <button
+              type="button"
+              class="btn btn-outline-primary active"
+              id="viewMonthBtn"
+            >
+              Month
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-primary"
+              id="viewWeekBtn"
+            >
+              Week
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-primary"
+              id="viewDayBtn"
+            >
+              Day
+            </button>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">Date Range</label>
+          <div class="input-group">
+            <input
+              type="text"
+              class="form-control datepicker"
+              id="calendarDatePicker"
+              placeholder="Select date"
+            />
+            <button
+              class="btn btn-outline-secondary"
+              type="button"
+              id="goToTodayBtn"
+            >
+              Today
+            </button>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">Conference Room</label>
+          <select class="form-select" id="roomFilter">
+            <option value="all">All Rooms</option>
+            {% for room in rooms %}
+            <option value="{{ room.id }}">{{ room.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">Booking Status</label>
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              value="tentative"
+              id="statusTentative"
+              checked
+            />
+            <label class="form-check-label" for="statusTentative">
+              <span class="badge bg-warning">Tentative</span>
+            </label>
+          </div>
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              value="confirmed"
+              id="statusConfirmed"
+              checked
+            />
+            <label class="form-check-label" for="statusConfirmed">
+              <span class="badge bg-success">Confirmed</span>
+            </label>
+          </div>
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              value="cancelled"
+              id="statusCancelled"
+            />
+            <label class="form-check-label" for="statusCancelled">
+              <span class="badge bg-danger">Cancelled</span>
+            </label>
+          </div>
+        </div>
+
+        <hr />
+
+        <div class="mb-3">
+          <label class="form-label fw-bold">Statistics</label>
+          <div class="row text-center g-2">
+            <div class="col-4">
+              <div class="p-2 border rounded bg-light">
+                <div class="h4 mb-0" id="tentativeCount">0</div>
+                <div class="small text-muted">Tentative</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="p-2 border rounded bg-light">
+                <div class="h4 mb-0" id="confirmedCount">0</div>
+                <div class="small text-muted">Confirmed</div>
+              </div>
+            </div>
+            <div class="col-4">
+              <div class="p-2 border rounded bg-light">
+                <div class="h4 mb-0" id="totalCount">0</div>
+                <div class="small text-muted">Total</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <hr />
+
+        <div class="mb-3">
+          <div class="d-grid">
+            <a href="{{ url_for('new_booking') }}" class="btn btn-success">
+              <i class="fas fa-plus me-1"></i>New Booking
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar -->
+  <div class="col-lg-9 mb-4">
+    <div class="card shadow border-0 h-100">
+      <div
+        class="card-header bg-white d-flex justify-content-between align-items-center"
+      >
+        <h5 class="m-0 font-weight-bold text-primary">
+          <i class="fas fa-calendar-alt me-2"></i>Calendar
+        </h5>
+        <div class="d-flex">
+          <div class="btn-group me-2" role="group">
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary"
+              id="exportPdfBtn"
+            >
+              <i class="fas fa-file-pdf me-1"></i>PDF
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-outline-secondary"
+              id="exportCsvBtn"
+            >
+              <i class="fas fa-file-csv me-1"></i>CSV
+            </button>
+          </div>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-primary"
+            id="refreshCalendarBtn"
+          >
+            <i class="fas fa-sync-alt me-1"></i>Refresh
+          </button>
+        </div>
+      </div>
+      <div class="card-body position-relative">
+        <!-- Loading indicator -->
+        <div id="calendarLoading" class="calendar-loading hidden">
+          <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Loading...</span>
+          </div>
+        </div>
+
+        <!-- Calendar container -->
+        <div id="calendar"></div>
+      </div>
+      <div class="card-footer bg-white">
+        <div class="room-legend">
+          {% for room in rooms %}
+          <div class="room-legend-item">
+            <div
+              class="room-legend-color"
+              style="background-color: rgba({{ room.id * 50 % 255 }}, {{ room.id * 30 % 255 }}, {{ room.id * 70 % 255 }}, 0.8);"
+            ></div>
+            <span class="small">{{ room.name }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        <div class="mt-2">
+          <small class="text-muted">
+            <span class="badge bg-warning me-1">Yellow</span> = Tentative,
+            <span class="badge bg-success me-1">Green</span> = Confirmed,
+            <span class="badge bg-danger me-1">Red</span> = Cancelled
+          </small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Event Details Modal -->
+<div
+  class="modal fade"
+  id="eventModal"
+  tabindex="-1"
+  aria-labelledby="eventModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="eventModalLabel">Booking Details</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <div class="d-flex justify-content-between mb-3">
+          <h4 id="eventTitle"></h4>
+          <span id="eventStatus" class="badge"></span>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-6">
+            <p>
+              <i class="fas fa-calendar-alt me-2"></i><strong>Date:</strong>
+              <span id="eventDate"></span>
+            </p>
+            <p>
+              <i class="fas fa-clock me-2"></i><strong>Time:</strong>
+              <span id="eventTime"></span>
+            </p>
+            <p>
+              <i class="fas fa-door-open me-2"></i><strong>Room:</strong>
+              <span id="eventRoom"></span>
+            </p>
+          </div>
+          <div class="col-md-6">
+            <p>
+              <i class="fas fa-user me-2"></i><strong>Client:</strong>
+              <span id="eventClient"></span>
+            </p>
+            <p>
+              <i class="fas fa-users me-2"></i><strong>Attendees:</strong>
+              <span id="eventAttendees"></span>
+            </p>
+            <p>
+              <i class="fas fa-dollar-sign me-2"></i><strong>Total:</strong>
+              <span id="eventTotal"></span>
+            </p>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <h5><i class="fas fa-plus-circle me-2"></i>Add-ons</h5>
+          <div id="eventAddons" class="border p-2 rounded">
+            No add-ons selected
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <h5><i class="fas fa-sticky-note me-2"></i>Notes</h5>
+          <p id="eventNotes" class="border p-2 rounded"></p>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <a id="viewBookingLink" href="#" class="btn btn-primary">
+          <i class="fas fa-eye me-1"></i>View Details
+        </a>
+        <a id="editBookingLink" href="#" class="btn btn-warning">
+          <i class="fas fa-edit me-1"></i>Edit Booking
+        </a>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Create Booking Modal -->
+<div
+  class="modal fade"
+  id="createBookingModal"
+  tabindex="-1"
+  aria-labelledby="createBookingModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="createBookingModalLabel">Quick Booking</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <form id="quickBookingForm">
+          <div class="mb-3">
+            <label for="quickBookingTitle" class="form-label"
+              >Event Title</label
+            >
+            <input
+              type="text"
+              class="form-control"
+              id="quickBookingTitle"
+              required
+            />
+          </div>
+
+          <div class="mb-3">
+            <label for="quickBookingRoom" class="form-label"
+              >Conference Room</label
+            >
+            <select class="form-select" id="quickBookingRoom" required>
+              <option value="">Select a room</option>
+              {% for room in rooms %}
+              <option value="{{ room.id }}">{{ room.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="quickBookingClient" class="form-label">Client</label>
+            <select class="form-select" id="quickBookingClient" required>
+              <option value="">Select a client</option>
+              <!-- Will be populated via AJAX -->
+            </select>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="quickBookingStart" class="form-label"
+                >Start Time</label
+              >
+              <input
+                type="text"
+                class="form-control datetimepicker"
+                id="quickBookingStart"
+                required
+              />
+            </div>
+            <div class="col-md-6">
+              <label for="quickBookingEnd" class="form-label">End Time</label>
+              <input
+                type="text"
+                class="form-control datetimepicker"
+                id="quickBookingEnd"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="quickBookingStatus" class="form-label">Status</label>
+            <select class="form-select" id="quickBookingStatus">
+              <option value="tentative">Tentative</option>
+              <option value="confirmed">Confirmed</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label for="quickBookingNotes" class="form-label">Notes</label>
+            <textarea
+              class="form-control"
+              id="quickBookingNotes"
+              rows="2"
+            ></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" id="saveQuickBookingBtn">
+          Create Booking
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<!-- FullCalendar JS -->
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    var calendarEl = document.getElementById("calendar");
+    var loadingIndicator = document.getElementById("calendarLoading");
+
+    // Initialize FullCalendar
+    var calendar = new FullCalendar.Calendar(calendarEl, {
+      initialView: "dayGridMonth",
+      headerToolbar: {
+        left: "prev,next today",
+        center: "title",
+        right: "dayGridMonth,timeGridWeek,timeGridDay",
+      },
+      allDaySlot: false,
+      slotMinTime: "07:00:00",
+      slotMaxTime: "22:00:00",
+      businessHours: {
+        daysOfWeek: [0, 1, 2, 3, 4, 5, 6],
+        startTime: "07:00",
+        endTime: "22:00",
+      },
+      height: "100%",
+      events: "{{ url_for('get_events') }}",
+      eventClick: function (info) {
+        showEventDetails(info.event);
+      },
+      dateClick: function (info) {
+        // Optional: show quick booking modal when clicking on a date
+        showQuickBookingModal(info.date);
+      },
+      eventTimeFormat: {
+        hour: "2-digit",
+        minute: "2-digit",
+        meridiem: false,
+        hour12: false,
+      },
+      eventClassNames: function (arg) {
+        // Add class based on booking status
+        return ["event-" + arg.event.extendedProps.status];
+      },
+      loading: function (isLoading) {
+        // Show/hide loading indicator
+        if (isLoading) {
+          loadingIndicator.classList.remove("hidden");
+        } else {
+          loadingIndicator.classList.add("hidden");
+          updateEventCounters();
+        }
+      },
+    });
+
+    calendar.render();
+
+    // Store calendar in global variable for access in other functions
+    window.bookingCalendar = calendar;
+
+    // Filter events by room
+    document
+      .getElementById("roomFilter")
+      .addEventListener("change", function () {
+        filterEvents();
+      });
+
+    // Filter events by status
+    document
+      .querySelectorAll("input[type=checkbox]")
+      .forEach(function (checkbox) {
+        checkbox.addEventListener("change", function () {
+          filterEvents();
+        });
+      });
+
+    // View buttons
+    document
+      .getElementById("viewMonthBtn")
+      .addEventListener("click", function () {
+        calendar.changeView("dayGridMonth");
+        updateActiveButton("viewMonthBtn", ["viewWeekBtn", "viewDayBtn"]);
+      });
+
+    document
+      .getElementById("viewWeekBtn")
+      .addEventListener("click", function () {
+        calendar.changeView("timeGridWeek");
+        updateActiveButton("viewWeekBtn", ["viewMonthBtn", "viewDayBtn"]);
+      });
+
+    document
+      .getElementById("viewDayBtn")
+      .addEventListener("click", function () {
+        calendar.changeView("timeGridDay");
+        updateActiveButton("viewDayBtn", ["viewMonthBtn", "viewWeekBtn"]);
+      });
+
+    // Go to today button
+    document
+      .getElementById("goToTodayBtn")
+      .addEventListener("click", function () {
+        calendar.today();
+      });
+
+    // Refresh calendar button
+    document
+      .getElementById("refreshCalendarBtn")
+      .addEventListener("click", function () {
+        calendar.refetchEvents();
+        this.disabled = true;
+        this.innerHTML =
+          '<i class="fas fa-sync-alt fa-spin me-1"></i>Refreshing...';
+
+        setTimeout(() => {
+          this.disabled = false;
+          this.innerHTML = '<i class="fas fa-sync-alt me-1"></i>Refresh';
+        }, 1000);
+      });
+
+    // Export buttons (sample functionality)
+    document
+      .getElementById("exportPdfBtn")
+      .addEventListener("click", function () {
+        alert("PDF export functionality would be implemented here.");
+        // In a real implementation, you would generate a PDF of the current calendar view
+      });
+
+    document
+      .getElementById("exportCsvBtn")
+      .addEventListener("click", function () {
+        alert("CSV export functionality would be implemented here.");
+        // In a real implementation, you would generate a CSV of all events in the current view
+      });
+
+    // Initialize datepicker for the calendar (if using flatpickr)
+    if (typeof flatpickr !== "undefined") {
+      flatpickr("#calendarDatePicker", {
+        dateFormat: "Y-m-d",
+        onChange: function (selectedDates) {
+          if (selectedDates.length > 0) {
+            calendar.gotoDate(selectedDates[0]);
+          }
+        },
+      });
+    }
+
+    // Filter events function
+    function filterEvents() {
+      var roomId = document.getElementById("roomFilter").value;
+      var statusTentative = document.getElementById("statusTentative").checked;
+      var statusConfirmed = document.getElementById("statusConfirmed").checked;
+      var statusCancelled = document.getElementById("statusCancelled").checked;
+
+      var events = calendar.getEvents();
+
+      events.forEach(function (event) {
+        var show = true;
+
+        // Filter by room
+        if (roomId !== "all" && event.extendedProps.roomId != roomId) {
+          show = false;
+        }
+
+        // Filter by status
+        if (
+          (event.extendedProps.status === "tentative" && !statusTentative) ||
+          (event.extendedProps.status === "confirmed" && !statusConfirmed) ||
+          (event.extendedProps.status === "cancelled" && !statusCancelled)
+        ) {
+          show = false;
+        }
+
+        event.setProp("display", show ? "auto" : "none");
+      });
+
+      // Update event counters
+      updateEventCounters();
+    }
+
+    // Update active button in button group
+    function updateActiveButton(activeId, inactiveIds) {
+      document.getElementById(activeId).classList.add("active");
+      inactiveIds.forEach(function (id) {
+        document.getElementById(id).classList.remove("active");
+      });
+    }
+
+    // Update event counters
+    function updateEventCounters() {
+      var events = calendar.getEvents();
+      var tentativeCount = 0;
+      var confirmedCount = 0;
+      var visibleCount = 0;
+
+      events.forEach(function (event) {
+        // Check if event is not hidden by filter
+        if (event.display !== "none") {
+          visibleCount++;
+
+          if (event.extendedProps.status === "tentative") {
+            tentativeCount++;
+          } else if (event.extendedProps.status === "confirmed") {
+            confirmedCount++;
+          }
+        }
+      });
+
+      // Update counter displays
+      document.getElementById("tentativeCount").textContent = tentativeCount;
+      document.getElementById("confirmedCount").textContent = confirmedCount;
+      document.getElementById("totalCount").textContent = visibleCount;
+    }
+
+    // Function to show event details
+    function showEventDetails(event) {
+      var modal = new bootstrap.Modal(document.getElementById("eventModal"));
+
+      // Set event details
+      document.getElementById("eventTitle").textContent = event.title;
+
+      var statusBadge = document.getElementById("eventStatus");
+      statusBadge.textContent =
+        event.extendedProps.status.charAt(0).toUpperCase() +
+        event.extendedProps.status.slice(1);
+
+      if (event.extendedProps.status === "tentative") {
+        statusBadge.className = "badge bg-warning";
+      } else if (event.extendedProps.status === "confirmed") {
+        statusBadge.className = "badge bg-success";
+      } else {
+        statusBadge.className = "badge bg-danger";
+      }
+
+      // Format date and time
+      var start = new Date(event.start);
+      var end = new Date(event.end);
+
+      var dateOptions = {
+        weekday: "long",
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      };
+      var timeOptions = { hour: "2-digit", minute: "2-digit", hour12: false };
+
+      document.getElementById("eventDate").textContent =
+        start.toLocaleDateString(undefined, dateOptions);
+      document.getElementById("eventTime").textContent =
+        start.toLocaleTimeString(undefined, timeOptions) +
+        " - " +
+        end.toLocaleTimeString(undefined, timeOptions);
+
+      document.getElementById("eventRoom").textContent =
+        event.extendedProps.room;
+      document.getElementById("eventClient").textContent =
+        event.extendedProps.client;
+      document.getElementById("eventAttendees").textContent =
+        event.extendedProps.attendees || "Not specified";
+      document.getElementById("eventTotal").textContent = event.extendedProps
+        .total
+        ? "$" + event.extendedProps.total
+        : "Not specified";
+
+      // Handle addons
+      var addonsElement = document.getElementById("eventAddons");
+      if (event.extendedProps.addons && event.extendedProps.addons.length > 0) {
+        var addonsList = event.extendedProps.addons
+          .map(function (addon) {
+            return (
+              '<div class="badge bg-primary me-1 mb-1">' + addon + "</div>"
+            );
+          })
+          .join("");
+        addonsElement.innerHTML = addonsList;
+      } else {
+        addonsElement.textContent = "No add-ons selected";
+      }
+
+      // Handle notes
+      var notesElement = document.getElementById("eventNotes");
+      if (event.extendedProps.notes) {
+        notesElement.textContent = event.extendedProps.notes;
+      } else {
+        notesElement.textContent = "No notes";
+        notesElement.classList.add("text-muted");
+      }
+
+      // Set links
+      document.getElementById("viewBookingLink").href = "/bookings/" + event.id;
+      document.getElementById("editBookingLink").href =
+        "/bookings/" + event.id + "/edit";
+
+      modal.show();
+    }
+
+    // Function to show quick booking modal
+    function showQuickBookingModal(date) {
+      // Format the date for the form
+      var formattedDate = date.toISOString().slice(0, 16).replace("T", " ");
+      var endTime = new Date(date.getTime() + 60 * 60 * 1000); // Default to 1 hour later
+      var formattedEndTime = endTime
+        .toISOString()
+        .slice(0, 16)
+        .replace("T", " ");
+
+      // Set default values in the form
+      document.getElementById("quickBookingStart").value = formattedDate;
+      document.getElementById("quickBookingEnd").value = formattedEndTime;
+
+      // Load clients via AJAX
+      loadClients();
+
+      // Show the modal
+      var modal = new bootstrap.Modal(
+        document.getElementById("createBookingModal")
+      );
+      modal.show();
+    }
+
+    // Function to load clients for the dropdown
+    function loadClients() {
+      var clientSelect = document.getElementById("quickBookingClient");
+
+      // Clear existing options except the first one
+      while (clientSelect.options.length > 1) {
+        clientSelect.remove(1);
+      }
+
+      // Add loading option
+      var loadingOption = document.createElement("option");
+      loadingOption.text = "Loading clients...";
+      loadingOption.disabled = true;
+      clientSelect.add(loadingOption);
+
+      // Fetch clients
+      fetch("/api/clients")
+        .then((response) => response.json())
+        .then((data) => {
+          // Remove loading option
+          clientSelect.remove(clientSelect.options.length - 1);
+
+          // Add clients to the dropdown
+          data.forEach((client) => {
+            var option = document.createElement("option");
+            option.value = client.id;
+            option.text = client.company_name
+              ? client.company_name + " (" + client.contact_person + ")"
+              : client.contact_person;
+            clientSelect.add(option);
+          });
+        })
+        .catch((error) => {
+          console.error("Error loading clients:", error);
+          clientSelect.remove(clientSelect.options.length - 1);
+
+          var errorOption = document.createElement("option");
+          errorOption.text = "Error loading clients";
+          errorOption.disabled = true;
+          clientSelect.add(errorOption);
+        });
+    }
+
+    // Handle quick booking form submission
+    document
+      .getElementById("saveQuickBookingBtn")
+      .addEventListener("click", function () {
+        var form = document.getElementById("quickBookingForm");
+
+        // Basic validation
+        if (!form.checkValidity()) {
+          form.reportValidity();
+          return;
+        }
+
+        // Collect form data
+        var formData = {
+          title: document.getElementById("quickBookingTitle").value,
+          room_id: document.getElementById("quickBookingRoom").value,
+          client_id: document.getElementById("quickBookingClient").value,
+          start_time: document.getElementById("quickBookingStart").value,
+          end_time: document.getElementById("quickBookingEnd").value,
+          status: document.getElementById("quickBookingStatus").value,
+          notes: document.getElementById("quickBookingNotes").value,
+        };
+
+        // Disable the button and show loading state
+        var saveBtn = this;
+        saveBtn.disabled = true;
+        saveBtn.innerHTML =
+          '<span class="spinner-border spinner-border-sm me-2"></span>Creating...';
+
+        // Send data to server
+        fetch("/api/bookings/create", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": getCsrfToken(), // Function to get CSRF token from meta tag or cookie
+          },
+          body: JSON.stringify(formData),
+        })
+          .then((response) => {
+            if (!response.ok) {
+              throw new Error("Network response was not ok");
+            }
+            return response.json();
+          })
+          .then((data) => {
+            // Close the modal
+            var modal = bootstrap.Modal.getInstance(
+              document.getElementById("createBookingModal")
+            );
+            modal.hide();
+
+            // Show success message
+            alert("Booking created successfully!");
+
+            // Refresh calendar
+            calendar.refetchEvents();
+
+            // Reset form
+            form.reset();
+          })
+          .catch((error) => {
+            console.error("Error creating booking:", error);
+            alert("Error creating booking: " + error.message);
+          })
+          .finally(() => {
+            // Re-enable the button
+            saveBtn.disabled = false;
+            saveBtn.innerHTML = "Create Booking";
+          });
+      });
+
+    // Helper function to get CSRF token
+    function getCsrfToken() {
+      return (
+        document
+          .querySelector('meta[name="csrf-token"]')
+          ?.getAttribute("content") || ""
+      );
+    }
+
+    // Initial counter update
+    updateEventCounters();
+  });
+</script>
+{% endblock %}

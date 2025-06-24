@@ -1,0 +1,488 @@
+{% extends "layout.html" %} {% block title %}Add Accommodation | Rainbow Towers
+Conference Booking{% endblock %} {% block extra_css %}
+<!-- Flatpickr CSS -->
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+/>
+<style>
+  .room-type-card {
+    transition: all 0.2s;
+    cursor: pointer;
+    border: 2px solid transparent;
+  }
+
+  .room-type-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+  }
+
+  .room-type-card.selected {
+    border-color: #4e73df;
+    background-color: rgba(78, 115, 223, 0.05);
+  }
+
+  .room-amenity {
+    display: inline-block;
+    background-color: #f8f9fc;
+    color: #4e73df;
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    margin-right: 0.25rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .price-summary-card {
+    position: sticky;
+    top: 1rem;
+  }
+
+  .counter-input {
+    width: 80px;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1><i class="fas fa-bed text-primary me-2"></i>Add Accommodation</h1>
+  <a
+    href="{{ url_for('view_booking', id=booking.id) }}"
+    class="btn btn-outline-secondary"
+  >
+    <i class="fas fa-arrow-left me-1"></i>Back to Booking
+  </a>
+</div>
+
+<div class="alert alert-info mb-4">
+  <div class="d-flex align-items-center">
+    <i class="fas fa-info-circle fa-2x me-3"></i>
+    <div>
+      <h5 class="alert-heading mb-1">
+        Adding Accommodation for: {{ booking.title }}
+      </h5>
+      <p class="mb-0">
+        {{ booking.start_time.strftime('%A, %d %B %Y') }} to {{
+        booking.end_time.strftime('%A, %d %B %Y') }}
+        <span
+          class="ms-2 badge bg-{% if booking.status == 'tentative' %}warning{% elif booking.status == 'confirmed' %}success{% else %}danger{% endif %}"
+        >
+          {{ booking.status|capitalize }}
+        </span>
+      </p>
+    </div>
+  </div>
+</div>
+
+<form method="POST" id="accommodationForm">
+  {{ form.hidden_tag() }}
+
+  <div class="row">
+    <!-- Main Form Content -->
+    <div class="col-lg-8">
+      <!-- Room Type Selection -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white">
+          <h5 class="mb-0 text-primary">
+            <i class="fas fa-home me-2"></i>Room Type
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted mb-3">
+            Select a room type that best suits your needs:
+          </p>
+
+          <div class="row">
+            <!-- Standard Room -->
+            <div class="col-md-6 mb-3">
+              <div
+                class="card room-type-card h-100"
+                data-room-type="standard"
+                data-room-price="120"
+              >
+                <div class="card-body">
+                  <div class="form-check">
+                    <input class="form-check-input room-type-radio" type="radio"
+                    name="room_type" id="standardRoom" value="standard" {% if
+                    form.room_type.data == 'standard' %}checked{% endif %}>
+                    <label class="form-check-label fw-bold" for="standardRoom">
+                      Standard Room
+                    </label>
+                  </div>
+                  <p class="text-muted small mt-2">
+                    Comfortable room with all basic amenities for a pleasant
+                    stay.
+                  </p>
+                  <div class="mt-2">
+                    <div class="room-amenity">Queen Bed</div>
+                    <div class="room-amenity">En-suite Bathroom</div>
+                    <div class="room-amenity">Wi-Fi</div>
+                    <div class="room-amenity">TV</div>
+                  </div>
+                  <div class="mt-3 fw-bold">$120 per night</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Deluxe Room -->
+            <div class="col-md-6 mb-3">
+              <div
+                class="card room-type-card h-100"
+                data-room-type="deluxe"
+                data-room-price="180"
+              >
+                <div class="card-body">
+                  <div class="form-check">
+                    <input class="form-check-input room-type-radio" type="radio"
+                    name="room_type" id="deluxeRoom" value="deluxe" {% if
+                    form.room_type.data == 'deluxe' %}checked{% endif %}>
+                    <label class="form-check-label fw-bold" for="deluxeRoom">
+                      Deluxe Room
+                    </label>
+                  </div>
+                  <p class="text-muted small mt-2">
+                    Spacious room with additional amenities for extra comfort.
+                  </p>
+                  <div class="mt-2">
+                    <div class="room-amenity">King Bed</div>
+                    <div class="room-amenity">Luxury Bathroom</div>
+                    <div class="room-amenity">High-speed Wi-Fi</div>
+                    <div class="room-amenity">Smart TV</div>
+                    <div class="room-amenity">Mini Fridge</div>
+                  </div>
+                  <div class="mt-3 fw-bold">$180 per night</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Executive Room -->
+            <div class="col-md-6 mb-3">
+              <div
+                class="card room-type-card h-100"
+                data-room-type="executive"
+                data-room-price="250"
+              >
+                <div class="card-body">
+                  <div class="form-check">
+                    <input class="form-check-input room-type-radio" type="radio"
+                    name="room_type" id="executiveRoom" value="executive" {% if
+                    form.room_type.data == 'executive' %}checked{% endif %}>
+                    <label class="form-check-label fw-bold" for="executiveRoom">
+                      Executive Room
+                    </label>
+                  </div>
+                  <p class="text-muted small mt-2">
+                    Premium accommodations with exclusive amenities and
+                    services.
+                  </p>
+                  <div class="mt-2">
+                    <div class="room-amenity">King Bed</div>
+                    <div class="room-amenity">Luxury Bathroom</div>
+                    <div class="room-amenity">Work Desk</div>
+                    <div class="room-amenity">Lounge Area</div>
+                    <div class="room-amenity">Smart TV</div>
+                    <div class="room-amenity">Mini Bar</div>
+                    <div class="room-amenity">Executive Lounge Access</div>
+                  </div>
+                  <div class="mt-3 fw-bold">$250 per night</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Suite -->
+            <div class="col-md-6 mb-3">
+              <div
+                class="card room-type-card h-100"
+                data-room-type="suite"
+                data-room-price="350"
+              >
+                <div class="card-body">
+                  <div class="form-check">
+                    <input class="form-check-input room-type-radio" type="radio"
+                    name="room_type" id="suiteRoom" value="suite" {% if
+                    form.room_type.data == 'suite' %}checked{% endif %}>
+                    <label class="form-check-label fw-bold" for="suiteRoom">
+                      Suite
+                    </label>
+                  </div>
+                  <p class="text-muted small mt-2">
+                    Luxurious suite with separate living area and premium
+                    amenities.
+                  </p>
+                  <div class="mt-2">
+                    <div class="room-amenity">King Bed</div>
+                    <div class="room-amenity">Separate Living Room</div>
+                    <div class="room-amenity">Premium Bathroom</div>
+                    <div class="room-amenity">Jacuzzi</div>
+                    <div class="room-amenity">City View</div>
+                    <div class="room-amenity">Dining Area</div>
+                    <div class="room-amenity">Mini Kitchen</div>
+                    <div class="room-amenity">VIP Services</div>
+                  </div>
+                  <div class="mt-3 fw-bold">$350 per night</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {% if form.room_type.errors %}
+          <div class="text-danger small mt-1">
+            {% for error in form.room_type.errors %} {{ error }} {% endfor %}
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Stay Details -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white">
+          <h5 class="mb-0 text-primary">
+            <i class="fas fa-calendar me-2"></i>Stay Details
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Check-in Date</label>
+              {{ form.check_in(class="form-control flatpickr",
+              placeholder="Select check-in date") }} {% if form.check_in.errors
+              %}
+              <div class="text-danger small mt-1">
+                {% for error in form.check_in.errors %} {{ error }} {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Check-out Date</label>
+              {{ form.check_out(class="form-control flatpickr",
+              placeholder="Select check-out date") }} {% if
+              form.check_out.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.check_out.errors %} {{ error }} {% endfor
+                %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Number of Rooms</label>
+            <div class="input-group counter-input">
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                id="decreaseRooms"
+              >
+                <i class="fas fa-minus"></i>
+              </button>
+              {{ form.number_of_rooms(class="form-control text-center", min="1",
+              max="10") }}
+              <button
+                type="button"
+                class="btn btn-outline-secondary"
+                id="increaseRooms"
+              >
+                <i class="fas fa-plus"></i>
+              </button>
+            </div>
+            {% if form.number_of_rooms.errors %}
+            <div class="text-danger small mt-1">
+              {% for error in form.number_of_rooms.errors %} {{ error }} {%
+              endfor %}
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Special Requests</label>
+            {{ form.special_requests(class="form-control", rows="3",
+            placeholder="Any special requirements or requests for your stay") }}
+            {% if form.special_requests.errors %}
+            <div class="text-danger small mt-1">
+              {% for error in form.special_requests.errors %} {{ error }} {%
+              endfor %}
+            </div>
+            {% endif %}
+            <div class="form-text small">
+              Examples: Early check-in, late check-out, accessible room, extra
+              pillows, etc.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pricing Summary -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 price-summary-card">
+        <div class="card-header bg-white">
+          <h5 class="mb-0 text-primary">
+            <i class="fas fa-receipt me-2"></i>Accommodation Summary
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="d-flex justify-content-between mb-2">
+            <div>Room Type:</div>
+            <div class="fw-bold" id="summaryRoomType">--</div>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <div>Number of Rooms:</div>
+            <div class="fw-bold" id="summaryRooms">--</div>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <div>Rate per Night:</div>
+            <div class="fw-bold" id="summaryRate">--</div>
+          </div>
+          <div class="d-flex justify-content-between mb-2">
+            <div>Number of Nights:</div>
+            <div class="fw-bold" id="summaryNights">--</div>
+          </div>
+          <hr />
+          <div class="d-flex justify-content-between mb-2">
+            <div class="fw-bold">Estimated Total:</div>
+            <div class="fw-bold fs-5" id="totalPrice">$0.00</div>
+          </div>
+          <div class="alert alert-info mt-3 small">
+            <i class="fas fa-info-circle me-1"></i>
+            Room availability is subject to confirmation by the hotel. You will
+            receive a confirmation once your request is processed.
+          </div>
+
+          <div class="d-grid gap-2 mt-4">
+            <button type="submit" class="btn btn-success">
+              <i class="fas fa-bed me-1"></i>Request Accommodation
+            </button>
+            <a
+              href="{{ url_for('view_booking', id=booking.id) }}"
+              class="btn btn-outline-secondary"
+            >
+              Cancel
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %} {% block extra_js %}
+<!-- Flatpickr JS -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialize datetime pickers
+    const checkInPicker = flatpickr("#check_in", {
+      dateFormat: "Y-m-d",
+      minDate: "today",
+      defaultDate: "{{ booking.start_time.strftime('%Y-%m-%d') }}",
+    });
+
+    const checkOutPicker = flatpickr("#check_out", {
+      dateFormat: "Y-m-d",
+      minDate: "today",
+      defaultDate: "{{ booking.end_time.strftime('%Y-%m-%d') }}",
+    });
+
+    // Check-in date should not be after check-out date
+    checkInPicker.config.onChange.push(function (selectedDates, dateStr) {
+      checkOutPicker.set("minDate", dateStr);
+      updatePriceSummary();
+    });
+
+    checkOutPicker.config.onChange.push(function () {
+      updatePriceSummary();
+    });
+
+    // Room type selection
+    const roomTypeCards = document.querySelectorAll(".room-type-card");
+    roomTypeCards.forEach((card) => {
+      // Initial selection based on form data
+      const radioInput = card.querySelector(".room-type-radio");
+      if (radioInput.checked) {
+        card.classList.add("selected");
+      }
+
+      card.addEventListener("click", function () {
+        // Update radio button
+        const radioInput = this.querySelector(".room-type-radio");
+        radioInput.checked = true;
+
+        // Update visual selection
+        roomTypeCards.forEach((c) => c.classList.remove("selected"));
+        this.classList.add("selected");
+
+        // Update summary
+        updatePriceSummary();
+      });
+    });
+
+    // Number of rooms counter
+    const roomsInput = document.getElementById("number_of_rooms");
+    document
+      .getElementById("decreaseRooms")
+      .addEventListener("click", function () {
+        if (roomsInput.value > 1) {
+          roomsInput.value = parseInt(roomsInput.value) - 1;
+          updatePriceSummary();
+        }
+      });
+
+    document
+      .getElementById("increaseRooms")
+      .addEventListener("click", function () {
+        if (roomsInput.value < 10) {
+          roomsInput.value = parseInt(roomsInput.value) + 1;
+          updatePriceSummary();
+        }
+      });
+
+    roomsInput.addEventListener("change", updatePriceSummary);
+
+    // Update price summary
+    function updatePriceSummary() {
+      // Get selected room type
+      const selectedRoom = document.querySelector(".room-type-radio:checked");
+      if (!selectedRoom) return;
+
+      const roomType = selectedRoom.value;
+      const roomCard = document.querySelector(`[data-room-type="${roomType}"]`);
+      const roomPrice = parseFloat(roomCard.getAttribute("data-room-price"));
+
+      // Get dates
+      const checkInDate = checkInPicker.selectedDates[0];
+      const checkOutDate = checkOutPicker.selectedDates[0];
+
+      let nights = 0;
+      if (checkInDate && checkOutDate) {
+        // Calculate nights
+        const timeDiff = checkOutDate.getTime() - checkInDate.getTime();
+        nights = Math.ceil(timeDiff / (1000 * 3600 * 24));
+      }
+
+      // Get number of rooms
+      const numRooms = parseInt(roomsInput.value) || 1;
+
+      // Update summary elements
+      document.getElementById("summaryRoomType").textContent =
+        roomType.charAt(0).toUpperCase() + roomType.slice(1);
+      document.getElementById("summaryRooms").textContent = numRooms;
+      document.getElementById(
+        "summaryRate"
+      ).textContent = `$${roomPrice.toFixed(2)}`;
+      document.getElementById("summaryNights").textContent =
+        nights > 0 ? nights : "--";
+
+      // Calculate total
+      let total = 0;
+      if (nights > 0) {
+        total = roomPrice * numRooms * nights;
+      }
+
+      document.getElementById("totalPrice").textContent = `$${total.toFixed(
+        2
+      )}`;
+    }
+
+    // Initial update
+    updatePriceSummary();
+  });
+</script>
+{% endblock %}

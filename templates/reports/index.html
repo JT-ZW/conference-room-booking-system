@@ -1,0 +1,162 @@
+{% extends "layout.html" %} {% block title %}Reports | Rainbow Towers Conference
+Booking{% endblock %} {% block extra_css %}
+<style>
+  .report-card {
+    transition: transform 0.2s;
+    border-left: 4px solid;
+  }
+
+  .report-card:hover {
+    transform: translateY(-5px);
+  }
+
+  .report-utilization {
+    border-color: #4e73df;
+  }
+  .report-revenue {
+    border-color: #1cc88a;
+  }
+  .report-clients {
+    border-color: #36b9cc;
+  }
+  .report-popular {
+    border-color: #f6c23e;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1><i class="fas fa-chart-bar text-primary me-2"></i>Reports</h1>
+</div>
+
+<div class="row">
+  <!-- Room Utilization Report -->
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm border-0 h-100 report-card report-utilization">
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+          <div class="rounded-circle bg-primary-soft p-3 me-3">
+            <i class="fas fa-chart-pie fa-2x text-primary"></i>
+          </div>
+          <div>
+            <h5 class="card-title mb-0">Room Utilization</h5>
+            <div class="text-muted small">Analyze conference room usage</div>
+          </div>
+        </div>
+        <p class="card-text">
+          Track how efficiently your conference rooms are being used. Identify
+          peak usage periods and opportunities for optimization.
+        </p>
+        <ul class="mb-0">
+          <li>Utilization rates by room</li>
+          <li>Daily and monthly usage patterns</li>
+          <li>Occupancy trends over time</li>
+        </ul>
+      </div>
+      <div class="card-footer bg-white border-0">
+        <a
+          href="{{ url_for('room_utilization_report') }}"
+          class="btn btn-primary"
+        >
+          <i class="fas fa-chart-pie me-1"></i>View Report
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Revenue Report -->
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm border-0 h-100 report-card report-revenue">
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+          <div class="rounded-circle bg-success-soft p-3 me-3">
+            <i class="fas fa-dollar-sign fa-2x text-success"></i>
+          </div>
+          <div>
+            <h5 class="card-title mb-0">Revenue Report</h5>
+            <div class="text-muted small">Financial performance analysis</div>
+          </div>
+        </div>
+        <p class="card-text">
+          Get insights into your booking revenue streams. Analyze income from
+          room bookings and add-on services.
+        </p>
+        <ul class="mb-0">
+          <li>Revenue by room and service type</li>
+          <li>Monthly and quarterly financial trends</li>
+          <li>Add-on contribution to overall revenue</li>
+        </ul>
+      </div>
+      <div class="card-footer bg-white border-0">
+        <a href="{{ url_for('revenue_report') }}" class="btn btn-success">
+          <i class="fas fa-dollar-sign me-1"></i>View Report
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Client Analysis -->
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm border-0 h-100 report-card report-clients">
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+          <div class="rounded-circle bg-info-soft p-3 me-3">
+            <i class="fas fa-users fa-2x text-info"></i>
+          </div>
+          <div>
+            <h5 class="card-title mb-0">Client Analysis</h5>
+            <div class="text-muted small">Customer booking patterns</div>
+          </div>
+        </div>
+        <p class="card-text">
+          Understand your client base and their booking behavior. Identify your
+          most valuable customers.
+        </p>
+        <ul class="mb-0">
+          <li>Top clients by booking frequency</li>
+          <li>Booking value by client</li>
+          <li>Client retention metrics</li>
+        </ul>
+      </div>
+      <div class="card-footer bg-white border-0">
+        <a href="{{ url_for('client_analysis_report') }}" class="btn btn-info">
+          <i class="fas fa-users me-1"></i>View Report
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Popular Add-ons -->
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm border-0 h-100 report-card report-popular">
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+          <div class="rounded-circle bg-warning-soft p-3 me-3">
+            <i class="fas fa-star fa-2x text-warning"></i>
+          </div>
+          <div>
+            <h5 class="card-title mb-0">Popular Add-ons</h5>
+            <div class="text-muted small">Service popularity analysis</div>
+          </div>
+        </div>
+        <p class="card-text">
+          Discover which add-on services are most popular among your clients.
+          Identify opportunities for upselling.
+        </p>
+        <ul class="mb-0">
+          <li>Most-booked add-on services</li>
+          <li>Add-on usage by client type</li>
+          <li>Trends in service popularity</li>
+        </ul>
+      </div>
+      <div class="card-footer bg-white border-0">
+        <a
+          href="{{ url_for('popular_addons_report') }}"
+          class="btn btn-warning"
+        >
+          <i class="fas fa-star me-1"></i>View Report
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,745 @@
+{% extends "layout.html" %} {% block title %}Add-ons | Rainbow Towers Conference
+Booking{% endblock %} {% block extra_css %}
+<style>
+  .category-card {
+    transition: transform 0.2s;
+    border-left: 4px solid #4e73df;
+    margin-bottom: 1.5rem;
+  }
+
+  .category-card:hover {
+    transform: translateY(-5px);
+  }
+
+  .addon-item {
+    padding: 0.75rem;
+    border-radius: 0.35rem;
+    border: 1px solid #e3e6f0;
+    margin-bottom: 0.5rem;
+    transition: all 0.2s;
+  }
+
+  .addon-item:hover {
+    border-color: #4e73df;
+    background-color: #f8f9fa;
+  }
+
+  .addon-item .addon-price {
+    font-size: 1.1rem;
+    font-weight: bold;
+    color: #4e73df;
+  }
+
+  .addon-inactive {
+    opacity: 0.6;
+  }
+
+  .category-header {
+    border-bottom: 1px solid #e3e6f0;
+    padding-bottom: 0.5rem;
+    margin-bottom: 1rem;
+  }
+
+  .badge-addon-count {
+    background-color: #4e73df;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>
+    <i class="fas fa-plus-circle text-primary me-2"></i>Add-ons & Services
+  </h1>
+  <div>
+    <button
+      type="button"
+      class="btn btn-primary"
+      data-bs-toggle="modal"
+      data-bs-target="#newCategoryModal"
+    >
+      <i class="fas fa-folder-plus me-1"></i>New Category
+    </button>
+    <a href="{{ url_for('new_addon') }}" class="btn btn-success ms-2">
+      <i class="fas fa-plus me-1"></i>New Add-on
+    </a>
+  </div>
+</div>
+
+<!-- Overview Section with Real Statistics -->
+<div class="card shadow mb-4">
+  <div class="card-header py-3">
+    <h6 class="m-0 font-weight-bold text-primary">Add-on Services Overview</h6>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-primary shadow h-100 py-2">
+          <div class="card-body">
+            <div class="row no-gutters align-items-center">
+              <div class="col mr-2">
+                <div
+                  class="text-xs font-weight-bold text-primary text-uppercase mb-1"
+                >
+                  Total Add-ons
+                </div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">
+                  {{ stats.total_addons if stats else 0 }}
+                </div>
+              </div>
+              <div class="col-auto">
+                <i class="fas fa-list fa-2x text-gray-300"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-success shadow h-100 py-2">
+          <div class="card-body">
+            <div class="row no-gutters align-items-center">
+              <div class="col mr-2">
+                <div
+                  class="text-xs font-weight-bold text-success text-uppercase mb-1"
+                >
+                  Categories
+                </div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">
+                  {{ stats.total_categories if stats else 0 }}
+                </div>
+              </div>
+              <div class="col-auto">
+                <i class="fas fa-folder fa-2x text-gray-300"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-info shadow h-100 py-2">
+          <div class="card-body">
+            <div class="row no-gutters align-items-center">
+              <div class="col mr-2">
+                <div
+                  class="text-xs font-weight-bold text-info text-uppercase mb-1"
+                >
+                  Active Add-ons
+                </div>
+                <div class="h5 mb-0 font-weight-bold text-gray-800">
+                  {{ stats.active_addons if stats else 0 }}
+                </div>
+              </div>
+              <div class="col-auto">
+                <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card border-left-warning shadow h-100 py-2">
+          <div class="card-body">
+            <div class="row no-gutters align-items-center">
+              <div class="col mr-2">
+                <div
+                  class="text-xs font-weight-bold text-warning text-uppercase mb-1"
+                >
+                  Usage Rate
+                </div>
+                <div class="row no-gutters align-items-center">
+                  <div class="col-auto">
+                    <div class="h5 mb-0 mr-3 font-weight-bold text-gray-800">
+                      {{ stats.usage_rate if stats else 0 }}%
+                    </div>
+                  </div>
+                  <div class="col">
+                    <div class="progress progress-sm mr-2">
+                      <div
+                        class="progress-bar bg-warning"
+                        role="progressbar"
+                        style="width: {{ stats.usage_rate if stats else 0 }}%"
+                        aria-valuenow="{{ stats.usage_rate if stats else 0 }}"
+                        aria-valuemin="0"
+                        aria-valuemax="100"
+                      ></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="col-auto">
+                <i class="fas fa-chart-bar fa-2x text-gray-300"></i>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p class="mb-0">
+      Add-on services are additional products and services that can be booked
+      alongside conference rooms. {% if stats and stats.total_addons > 0 %}
+      Currently {{ stats.addons_with_usage }} out of {{ stats.total_addons }}
+      add-ons ({{ stats.usage_rate }}%) have been used in bookings. {% endif %}
+      Use these to provide clients with enhanced experiences and additional
+      revenue opportunities.
+    </p>
+  </div>
+</div>
+
+<!-- Add-ons by Category -->
+{% for category in categories %}
+<div class="card shadow-sm border-0 category-card">
+  <div
+    class="card-header bg-white d-flex justify-content-between align-items-center"
+  >
+    <h5 class="mb-0 text-primary">
+      <i class="fas fa-tag me-2"></i>{{ category.name }}
+      <span class="badge rounded-pill badge-addon-count text-white"
+        >{{ category.addons|length }}</span
+      >
+    </h5>
+    <div class="dropdown no-arrow">
+      <button
+        class="btn btn-sm btn-outline-secondary dropdown-toggle"
+        type="button"
+        id="categoryActions{{ category.id }}"
+        data-bs-toggle="dropdown"
+        aria-expanded="false"
+      >
+        <i class="fas fa-ellipsis-v"></i>
+      </button>
+      <ul
+        class="dropdown-menu dropdown-menu-end shadow animated--fade-in"
+        aria-labelledby="categoryActions{{ category.id }}"
+      >
+        <li>
+          <a
+            class="dropdown-item"
+            href="#"
+            data-bs-toggle="modal"
+            data-bs-target="#editCategoryModal{{ category.id }}"
+            ><i class="fas fa-edit me-1"></i>Edit Category</a
+          >
+        </li>
+        <li>
+          <a
+            class="dropdown-item"
+            href="{{ url_for('new_addon') }}?category={{ category.id }}"
+            ><i class="fas fa-plus me-1"></i>Add to Category</a
+          >
+        </li>
+        <li><hr class="dropdown-divider" /></li>
+        <li>
+          <a
+            class="dropdown-item text-danger"
+            href="#"
+            data-bs-toggle="modal"
+            data-bs-target="#deleteCategoryModal{{ category.id }}"
+            ><i class="fas fa-trash me-1"></i>Delete Category</a
+          >
+        </li>
+      </ul>
+    </div>
+  </div>
+  <div class="card-body">
+    {% if category.description %}
+    <p class="text-muted mb-3">{{ category.description }}</p>
+    {% endif %}
+
+    <div class="row">
+      {% for addon in category.addons %}
+      <div class="col-md-6 col-lg-4">
+        <div
+          class="addon-item {% if not addon.is_active %}addon-inactive{% endif %}"
+        >
+          <div class="d-flex justify-content-between align-items-start mb-2">
+            <h6 class="mb-0">{{ addon.name }}</h6>
+            <span class="addon-price">${{ addon.price }}</span>
+          </div>
+          <p class="text-muted small mb-2">{{ addon.description }}</p>
+          <div class="d-flex justify-content-between align-items-center">
+            <span
+              class="badge {% if addon.is_active %}bg-success{% else %}bg-secondary{% endif %}"
+            >
+              {% if addon.is_active %}Active{% else %}Inactive{% endif %}
+            </span>
+            <div>
+              <a
+                href="{{ url_for('edit_addon', id=addon.id) }}"
+                class="btn btn-sm btn-outline-warning"
+              >
+                <i class="fas fa-edit"></i>
+              </a>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-danger"
+                data-bs-toggle="modal"
+                data-bs-target="#deleteAddonModal{{ addon.id }}"
+              >
+                <i class="fas fa-trash"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="col-12">
+        <div class="alert alert-light text-center py-3">
+          <p class="mb-2">No add-ons in this category yet.</p>
+          <a
+            href="{{ url_for('new_addon') }}?category={{ category.id }}"
+            class="btn btn-sm btn-outline-primary"
+          >
+            <i class="fas fa-plus me-1"></i>Add to This Category
+          </a>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Edit Category Modal -->
+<div
+  class="modal fade"
+  id="editCategoryModal{{ category.id }}"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Edit Category</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <form
+        action="{{ url_for('edit_addon_category', id=category.id) }}"
+        method="POST"
+      >
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="categoryName{{ category.id }}" class="form-label"
+              >Category Name</label
+            >
+            <input
+              type="text"
+              class="form-control"
+              id="categoryName{{ category.id }}"
+              name="name"
+              value="{{ category.name }}"
+              required
+            />
+          </div>
+          <div class="mb-3">
+            <label for="categoryDescription{{ category.id }}" class="form-label"
+              >Description</label
+            >
+            <textarea
+              class="form-control"
+              id="categoryDescription{{ category.id }}"
+              name="description"
+              rows="3"
+            >
+{{ category.description }}</textarea
+            >
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Delete Category Modal -->
+<div
+  class="modal fade"
+  id="deleteCategoryModal{{ category.id }}"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Delete Category</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <p>
+          Are you sure you want to delete the category
+          <strong>{{ category.name }}</strong>?
+        </p>
+        {% if category.addons %}
+        <div class="alert alert-danger">
+          <i class="fas fa-exclamation-triangle me-1"></i>
+          This category contains {{ category.addons|length }} add-on(s).
+          Deleting this category will affect these add-ons.
+        </div>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <form
+          action="{{ url_for('delete_addon_category', id=category.id) }}"
+          method="POST"
+        >
+          <button
+            type="submit"
+            class="btn btn-danger"
+            {%
+            if
+            category.addons
+            %}disabled{%
+            endif
+            %}
+          >
+            Delete Category
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %} {% if not categories %}
+<div class="alert alert-info text-center py-4">
+  <h4 class="alert-heading mb-3">No Categories Yet</h4>
+  <p class="mb-3">Start by creating your first add-on category.</p>
+  <button
+    type="button"
+    class="btn btn-primary"
+    data-bs-toggle="modal"
+    data-bs-target="#newCategoryModal"
+  >
+    <i class="fas fa-folder-plus me-1"></i>Create Category
+  </button>
+</div>
+{% endif %}
+
+<!-- Delete Add-on Modals -->
+{% for category in categories %} {% for addon in category.addons %}
+<div
+  class="modal fade"
+  id="deleteAddonModal{{ addon.id }}"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Delete Add-on</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <p>
+          Are you sure you want to delete the add-on
+          <strong>{{ addon.name }}</strong>?
+        </p>
+        {% if addon.bookings.count() > 0 %}
+        <div class="alert alert-danger">
+          <i class="fas fa-exclamation-triangle me-1"></i>
+          This add-on is used in {{ addon.bookings.count() }} booking(s).
+          Deleting it will affect these bookings.
+        </div>
+        {% endif %}
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <form action="{{ url_for('delete_addon', id=addon.id) }}" method="POST">
+          <button
+            type="submit"
+            class="btn btn-danger"
+            {%
+            if
+            addon.bookings.count()
+          >
+            0 %}disabled{% endif %}>Delete Add-on
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endfor %} {% endfor %}
+
+<!-- New Category Modal -->
+<div class="modal fade" id="newCategoryModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">New Category</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <form action="{{ url_for('new_addon_category') }}" method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="categoryName" class="form-label">Category Name</label>
+            <input
+              type="text"
+              class="form-control"
+              id="categoryName"
+              name="name"
+              placeholder="e.g., Audio/Visual Equipment"
+              required
+            />
+          </div>
+          <div class="mb-3">
+            <label for="categoryDescription" class="form-label"
+              >Description</label
+            >
+            <textarea
+              class="form-control"
+              id="categoryDescription"
+              name="description"
+              rows="3"
+              placeholder="Describe the category..."
+            ></textarea>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">Create Category</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Add Add-on Modal -->
+<div
+  class="modal fade"
+  id="quickAddAddonModal"
+  tabindex="-1"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title">Quick Add Add-on</h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <form action="{{ url_for('new_addon') }}" method="POST">
+        <div class="modal-body">
+          <div class="mb-3">
+            <label for="quickAddonName" class="form-label">Add-on Name</label>
+            <input
+              type="text"
+              class="form-control"
+              id="quickAddonName"
+              name="name"
+              required
+            />
+          </div>
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label for="quickAddonCategory" class="form-label"
+                >Category</label
+              >
+              <select
+                class="form-select"
+                id="quickAddonCategory"
+                name="category_id"
+                required
+              >
+                <option value="">Select category</option>
+                {% for category in categories %}
+                <option value="{{ category.id }}">{{ category.name }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <div class="col-md-6">
+              <label for="quickAddonPrice" class="form-label"
+                >Price (USD)</label
+              >
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                class="form-control"
+                id="quickAddonPrice"
+                name="price"
+                required
+              />
+            </div>
+          </div>
+          <div class="mb-3">
+            <label for="quickAddonDescription" class="form-label"
+              >Description</label
+            >
+            <textarea
+              class="form-control"
+              id="quickAddonDescription"
+              name="description"
+              rows="2"
+            ></textarea>
+          </div>
+          <div class="form-check form-switch">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="quickAddonActive"
+              name="is_active"
+              checked
+            />
+            <label class="form-check-label" for="quickAddonActive"
+              >Active</label
+            >
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">Add</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(
+      document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    );
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Add animation to category cards on scroll
+    const categoryCards = document.querySelectorAll(".category-card");
+
+    const animateOnScroll = function () {
+      categoryCards.forEach((card) => {
+        const cardPosition = card.getBoundingClientRect();
+
+        // If card is in viewport
+        if (cardPosition.top < window.innerHeight && cardPosition.bottom > 0) {
+          card.style.opacity = "1";
+          card.style.transform = "translateY(0)";
+        }
+      });
+    };
+
+    // Set initial state
+    categoryCards.forEach((card) => {
+      card.style.opacity = "0";
+      card.style.transform = "translateY(20px)";
+      card.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+    });
+
+    // Run on load
+    animateOnScroll();
+
+    // Run on scroll
+    window.addEventListener("scroll", animateOnScroll);
+
+    // Handle addon toggle switch
+    const addonToggleSwitches = document.querySelectorAll(".addon-toggle");
+    addonToggleSwitches.forEach((toggle) => {
+      toggle.addEventListener("change", function () {
+        const addonId = this.dataset.addonId;
+        const isActive = this.checked;
+
+        // Send Ajax request to update status
+        fetch(`/api/addons/${addonId}/toggle-status`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-CSRFToken": document
+              .querySelector('meta[name="csrf-token"]')
+              .getAttribute("content"),
+          },
+          body: JSON.stringify({ is_active: isActive }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.success) {
+              // Update UI
+              const addonItem = toggle.closest(".addon-item");
+              if (isActive) {
+                addonItem.classList.remove("addon-inactive");
+                addonItem.querySelector(".badge").className =
+                  "badge bg-success";
+                addonItem.querySelector(".badge").textContent = "Active";
+              } else {
+                addonItem.classList.add("addon-inactive");
+                addonItem.querySelector(".badge").className =
+                  "badge bg-secondary";
+                addonItem.querySelector(".badge").textContent = "Inactive";
+              }
+            } else {
+              // Revert toggle if failed
+              toggle.checked = !isActive;
+              alert("Failed to update status: " + data.message);
+            }
+          })
+          .catch((error) => {
+            console.error("Error updating status:", error);
+            toggle.checked = !isActive;
+            alert("An error occurred while updating status.");
+          });
+      });
+    });
+
+    // Quick add button
+    const quickAddBtn = document.getElementById("quickAddBtn");
+    if (quickAddBtn) {
+      quickAddBtn.addEventListener("click", function () {
+        const modal = new bootstrap.Modal(
+          document.getElementById("quickAddAddonModal")
+        );
+        modal.show();
+      });
+    }
+  });
+</script>
+{% endblock %}

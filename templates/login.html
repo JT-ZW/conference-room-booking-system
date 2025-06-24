@@ -1,0 +1,71 @@
+{% extends "layout.html" %} {% block title %}Login | Rainbow Towers Conference
+Booking{% endblock %} {% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-6 col-lg-5">
+    <div class="card border-primary shadow">
+      <div class="card-header bg-primary text-white text-center py-3">
+        <h4 class="mb-0">Staff Login</h4>
+      </div>
+      <div class="card-body p-4">
+        <div class="text-center mb-4">
+          <img
+            src="{{ url_for('static', filename='img/rainbow-towers-logo.png') }}"
+            alt="Rainbow Towers Logo"
+            height="80"
+          />
+        </div>
+
+        <form method="POST" action="{{ url_for('login') }}">
+          {{ form.hidden_tag() }}
+
+          <div class="mb-3">
+            <label for="username" class="form-label">Username</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-user"></i></span>
+              {{ form.username(class="form-control", placeholder="Enter your
+              username") }}
+            </div>
+            {% if form.username.errors %}
+            <div class="text-danger small mt-1">
+              {% for error in form.username.errors %} {{ error }} {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3">
+            <label for="password" class="form-label">Password</label>
+            <div class="input-group">
+              <span class="input-group-text"><i class="fas fa-lock"></i></span>
+              {{ form.password(class="form-control", placeholder="Enter your
+              password") }}
+            </div>
+            {% if form.password.errors %}
+            <div class="text-danger small mt-1">
+              {% for error in form.password.errors %} {{ error }} {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="mb-3 form-check">
+            {{ form.remember_me(class="form-check-input") }}
+            <label class="form-check-label" for="remember_me"
+              >Remember me</label
+            >
+          </div>
+
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-sign-in-alt me-2"></i>Login
+            </button>
+          </div>
+        </form>
+      </div>
+      <div class="card-footer text-center py-3">
+        <div class="small text-muted">
+          Rainbow Towers Hotel & Conference Centre
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

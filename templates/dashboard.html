@@ -1,0 +1,308 @@
+{% extends "layout.html" %} {% block title %}Dashboard | Rainbow Towers
+Conference Booking{% endblock %} {% block extra_css %}
+<style>
+  .stats-card {
+    border-left: 4px solid;
+    transition: transform 0.2s;
+  }
+
+  .stats-card:hover {
+    transform: translateY(-5px);
+  }
+
+  .stats-card .icon {
+    opacity: 0.3;
+    font-size: 2rem;
+  }
+
+  .stats-card-bookings {
+    border-color: #4e73df;
+  }
+  .stats-card-clients {
+    border-color: #1cc88a;
+  }
+  .stats-card-rooms {
+    border-color: #36b9cc;
+  }
+  .stats-card-today {
+    border-color: #f6c23e;
+  }
+
+  .booking-item {
+    border-left: 4px solid;
+    transition: transform 0.2s;
+  }
+
+  .booking-item:hover {
+    transform: translateX(5px);
+  }
+
+  .booking-tentative {
+    border-color: #f6c23e;
+  }
+  .booking-confirmed {
+    border-color: #1cc88a;
+  }
+  .booking-cancelled {
+    border-color: #e74a3b;
+  }
+</style>
+{% endblock %} {% block content %}
+<h1 class="mb-4">
+  <i class="fas fa-tachometer-alt text-primary me-2"></i>Dashboard
+</h1>
+
+<!-- Stats Cards -->
+<div class="row mb-4">
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-0 shadow stats-card stats-card-bookings h-100">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col">
+            <div
+              class="text-xs font-weight-bold text-primary text-uppercase mb-1"
+            >
+              Active Bookings
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800">
+              {{ total_active_bookings }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-calendar fa-2x text-gray-300 icon"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-0 shadow stats-card stats-card-clients h-100">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col">
+            <div
+              class="text-xs font-weight-bold text-success text-uppercase mb-1"
+            >
+              Total Clients
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800">
+              {{ total_clients }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-users fa-2x text-gray-300 icon"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-0 shadow stats-card stats-card-rooms h-100">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col">
+            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+              Conference Rooms
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800">
+              {{ total_rooms }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-door-open fa-2x text-gray-300 icon"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-0 shadow stats-card stats-card-today h-100">
+      <div class="card-body">
+        <div class="row align-items-center">
+          <div class="col">
+            <div
+              class="text-xs font-weight-bold text-warning text-uppercase mb-1"
+            >
+              Today's Events
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800">
+              {{ today_bookings|length }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-clock fa-2x text-gray-300 icon"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row">
+  <!-- Upcoming Bookings -->
+  <div class="col-lg-8 mb-4">
+    <div class="card border-0 shadow h-100">
+      <div class="card-header bg-white">
+        <h5 class="m-0 font-weight-bold text-primary">
+          <i class="fas fa-calendar-alt me-2"></i>Upcoming Bookings
+        </h5>
+      </div>
+      <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+          {% for booking in upcoming_bookings %}
+          <a
+            href="{{ url_for('view_booking', id=booking.id) }}"
+            class="list-group-item list-group-item-action booking-item booking-{{ booking.status }}"
+          >
+            <div
+              class="d-flex w-100 justify-content-between align-items-center"
+            >
+              <div>
+                <h5 class="mb-1">{{ booking.title }}</h5>
+                <p class="mb-1 text-muted">
+                  <i class="fas fa-door-open me-1"></i>{{ booking.room.name }} |
+                  <i class="fas fa-user me-1"></i>{{ booking.client.company_name
+                  or booking.client.contact_person }}
+                </p>
+              </div>
+              <div class="text-end">
+                <span
+                  class="badge bg-{% if booking.status == 'tentative' %}warning{% elif booking.status == 'confirmed' %}success{% else %}danger{% endif %}"
+                >
+                  {{ booking.status|capitalize }}
+                </span>
+                <div class="small text-muted mt-1">
+                  {{ booking.start_time.strftime('%d %b %Y, %H:%M') }}
+                </div>
+              </div>
+            </div>
+          </a>
+          {% else %}
+          <div class="list-group-item text-center py-4">
+            <p class="text-muted mb-0">No upcoming bookings</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="card-footer bg-white">
+        <a href="{{ url_for('bookings') }}" class="btn btn-sm btn-primary">
+          <i class="fas fa-list me-1"></i>View All Bookings
+        </a>
+        <a href="{{ url_for('new_booking') }}" class="btn btn-sm btn-success">
+          <i class="fas fa-plus me-1"></i>New Booking
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Today's Events -->
+  <div class="col-lg-4 mb-4">
+    <div class="card border-0 shadow h-100">
+      <div class="card-header bg-white">
+        <h5 class="m-0 font-weight-bold text-primary">
+          <i class="fas fa-clock me-2"></i>Today's Events
+        </h5>
+      </div>
+      <div class="card-body p-0">
+        <div class="list-group list-group-flush">
+          {% for booking in today_bookings %}
+          <a
+            href="{{ url_for('view_booking', id=booking.id) }}"
+            class="list-group-item list-group-item-action"
+          >
+            <div class="d-flex w-100 justify-content-between">
+              <h6 class="mb-1">{{ booking.title }}</h6>
+              <span
+                class="badge bg-{% if booking.status == 'tentative' %}warning{% elif booking.status == 'confirmed' %}success{% else %}danger{% endif %}"
+              >
+                {{ booking.status|capitalize }}
+              </span>
+            </div>
+            <div class="d-flex w-100 justify-content-between">
+              <p class="mb-1 small">
+                <i class="fas fa-door-open me-1"></i>{{ booking.room.name }}
+              </p>
+              <small class="text-muted">
+                {{ booking.start_time.strftime('%H:%M') }} - {{
+                booking.end_time.strftime('%H:%M') }}
+              </small>
+            </div>
+          </a>
+          {% else %}
+          <div class="list-group-item text-center py-4">
+            <p class="text-muted mb-0">No events scheduled for today</p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      <div class="card-footer bg-white text-center">
+        <a href="{{ url_for('calendar') }}" class="btn btn-sm btn-primary">
+          <i class="fas fa-calendar-alt me-1"></i>View Calendar
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+  <div class="col-12">
+    <div class="card border-0 shadow">
+      <div class="card-header bg-white">
+        <h5 class="m-0 font-weight-bold text-primary">
+          <i class="fas fa-bolt me-2"></i>Quick Actions
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-3 mb-3">
+            <a
+              href="{{ url_for('new_booking') }}"
+              class="btn btn-success w-100 py-3"
+            >
+              <i class="fas fa-calendar-plus fa-2x mb-2"></i>
+              <div>New Booking</div>
+            </a>
+          </div>
+          <div class="col-md-3 mb-3">
+            <a
+              href="{{ url_for('new_client') }}"
+              class="btn btn-info w-100 py-3"
+            >
+              <i class="fas fa-user-plus fa-2x mb-2"></i>
+              <div>New Client</div>
+            </a>
+          </div>
+          <div class="col-md-3 mb-3">
+            <a
+              href="{{ url_for('calendar') }}"
+              class="btn btn-primary w-100 py-3"
+            >
+              <i class="fas fa-calendar-alt fa-2x mb-2"></i>
+              <div>Calendar View</div>
+            </a>
+          </div>
+          <div class="col-md-3 mb-3">
+            <a
+              href="{{ url_for('reports') }}"
+              class="btn btn-secondary w-100 py-3"
+            >
+              <i class="fas fa-chart-bar fa-2x mb-2"></i>
+              <div>Reports</div>
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Calendar code would go here if needed
+  });
+</script>
+{% endblock %}

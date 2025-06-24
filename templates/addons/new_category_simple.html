@@ -1,0 +1,178 @@
+{% extends "layout.html" %} {% block title %}New Add-on Category | Rainbow
+Towers Conference Booking{% endblock %} {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>
+    <i class="fas fa-folder-plus text-primary me-2"></i>New Add-on Category
+  </h1>
+  <a href="{{ url_for('addons') }}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-1"></i>Back to Add-ons
+  </a>
+</div>
+
+<div class="row">
+  <div class="col-lg-8 col-md-10 mx-auto">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white">
+        <h5 class="mb-0 text-primary">
+          <i class="fas fa-info-circle me-2"></i>Category Details
+        </h5>
+      </div>
+      <div class="card-body">
+        <form method="POST" action="{{ url_for('new_addon_category_simple') }}">
+          <div class="mb-3">
+            <label for="name" class="form-label fw-bold">Category Name</label>
+            <input
+              type="text"
+              class="form-control"
+              id="name"
+              name="name"
+              placeholder="e.g., Audio/Visual Equipment"
+              required
+            />
+            <div class="small text-muted mt-1">
+              <i class="fas fa-info-circle me-1"></i> Give a clear, descriptive
+              name for this group of add-ons.
+            </div>
+          </div>
+          <div class="mb-4">
+            <label for="description" class="form-label fw-bold"
+              >Description</label
+            >
+            <textarea
+              class="form-control"
+              id="description"
+              name="description"
+              rows="4"
+              placeholder="Describe the types of add-ons that will be included in this category..."
+            ></textarea>
+          </div>
+
+          <div class="row">
+            <div class="col-md-6 offset-md-3">
+              <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-success">
+                  <i class="fas fa-save me-1"></i>Create Category
+                </button>
+                <a
+                  href="{{ url_for('addons') }}"
+                  class="btn btn-outline-secondary"
+                >
+                  Cancel
+                </a>
+              </div>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="card shadow-sm border-0 mt-4">
+      <div class="card-header bg-white">
+        <h5 class="mb-0 text-primary">
+          <i class="fas fa-lightbulb me-2"></i>Category Suggestions
+        </h5>
+      </div>
+      <div class="card-body">
+        <p class="text-muted mb-3">
+          Common add-on categories for conference venues include:
+        </p>
+
+        <div class="row">
+          <div class="col-md-6">
+            <div class="list-group mb-3">
+              <button
+                type="button"
+                class="list-group-item list-group-item-action category-suggestion"
+                data-name="Audio/Visual Equipment"
+                data-description="Sound systems, microphones, projectors, and screens for presentations and events."
+              >
+                <i class="fas fa-volume-up me-2 text-primary"></i>Audio/Visual
+                Equipment
+              </button>
+              <button
+                type="button"
+                class="list-group-item list-group-item-action category-suggestion"
+                data-name="Food & Beverage"
+                data-description="Catering options, refreshments, coffee service, and meal packages for event attendees."
+              >
+                <i class="fas fa-utensils me-2 text-primary"></i>Food & Beverage
+              </button>
+              <button
+                type="button"
+                class="list-group-item list-group-item-action category-suggestion"
+                data-name="Technical Support"
+                data-description="Staff assistance with setup, operation, and troubleshooting of equipment and technology."
+              >
+                <i class="fas fa-headset me-2 text-primary"></i>Technical
+                Support
+              </button>
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="list-group">
+              <button
+                type="button"
+                class="list-group-item list-group-item-action category-suggestion"
+                data-name="Decor & Furnishings"
+                data-description="Additional furniture, decorations, floral arrangements, and stage setups."
+              >
+                <i class="fas fa-couch me-2 text-primary"></i>Decor &
+                Furnishings
+              </button>
+              <button
+                type="button"
+                class="list-group-item list-group-item-action category-suggestion"
+                data-name="Event Services"
+                data-description="Registration desks, name tags, printing services, and event materials."
+              >
+                <i class="fas fa-clipboard-list me-2 text-primary"></i>Event
+                Services
+              </button>
+              <button
+                type="button"
+                class="list-group-item list-group-item-action category-suggestion"
+                data-name="Accommodation"
+                data-description="Hotel room packages and special rates for event attendees."
+              >
+                <i class="fas fa-bed me-2 text-primary"></i>Accommodation
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Handle category suggestion clicks
+    const suggestionButtons = document.querySelectorAll(".category-suggestion");
+    const nameInput = document.getElementById("name");
+    const descriptionInput = document.getElementById("description");
+
+    suggestionButtons.forEach((button) => {
+      button.addEventListener("click", function () {
+        const name = this.dataset.name;
+        const description = this.dataset.description;
+
+        nameInput.value = name;
+        descriptionInput.value = description;
+
+        // Add visual feedback
+        nameInput.classList.add("border-primary");
+        descriptionInput.classList.add("border-primary");
+
+        // Remove highlight after a moment
+        setTimeout(() => {
+          nameInput.classList.remove("border-primary");
+          descriptionInput.classList.remove("border-primary");
+        }, 2000);
+
+        // Scroll back to top of form
+        document.querySelector(".card").scrollIntoView({ behavior: "smooth" });
+      });
+    });
+  });
+</script>
+{% endblock %}

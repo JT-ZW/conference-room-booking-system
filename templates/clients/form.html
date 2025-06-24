@@ -1,0 +1,240 @@
+{% extends "layout.html" %} {% block title %}{% if client %}Edit Client{% else
+%}New Client{% endif %} | Rainbow Towers Conference Booking{% endblock %} {%
+block extra_css %}
+<style>
+  .form-card {
+    transition: all 0.2s;
+    height: 100%;
+  }
+
+  .form-card:hover {
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15) !important;
+  }
+
+  .client-icon {
+    font-size: 2.5rem;
+    opacity: 0.2;
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>
+    <i
+      class="fas fa-user{% if client %}-edit{% else %}-plus{% endif %} text-primary me-2"
+    ></i>
+    {% if client %}Edit Client{% else %}New Client{% endif %}
+  </h1>
+  <a href="{{ url_for('clients') }}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-1"></i>Back to Clients
+  </a>
+</div>
+
+<form method="POST">
+  {{ form.hidden_tag() }}
+
+  <div class="row">
+    <!-- Main Form -->
+    <div class="col-lg-8">
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white">
+          <h5 class="mb-0 text-primary">
+            <i class="fas fa-info-circle me-2"></i>Client Information
+          </h5>
+        </div>
+        <div class="card-body">
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Company Name</label>
+              {{ form.company_name(class="form-control", placeholder="Company
+              name (optional)") }} {% if form.company_name.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.company_name.errors %} {{ error }} {%
+                endfor %}
+              </div>
+              {% endif %}
+              <div class="small text-muted mt-1">
+                Leave blank for individual clients
+              </div>
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold"
+                >Contact Person <span class="text-danger">*</span></label
+              >
+              {{ form.contact_person(class="form-control", placeholder="Full
+              name of primary contact") }} {% if form.contact_person.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.contact_person.errors %} {{ error }} {%
+                endfor %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label fw-bold"
+                >Email <span class="text-danger">*</span></label
+              >
+              {{ form.email(class="form-control", placeholder="Contact email
+              address") }} {% if form.email.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.email.errors %} {{ error }} {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+            <div class="col-md-6">
+              <label class="form-label fw-bold">Phone Number</label>
+              {{ form.phone(class="form-control", placeholder="Contact phone
+              number") }} {% if form.phone.errors %}
+              <div class="text-danger small mt-1">
+                {% for error in form.phone.errors %} {{ error }} {% endfor %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label fw-bold">Address</label>
+            {{ form.address(class="form-control", rows="3", placeholder="Client
+            mailing address") }} {% if form.address.errors %}
+            <div class="text-danger small mt-1">
+              {% for error in form.address.errors %} {{ error }} {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+
+          <div class="mb-0">
+            <label class="form-label fw-bold">Notes</label>
+            {{ form.notes(class="form-control", rows="4",
+            placeholder="Additional information about this client...") }} {% if
+            form.notes.errors %}
+            <div class="text-danger small mt-1">
+              {% for error in form.notes.errors %} {{ error }} {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Save Panel -->
+    <div class="col-lg-4">
+      <div class="card shadow-sm border-0 position-sticky" style="top: 1rem">
+        <div class="card-header bg-white">
+          <h5 class="mb-0 text-primary">
+            <i class="fas fa-save me-2"></i>Save Client
+          </h5>
+        </div>
+        <div class="card-body">
+          <p class="text-muted small mb-3">
+            {% if client %} Update the client information or cancel to discard
+            changes. {% else %} Add a new client to the system. They will be
+            available for bookings immediately. {% endif %}
+          </p>
+
+          <div class="d-grid gap-2">
+            <button type="submit" class="btn btn-success">
+              <i class="fas fa-save me-1"></i>
+              {% if client %}Update Client{% else %}Create Client{% endif %}
+            </button>
+            <a
+              href="{{ url_for('clients') }}"
+              class="btn btn-outline-secondary"
+            >
+              Cancel
+            </a>
+          </div>
+
+          {% if client %}
+          <hr class="my-4" />
+          <div class="d-flex justify-content-between align-items-center">
+            <span class="text-muted small">Client ID: {{ client.id }}</span>
+            <span class="text-muted small"
+              >Created: {{ client.created_at.strftime('%d %b %Y') }}</span
+            >
+          </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Client Type Cards -->
+      <div class="row mt-4">
+        <div class="col-md-6 mb-4">
+          <div class="card form-card shadow-sm border-0">
+            <div class="card-body text-center py-4">
+              <i class="fas fa-building client-icon text-primary"></i>
+              <i
+                class="fas fa-building text-primary mb-3"
+                style="font-size: 2rem"
+              ></i>
+              <h5 class="card-title">Corporate Client</h5>
+              <p class="card-text small text-muted">
+                Companies, organizations, and businesses
+              </p>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-primary mt-2"
+                id="corporateClientBtn"
+              >
+                Select Template
+              </button>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-6 mb-4">
+          <div class="card form-card shadow-sm border-0">
+            <div class="card-body text-center py-4">
+              <i class="fas fa-user client-icon text-info"></i>
+              <i class="fas fa-user text-info mb-3" style="font-size: 2rem"></i>
+              <h5 class="card-title">Individual Client</h5>
+              <p class="card-text small text-muted">
+                Personal bookings and private events
+              </p>
+              <button
+                type="button"
+                class="btn btn-sm btn-outline-info mt-2"
+                id="individualClientBtn"
+              >
+                Select Template
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</form>
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Client type template buttons
+    const corporateClientBtn = document.getElementById("corporateClientBtn");
+    const individualClientBtn = document.getElementById("individualClientBtn");
+    const companyNameInput = document.getElementById("company_name");
+    const contactPersonInput = document.getElementById("contact_person");
+
+    // Set corporate client template
+    corporateClientBtn.addEventListener("click", function () {
+      if (!companyNameInput.value) {
+        companyNameInput.value = "[Company Name]";
+      }
+
+      if (!contactPersonInput.value) {
+        contactPersonInput.focus();
+      }
+    });
+
+    // Set individual client template
+    individualClientBtn.addEventListener("click", function () {
+      companyNameInput.value = "";
+
+      if (!contactPersonInput.value) {
+        contactPersonInput.focus();
+      }
+    });
+  });
+</script>
+{% endblock %}

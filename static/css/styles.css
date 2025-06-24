@@ -1,0 +1,819 @@
+/* 
+  Rainbow Towers Conference Booking System
+  Custom CSS Styles
+  Version 1.0
+*/
+
+/* ===== GENERAL STYLES ===== */
+:root {
+  --primary: #4e73df;
+  --primary-dark: #224abe;
+  --primary-light: #c8d2fa;
+  --secondary: #5a5c69;
+  --success: #1cc88a;
+  --info: #36b9cc;
+  --warning: #f6c23e;
+  --danger: #e74a3b;
+  --light: #f8f9fc;
+  --dark: #333;
+  --gray: #858796;
+  --gray-light: #eaecf4;
+  --shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+  --border-radius: 0.35rem;
+}
+
+body {
+  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--light);
+  color: var(--secondary);
+  line-height: 1.6;
+  padding-bottom: 4rem;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 700;
+  color: var(--dark);
+}
+
+a {
+  text-decoration: none;
+  color: var(--primary);
+  transition: all 0.2s;
+}
+
+a:hover {
+  color: var(--primary-dark);
+}
+
+/* Soft background colors */
+.bg-primary-soft { background-color: rgba(78, 115, 223, 0.1); }
+.bg-success-soft { background-color: rgba(28, 200, 138, 0.1); }
+.bg-info-soft { background-color: rgba(54, 185, 204, 0.1); }
+.bg-warning-soft { background-color: rgba(246, 194, 62, 0.1); }
+.bg-danger-soft { background-color: rgba(231, 74, 59, 0.1); }
+.bg-light-soft { background-color: rgba(248, 249, 252, 0.7); }
+
+/* Border colors */
+.border-primary { border-color: var(--primary) !important; }
+.border-success { border-color: var(--success) !important; }
+.border-info { border-color: var(--info) !important; }
+.border-warning { border-color: var(--warning) !important; }
+.border-danger { border-color: var(--danger) !important; }
+
+/* ===== NAVBAR ===== */
+.navbar {
+  background-color: white !important; /* White background */
+  box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075); /* Subtle shadow */
+}
+
+.navbar-brand {
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.navbar-brand img {
+  height: 40px;
+  margin-right: 10px;
+}
+
+.navbar-light .navbar-nav .nav-link {
+  color: var(--gray) !important; /* Grey text for navigation links */
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.navbar-light .navbar-nav .nav-link:hover,
+.navbar-light .navbar-nav .nav-link.active {
+  color: var(--dark) !important; /* Darker grey for hover/active state */
+}
+
+.navbar-dark .navbar-nav .nav-link {
+  color: rgba(255, 255, 255, 0.9); /* Ensure text is readable on the new background */
+  font-weight: 500;
+  padding: 0.75rem 1rem;
+  transition: all 0.2s;
+}
+
+.navbar-dark .navbar-nav .nav-link:hover,
+.navbar-dark .navbar-nav .nav-link.active {
+  color: white;
+  background-color: rgba(255, 255, 255, 0.2); /* Slight hover effect */
+}
+
+.navbar-dark .navbar-nav .nav-link i {
+  margin-right: 0.4rem;
+}
+
+.dropdown-menu {
+  border: none;
+  box-shadow: var(--shadow);
+  border-radius: var(--border-radius);
+}
+
+.dropdown-item {
+  padding: 0.5rem 1.5rem;
+}
+
+.dropdown-item i {
+  margin-right: 0.5rem;
+  width: 1rem;
+  text-align: center;
+}
+
+/* ===== CARDS ===== */
+.card {
+  border: none;
+  box-shadow: var(--shadow);
+  border-radius: var(--border-radius);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.card-header {
+  background-color: white;
+  border-bottom: 1px solid var(--gray-light);
+  padding: 1rem 1.25rem;
+}
+
+.card-footer {
+  background-color: white;
+  border-top: 1px solid var(--gray-light);
+  padding: 1rem 1.25rem;
+}
+
+.card-border-left {
+  border-left: 0.25rem solid var(--primary);
+}
+
+.card:hover {
+  box-shadow: 0 0.25rem 2rem 0 rgba(58, 59, 69, 0.2);
+}
+
+/* ===== BUTTONS ===== */
+.btn {
+  border-radius: var(--border-radius);
+  padding: 0.375rem 1rem;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.btn i {
+  margin-right: 0.4rem;
+}
+
+.btn-primary {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+.btn-outline-primary {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-outline-primary:hover {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.btn-success {
+  background-color: var(--success);
+  border-color: var(--success);
+}
+
+.btn-success:hover {
+  background-color: #17a673;
+  border-color: #17a673;
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  border-color: var(--danger);
+}
+
+.btn-danger:hover {
+  background-color: #d52a1a;
+  border-color: #d52a1a;
+}
+
+.btn-warning {
+  background-color: var(--warning);
+  border-color: var(--warning);
+  color: #fff;
+}
+
+.btn-warning:hover {
+  background-color: #e0ad16;
+  border-color: #e0ad16;
+  color: #fff;
+}
+
+.btn-info {
+  background-color: var(--info);
+  border-color: var(--info);
+}
+
+.btn-info:hover {
+  background-color: #2aa3b9;
+  border-color: #2aa3b9;
+}
+
+/* ===== FORMS ===== */
+.form-control,
+.form-select {
+  border-radius: var(--border-radius);
+  padding: 0.47rem 0.75rem;
+  border: 1px solid #d1d3e2;
+  font-size: 0.9rem;
+  transition: border-color 0.2s;
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 0.25rem rgba(78, 115, 223, 0.25);
+}
+
+.form-label {
+  color: var(--gray);
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+}
+
+.form-check-input:checked {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+.form-text {
+  color: var(--gray);
+  font-size: 0.8rem;
+}
+
+/* ===== TABLES ===== */
+.table {
+  color: var(--secondary);
+}
+
+.table th {
+  font-weight: 700;
+  color: var(--gray);
+  font-size: 0.85rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  background-color: #f8f9fc;
+  vertical-align: middle;
+}
+
+.table td {
+  vertical-align: middle;
+}
+
+.table-hover tbody tr:hover {
+  background-color: rgba(78, 115, 223, 0.05);
+}
+
+/* ===== ALERTS ===== */
+.alert {
+  border: none;
+  border-radius: var(--border-radius);
+  padding: 1rem 1.5rem;
+}
+
+.alert-dismissible .btn-close {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 1.25rem;
+}
+
+.alert i {
+  margin-right: 0.5rem;
+}
+
+/* ===== BADGES ===== */
+.badge {
+  padding: 0.4rem 0.6rem;
+  font-weight: 600;
+  font-size: 0.75rem;
+  border-radius: var(--border-radius);
+}
+
+/* ===== CALENDAR ===== */
+.fc-toolbar-title {
+  font-size: 1.5rem !important;
+  font-weight: 700 !important;
+  color: var(--secondary);
+}
+
+.fc-button {
+  background-color: var(--primary) !important;
+  border-color: var(--primary) !important;
+  font-weight: 500 !important;
+  text-transform: capitalize !important;
+  height: auto !important;
+  padding: 0.4rem 0.85rem !important;
+}
+
+.fc-button:hover {
+  background-color: var(--primary-dark) !important;
+  border-color: var(--primary-dark) !important;
+}
+
+.fc-button:focus {
+  box-shadow: 0 0 0 0.25rem rgba(78, 115, 223, 0.25) !important;
+}
+
+.fc-event {
+  border-radius: var(--border-radius);
+  font-size: 0.85rem;
+  padding: 0.2rem 0.5rem;
+  cursor: pointer;
+  border: none !important;
+  margin: 2px 0;
+}
+
+.fc-event:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.fc-daygrid-day-number {
+  font-weight: 600;
+  color: var(--secondary);
+}
+
+.fc-daygrid-day.fc-day-today {
+  background-color: rgba(78, 115, 223, 0.1) !important;
+}
+
+.fc th {
+  padding: 0.75rem 0 !important;
+  font-weight: 600;
+}
+
+/* ===== BOOKING STATUS ===== */
+.booking-status-tentative {
+  border-left: 4px solid var(--warning) !important;
+}
+
+.booking-status-confirmed {
+  border-left: 4px solid var(--success) !important;
+}
+
+.booking-status-cancelled {
+  border-left: 4px solid var(--danger) !important;
+}
+
+.event-tentative {
+  background-color: var(--warning) !important;
+  border-color: var(--warning) !important;
+}
+
+.event-confirmed {
+  background-color: var(--success) !important;
+  border-color: var(--success) !important;
+}
+
+.event-cancelled {
+  background-color: var(--danger) !important;
+  border-color: var(--danger) !important;
+}
+
+/* ===== ROOM STATUS ===== */
+.room-status-available {
+  border-top: 4px solid var(--success) !important;
+}
+
+.room-status-maintenance {
+  border-top: 4px solid var(--danger) !important;
+}
+
+.room-status-reserved {
+  border-top: 4px solid var(--primary) !important;
+}
+
+/* ===== STATS CARDS ===== */
+.stats-card {
+  border-left: 4px solid;
+  transition: transform 0.2s;
+}
+
+.stats-card:hover {
+  transform: translateY(-5px);
+}
+
+.stats-card .icon {
+  opacity: 0.3;
+  font-size: 2rem;
+}
+
+.stats-card-bookings { border-color: var(--primary); }
+.stats-card-clients { border-color: var(--success); }
+.stats-card-rooms { border-color: var(--info); }
+.stats-card-today { border-color: var(--warning); }
+
+/* ===== TIMELINE ===== */
+.timeline {
+  border-left: 2px solid var(--gray-light);
+  padding-left: 1.5rem;
+  position: relative;
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+.timeline-item:before {
+  content: '';
+  position: absolute;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--primary);
+  left: -1.6rem;
+  top: 0.25rem;
+}
+
+/* ===== DASHBOARD ===== */
+.booking-item {
+  border-left: 4px solid;
+  transition: transform 0.2s;
+}
+
+.booking-item:hover {
+  transform: translateX(5px);
+}
+
+.booking-tentative { border-color: var(--warning); }
+.booking-confirmed { border-color: var(--success); }
+.booking-cancelled { border-color: var(--danger); }
+
+/* ===== ADD-ONS ===== */
+.addon-badge {
+  background-color: var(--light);
+  color: var(--primary);
+  border: 1px solid var(--gray-light);
+  font-size: 0.85rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--border-radius);
+  margin-right: 0.5rem;
+  margin-bottom: 0.5rem;
+  display: inline-block;
+}
+
+.addon-category {
+  border-bottom: 1px solid var(--gray-light);
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+}
+
+.addon-category-title {
+  font-weight: bold;
+  color: var(--primary);
+}
+
+.addon-item {
+  padding: 0.75rem;
+  border-radius: var(--border-radius);
+  border: 1px solid var(--gray-light);
+  margin-bottom: 0.5rem;
+  transition: all 0.2s;
+}
+
+.addon-item:hover {
+  border-color: var(--primary);
+  background-color: var(--light);
+}
+
+.addon-item.selected {
+  border-color: var(--primary);
+  background-color: rgba(78, 115, 223, 0.1);
+}
+
+/* ===== CLIENT VIEW ===== */
+.client-header {
+  border-left: 4px solid var(--primary);
+  padding-left: 1rem;
+}
+
+/* ===== LOGIN PAGE ===== */
+.login-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  padding: 2rem;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 450px;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  box-shadow: 0 0.5rem 2rem rgba(0, 0, 0, 0.15);
+}
+
+.login-header {
+  background: linear-gradient(to right, var(--primary), var(--primary-dark));
+  color: white;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.login-body {
+  padding: 2rem;
+  background-color: white;
+}
+
+.login-footer {
+  background-color: var(--light);
+  padding: 1rem;
+  text-align: center;
+  color: var(--gray);
+  font-size: 0.9rem;
+}
+
+/* ===== MODAL ===== */
+.modal-header {
+  border-bottom: 1px solid var(--gray-light);
+}
+
+.modal-footer {
+  border-top: 1px solid var(--gray-light);
+}
+
+/* ===== PAGINATION ===== */
+.pagination {
+  margin-bottom: 0;
+}
+
+.page-link {
+  color: var(--primary);
+  border-color: var(--gray-light);
+  padding: 0.5rem 0.75rem;
+  font-weight: 500;
+}
+
+.page-link:hover {
+  color: var(--primary-dark);
+  background-color: var(--light);
+}
+
+.page-item.active .page-link {
+  background-color: var(--primary);
+  border-color: var(--primary);
+}
+
+/* ===== REPORTS ===== */
+.report-card {
+  transition: transform 0.2s;
+  border-left: 4px solid;
+}
+
+.report-card:hover {
+  transform: translateY(-5px);
+}
+
+.report-utilization { border-color: var(--primary); }
+.report-revenue { border-color: var(--success); }
+.report-clients { border-color: var(--info); }
+.report-popular { border-color: var(--warning); }
+
+/* ===== SELECT2 CUSTOMIZATION ===== */
+.select2-container--bootstrap-5 .select2-selection {
+  min-height: 38px;
+  border: 1px solid #d1d3e2;
+}
+
+.select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+  padding: 0.375rem 0.75rem;
+}
+
+.select2-container--bootstrap-5.select2-container--focus .select2-selection,
+.select2-container--bootstrap-5.select2-container--open .select2-selection {
+  border-color: var(--primary-light);
+  box-shadow: 0 0 0 0.25rem rgba(78, 115, 223, 0.25);
+}
+
+/* ===== FLATPICKR CUSTOMIZATION ===== */
+.flatpickr-calendar {
+  border-radius: var(--border-radius) !important;
+  box-shadow: var(--shadow) !important;
+  border: none !important;
+}
+
+.flatpickr-day.selected,
+.flatpickr-day.selected:hover {
+  background: var(--primary) !important;
+  border-color: var(--primary) !important;
+}
+
+.flatpickr-day.today {
+  border-color: var(--primary) !important;
+}
+
+.flatpickr-day:hover {
+  background: var(--light) !important;
+}
+
+.flatpickr-months .flatpickr-month {
+  background: var(--primary) !important;
+}
+
+.flatpickr-weekday {
+  color: var(--gray) !important;
+}
+
+.flatpickr-current-month,
+.flatpickr-current-month input.cur-year,
+.flatpickr-monthDropdown-months,
+.numInputWrapper span.arrowUp:after,
+.numInputWrapper span.arrowDown:after {
+  color: white !important;
+}
+
+.flatpickr-months .flatpickr-prev-month svg,
+.flatpickr-months .flatpickr-next-month svg {
+  fill: white !important;
+}
+
+/* ===== FOOTER ===== */
+footer {
+  margin-top: 2rem;
+  padding: 1.5rem 0;
+  background-color: white;
+  box-shadow: 0 -0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+}
+
+/* ===== UTILITIES ===== */
+.shadow-sm { box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important; }
+.shadow { box-shadow: var(--shadow) !important; }
+.shadow-lg { box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175) !important; }
+
+.rounded { border-radius: var(--border-radius) !important; }
+.rounded-pill { border-radius: 50rem !important; }
+
+.text-primary { color: var(--primary) !important; }
+.text-success { color: var(--success) !important; }
+.text-info { color: var(--info) !important; }
+.text-warning { color: var(--warning) !important; }
+.text-danger { color: var(--danger) !important; }
+.text-muted { color: var(--gray) !important; }
+
+.bg-primary { background-color: var(--primary) !important; }
+.bg-success { background-color: var(--success) !important; }
+.bg-info { background-color: var(--info) !important; }
+.bg-warning { background-color: var(--warning) !important; }
+.bg-danger { background-color: var(--danger) !important; }
+.bg-light { background-color: var(--light) !important; }
+.bg-dark { background-color: var(--dark) !important; }
+
+/* ===== ANIMATIONS ===== */
+.fade-in {
+  animation: fadeIn 0.5s;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* ===== RESPONSIVE ADJUSTMENTS ===== */
+@media (max-width: 991.98px) {
+  .navbar-brand span {
+    display: none;
+  }
+  
+  .navbar-nav {
+    padding: 0.5rem 0;
+  }
+  
+  .navbar-nav .nav-link {
+    padding: 0.75rem 1rem;
+  }
+  
+  .card-body {
+    padding: 1.25rem;
+  }
+  
+  .booking-details-card {
+    margin-top: 1rem;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .stats-card {
+    margin-bottom: 1rem;
+  }
+  
+  .fc-toolbar {
+    flex-direction: column;
+  }
+  
+  .fc-toolbar-chunk {
+    margin-bottom: 0.5rem;
+  }
+  
+  .fc-toolbar-title {
+    font-size: 1.25rem !important;
+  }
+  
+  h1 {
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .btn {
+    padding: 0.375rem 0.75rem;
+  }
+  
+  .navbar-brand img {
+    height: 30px;
+  }
+  
+  .card-header, .card-body, .card-footer {
+    padding: 1rem;
+  }
+  
+  h1 {
+    font-size: 1.5rem;
+  }
+  
+  .btn-group-sm > .btn, .btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+}
+
+/* ===== PRINT STYLES ===== */
+@media print {
+  .navbar, .footer, .btn, .no-print {
+    display: none !important;
+  }
+  
+  .container {
+    width: 100%;
+    max-width: 100%;
+    padding: 0;
+    margin: 0;
+  }
+  
+  .card {
+    border: 1px solid #ddd !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+  }
+  
+  body {
+    background-color: white;
+    font-size: 12pt;
+  }
+  
+  .col-print-12 {
+    width: 100% !important;
+    flex: 0 0 100% !important;
+    max-width: 100% !important;
+  }
+  
+  h1 {
+    font-size: 22pt;
+  }
+  
+  h2 {
+    font-size: 18pt;
+  }
+  
+  h3 {
+    font-size: 16pt;
+  }
+  
+  a[href]:after {
+    content: " (" attr(href) ")";
+    font-size: 90%;
+    color: #555;
+  }
+  
+  a[href^="#"]:after,
+  a[href^="javascript:"]:after {
+    content: "";
+  }
+}

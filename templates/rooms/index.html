@@ -1,0 +1,564 @@
+{% extends "layout.html" %} {% block title %}Conference Rooms | Rainbow Towers
+Conference Booking{% endblock %} {% block extra_css %}
+<style>
+  .room-card {
+    transition: transform 0.2s;
+  }
+
+  .room-card:hover {
+    transform: translateY(-5px);
+  }
+
+  .room-status-available {
+    border-top: 4px solid #1cc88a;
+  }
+  .room-status-maintenance {
+    border-top: 4px solid #e74a3b;
+  }
+  .room-status-reserved {
+    border-top: 4px solid #4e73df;
+  }
+
+  .room-amenity {
+    display: inline-block;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    background-color: #f8f9fc;
+    font-size: 0.8rem;
+  }
+
+  .room-preview {
+    height: 200px;
+    background-size: cover;
+    background-position: center;
+    border-top-left-radius: calc(0.35rem - 1px);
+    border-top-right-radius: calc(0.35rem - 1px);
+    position: relative;
+  }
+
+  .room-preview-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(
+      to bottom,
+      rgba(0, 0, 0, 0) 50%,
+      rgba(0, 0, 0, 0.7) 100%
+    );
+    display: flex;
+    align-items: flex-end;
+    padding: 1rem;
+  }
+
+  .room-preview-title {
+    color: white;
+    margin: 0;
+    text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.6);
+  }
+
+  .room-status-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 0.25rem;
+    font-weight: bold;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1><i class="fas fa-door-open text-primary me-2"></i>Conference Rooms</h1>
+  {% if current_user.role == 'admin' %}
+  <a href="{{ url_for('new_room') }}" class="btn btn-success">
+    <i class="fas fa-plus me-1"></i>Add New Room
+  </a>
+  {% endif %}
+</div>
+
+<!-- Room status overview -->
+<div class="row mb-4">
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="card border-left-success shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div
+              class="text-xs font-weight-bold text-success text-uppercase mb-1"
+            >
+              Available Rooms
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800">
+              {{ rooms|selectattr('status', 'equalto', 'available')|list|length
+              }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-check-circle fa-2x text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="card border-left-danger shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div
+              class="text-xs font-weight-bold text-danger text-uppercase mb-1"
+            >
+              Under Maintenance
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800">
+              {{ rooms|selectattr('status', 'equalto',
+              'maintenance')|list|length }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-tools fa-2x text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="card border-left-primary shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div
+              class="text-xs font-weight-bold text-primary text-uppercase mb-1"
+            >
+              Reserved
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800">
+              {{ rooms|selectattr('status', 'equalto', 'reserved')|list|length
+              }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-lock fa-2x text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="card border-left-info shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+              Total Capacity
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800">
+              {{ rooms|sum(attribute='capacity') }} people
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-users fa-2x text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Search and filters -->
+<div class="card shadow mb-4">
+  <div
+    class="card-header py-3 d-flex flex-row align-items-center justify-content-between"
+  >
+    <h6 class="m-0 font-weight-bold text-primary">
+      <i class="fas fa-filter me-1"></i> Search & Filter Rooms
+    </h6>
+    <div class="dropdown no-arrow">
+      <a
+        class="dropdown-toggle"
+        href="#"
+        role="button"
+        id="filterMoreOptions"
+        data-bs-toggle="dropdown"
+        aria-haspopup="true"
+        aria-expanded="false"
+      >
+        <i class="fas fa-ellipsis-v fa-sm fa-fw text-gray-400"></i>
+      </a>
+      <div
+        class="dropdown-menu dropdown-menu-right shadow animated--fade-in"
+        aria-labelledby="filterMoreOptions"
+      >
+        <a class="dropdown-item" href="#" onclick="resetFilters()"
+          >Reset Filters</a
+        >
+        <a class="dropdown-item" href="{{ url_for('rooms') }}">Refresh</a>
+      </div>
+    </div>
+  </div>
+  <div class="card-body">
+    <div class="row g-3">
+      <div class="col-md-4">
+        <div class="input-group">
+          <input
+            type="text"
+            class="form-control"
+            placeholder="Search room..."
+            id="roomSearch"
+          />
+          <button class="btn btn-primary" type="button" id="searchBtn">
+            <i class="fas fa-search"></i>
+          </button>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <select class="form-select" id="capacityFilter">
+          <option value="all">Any Capacity</option>
+          <option value="0-20">Up to 20 People</option>
+          <option value="21-50">21-50 People</option>
+          <option value="51-100">51-100 People</option>
+          <option value="101+">Over 100 People</option>
+        </select>
+      </div>
+      <div class="col-md-3">
+        <select class="form-select" id="statusFilter">
+          <option value="all">All Statuses</option>
+          <option value="available">Available</option>
+          <option value="maintenance">Under Maintenance</option>
+          <option value="reserved">Reserved</option>
+        </select>
+      </div>
+      <div class="col-md-2">
+        <select class="form-select" id="sortOrder">
+          <option value="name">Sort by Name</option>
+          <option value="capacity-asc">Capacity (Low to High)</option>
+          <option value="capacity-desc">Capacity (High to Low)</option>
+          <option value="price-asc">Price (Low to High)</option>
+          <option value="price-desc">Price (High to Low)</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Rooms Grid -->
+<div class="row" id="roomsContainer">
+  {% for room in rooms %}
+  <div
+    class="col-lg-4 col-md-6 mb-4 room-item"
+    data-name="{{ room.name|lower }}"
+    data-capacity="{{ room.capacity }}"
+    data-status="{{ room.status }}"
+    data-price="{{ room.hourly_rate }}"
+  >
+    <div
+      class="card shadow-sm border-0 h-100 room-card room-status-{{ room.status }}"
+    >
+      {% if room.image_url %}
+      <div
+        class="room-preview"
+        style="background-image: url('{{ room.image_url }}')"
+      >
+        <div class="room-preview-overlay">
+          <h5 class="room-preview-title">{{ room.name }}</h5>
+        </div>
+        <div
+          class="room-status-badge badge bg-{% if room.status == 'available' %}success{% elif room.status == 'maintenance' %}danger{% else %}primary{% endif %}"
+        >
+          {{ room.status|capitalize }}
+        </div>
+      </div>
+      {% else %}
+      <div
+        class="room-preview"
+        style="background-image: url('{{ url_for('static', filename='img/conference-room-placeholder.jpg') }}')"
+      >
+        <div class="room-preview-overlay">
+          <h5 class="room-preview-title">{{ room.name }}</h5>
+        </div>
+        <div
+          class="room-status-badge badge bg-{% if room.status == 'available' %}success{% elif room.status == 'maintenance' %}danger{% else %}primary{% endif %}"
+        >
+          {{ room.status|capitalize }}
+        </div>
+      </div>
+      {% endif %}
+      <div class="card-body">
+        <div class="mb-3">
+          <div class="d-flex justify-content-between mb-2">
+            <div>
+              <i class="fas fa-users me-1 text-primary"></i>
+              <span>Capacity: <strong>{{ room.capacity }} people</strong></span>
+            </div>
+          </div>
+
+          <div class="d-flex justify-content-between mb-1">
+            <small class="text-muted">Hourly Rate</small>
+            <span class="fw-bold">${{ room.hourly_rate }}/hour</span>
+          </div>
+          <div class="d-flex justify-content-between mb-1">
+            <small class="text-muted">Half-Day Rate</small>
+            <span class="fw-bold">${{ room.half_day_rate }}</span>
+          </div>
+          <div class="d-flex justify-content-between mb-1">
+            <small class="text-muted">Full-Day Rate</small>
+            <span class="fw-bold">${{ room.full_day_rate }}</span>
+          </div>
+        </div>
+
+        {% if room.description %}
+        <p class="text-muted small mb-3">
+          {{ room.description|truncate(100) }}
+        </p>
+        {% endif %} {% if room.amenities_list %}
+        <div class="mb-0">
+          <small class="text-muted d-block mb-2">Amenities:</small>
+          {% for amenity in room.amenities_list %}
+          <span class="room-amenity">{{ amenity }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </div>
+      <div class="card-footer bg-white border-0 d-flex justify-content-between">
+        <a
+          href="{{ url_for('calendar') }}?room={{ room.id }}"
+          class="btn btn-sm btn-primary"
+        >
+          <i class="fas fa-calendar-alt me-1"></i>View Availability
+        </a>
+
+        {% if current_user.role == 'admin' %}
+        <div>
+          <a
+            href="{{ url_for('edit_room', id=room.id) }}"
+            class="btn btn-sm btn-warning"
+          >
+            <i class="fas fa-edit"></i>
+          </a>
+          <button
+            type="button"
+            class="btn btn-sm btn-outline-danger"
+            data-bs-toggle="modal"
+            data-bs-target="#deleteRoomModal{{ room.id }}"
+          >
+            <i class="fas fa-trash"></i>
+          </button>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Delete Room Modal -->
+    {% if current_user.role == 'admin' %}
+    <div
+      class="modal fade"
+      id="deleteRoomModal{{ room.id }}"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Delete Room</h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <p>
+              Are you sure you want to delete <strong>{{ room.name }}</strong>?
+            </p>
+            <p class="text-danger">
+              This action cannot be undone. All bookings associated with this
+              room will be affected.
+            </p>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <form
+              action="{{ url_for('delete_room', id=room.id) }}"
+              method="POST"
+            >
+              <button type="submit" class="btn btn-danger">Delete Room</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% else %}
+  <div class="col-12">
+    <div class="alert alert-info text-center py-4">
+      <i class="fas fa-info-circle fa-2x mb-3"></i>
+      <p class="mb-0">No conference rooms have been added yet.</p>
+      {% if current_user.role == 'admin' %}
+      <div class="mt-3">
+        <a href="{{ url_for('new_room') }}" class="btn btn-primary">
+          <i class="fas fa-plus me-1"></i>Add Your First Room
+        </a>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- No Results Message -->
+<div id="noResults" class="alert alert-info text-center py-4 d-none">
+  <i class="fas fa-search fa-2x mb-3"></i>
+  <p class="mb-0">No rooms matching your search criteria.</p>
+  <button class="btn btn-link" onclick="resetFilters()">
+    Clear all filters
+  </button>
+</div>
+
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialize search and filtering
+    const roomSearch = document.getElementById("roomSearch");
+    const capacityFilter = document.getElementById("capacityFilter");
+    const statusFilter = document.getElementById("statusFilter");
+    const sortOrder = document.getElementById("sortOrder");
+    const searchBtn = document.getElementById("searchBtn");
+    const roomsContainer = document.getElementById("roomsContainer");
+    const noResults = document.getElementById("noResults");
+
+    // Attach event listeners
+    searchBtn.addEventListener("click", filterRooms);
+    roomSearch.addEventListener("keyup", function (e) {
+      if (e.key === "Enter") {
+        filterRooms();
+      }
+    });
+    capacityFilter.addEventListener("change", filterRooms);
+    statusFilter.addEventListener("change", filterRooms);
+    sortOrder.addEventListener("change", sortRooms);
+
+    // Function to filter rooms
+    function filterRooms() {
+      const searchTerm = roomSearch.value.toLowerCase();
+      const capacityValue = capacityFilter.value;
+      const statusValue = statusFilter.value;
+
+      let visibleCount = 0;
+
+      // Get all room items
+      const roomItems = document.querySelectorAll(".room-item");
+
+      roomItems.forEach((item) => {
+        const roomName = item.dataset.name;
+        const roomCapacity = parseInt(item.dataset.capacity);
+        const roomStatus = item.dataset.status;
+
+        let showRoom = true;
+
+        // Apply search filter
+        if (searchTerm && !roomName.includes(searchTerm)) {
+          showRoom = false;
+        }
+
+        // Apply capacity filter
+        if (capacityValue !== "all") {
+          if (capacityValue === "0-20" && roomCapacity > 20) {
+            showRoom = false;
+          } else if (
+            capacityValue === "21-50" &&
+            (roomCapacity <= 20 || roomCapacity > 50)
+          ) {
+            showRoom = false;
+          } else if (
+            capacityValue === "51-100" &&
+            (roomCapacity <= 50 || roomCapacity > 100)
+          ) {
+            showRoom = false;
+          } else if (capacityValue === "101+" && roomCapacity <= 100) {
+            showRoom = false;
+          }
+        }
+
+        // Apply status filter
+        if (statusValue !== "all" && roomStatus !== statusValue) {
+          showRoom = false;
+        }
+
+        // Show/hide the room
+        if (showRoom) {
+          item.classList.remove("d-none");
+          visibleCount++;
+        } else {
+          item.classList.add("d-none");
+        }
+      });
+
+      // Show no results message if needed
+      if (visibleCount === 0) {
+        noResults.classList.remove("d-none");
+      } else {
+        noResults.classList.add("d-none");
+      }
+
+      // Apply sorting after filtering
+      sortRooms();
+    }
+
+    // Function to sort rooms
+    function sortRooms() {
+      const sortValue = sortOrder.value;
+      const roomItems = Array.from(
+        document.querySelectorAll(".room-item:not(.d-none)")
+      );
+
+      // Sort the visible room items
+      roomItems.sort((a, b) => {
+        if (sortValue === "name") {
+          return a.dataset.name.localeCompare(b.dataset.name);
+        } else if (sortValue === "capacity-asc") {
+          return parseInt(a.dataset.capacity) - parseInt(b.dataset.capacity);
+        } else if (sortValue === "capacity-desc") {
+          return parseInt(b.dataset.capacity) - parseInt(a.dataset.capacity);
+        } else if (sortValue === "price-asc") {
+          return parseFloat(a.dataset.price) - parseFloat(b.dataset.price);
+        } else if (sortValue === "price-desc") {
+          return parseFloat(b.dataset.price) - parseFloat(a.dataset.price);
+        }
+        return 0;
+      });
+
+      // Reorder the items in the DOM
+      roomItems.forEach((item) => {
+        roomsContainer.appendChild(item);
+      });
+    }
+
+    // Function to reset filters
+    window.resetFilters = function () {
+      roomSearch.value = "";
+      capacityFilter.value = "all";
+      statusFilter.value = "all";
+      sortOrder.value = "name";
+      filterRooms();
+    };
+
+    // Apply initial sorting
+    sortRooms();
+  });
+</script>
+{% endblock %}

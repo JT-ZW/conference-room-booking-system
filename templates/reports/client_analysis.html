@@ -1,0 +1,1496 @@
+{% extends "layout.html" %} {% block title %}Client Analysis Report | Rainbow
+Towers Conference Booking{% endblock %} {% block extra_css %}
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+/>
+<style>
+  .date-range-form .form-control {
+    border-right: none;
+  }
+
+  .date-range-form .input-group-text {
+    background-color: #fff;
+    border-left: none;
+  }
+
+  .client-card {
+    border-left: 4px solid;
+    transition: all 0.2s;
+  }
+
+  .client-card:hover {
+    transform: translateY(-5px);
+  }
+
+  .client-total {
+    border-color: #4e73df;
+  }
+
+  .client-new {
+    border-color: #1cc88a;
+  }
+
+  .client-returning {
+    border-color: #36b9cc;
+  }
+
+  .client-atrisk {
+    border-color: #e74a3b;
+  }
+
+  .chart-container {
+    position: relative;
+    height: 350px;
+  }
+
+  .table-responsive {
+    max-height: 400px;
+    overflow-y: auto;
+  }
+
+  .chart-legend-item {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 1rem;
+  }
+
+  .legend-color {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 5px;
+    border-radius: 2px;
+  }
+
+  .client-progress {
+    height: 1.5rem;
+  }
+
+  .client-stat {
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+    border-radius: 0.35rem;
+    box-shadow: 0 0.15rem 1.75rem rgba(0, 0, 0, 0.15);
+    color: #fff;
+  }
+
+  .client-stat-premium {
+    background: linear-gradient(135deg, #6f42c1, #7e57c2);
+  }
+
+  .client-stat-repeat {
+    background: linear-gradient(135deg, #2e59d9, #4e73df);
+  }
+
+  .client-stat-new {
+    background: linear-gradient(135deg, #17a673, #1cc88a);
+  }
+
+  .client-stat-risk {
+    background: linear-gradient(135deg, #e74a3b, #f45f52);
+  }
+
+  .segment-card {
+    border-left: 4px solid;
+  }
+
+  .segment-premium {
+    border-color: #6f42c1;
+  }
+
+  .segment-repeat {
+    border-color: #4e73df;
+  }
+
+  .segment-new {
+    border-color: #1cc88a;
+  }
+
+  .segment-risk {
+    border-color: #e74a3b;
+  }
+
+  .recommendation-card {
+    border-left: 4px solid #f6c23e;
+  }
+
+  .metric-card {
+    transition: all 0.3s;
+    height: 100%;
+  }
+
+  .metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1.5rem rgba(0, 0, 0, 0.15);
+  }
+
+  .top-client-row {
+    transition: all 0.2s;
+  }
+
+  .top-client-row:hover {
+    background-color: rgba(78, 115, 223, 0.1);
+  }
+
+  .badge-premium {
+    background-color: #6f42c1;
+    color: white;
+  }
+
+  .badge-repeat {
+    background-color: #4e73df;
+    color: white;
+  }
+
+  .badge-new {
+    background-color: #1cc88a;
+    color: white;
+  }
+
+  .badge-risk {
+    background-color: #e74a3b;
+    color: white;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1><i class="fas fa-users text-info me-2"></i>Client Analysis Report</h1>
+  <a href="{{ url_for('reports') }}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-1"></i>Back to Reports
+  </a>
+</div>
+
+<!-- Date Range Selection -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <form
+      method="GET"
+      action="{{ url_for('client_analysis_report') }}"
+      class="row g-3 align-items-end"
+    >
+      <div class="col-md-4">
+        <label class="form-label">Start Date</label>
+        <div class="input-group date-range-form">
+          <input
+            type="text"
+            class="form-control datepicker"
+            name="start_date"
+            value="{{ start_date.strftime('%Y-%m-%d') if start_date else '' }}"
+            placeholder="Select start date"
+          />
+          <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">End Date</label>
+        <div class="input-group date-range-form">
+          <input
+            type="text"
+            class="form-control datepicker"
+            name="end_date"
+            value="{{ end_date.strftime('%Y-%m-%d') if end_date else '' }}"
+            placeholder="Select end date"
+          />
+          <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="fas fa-filter me-1"></i>Generate Report
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-primary shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div
+              class="text-xs font-weight-bold text-primary text-uppercase mb-1"
+            >
+              Date Range
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800">
+              {{ start_date.strftime('%d %b') if start_date else 'N/A' }} - {{
+              end_date.strftime('%d %b %Y') if end_date else 'N/A' }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-success shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div
+              class="text-xs font-weight-bold text-success text-uppercase mb-1"
+            >
+              Total Bookings
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800">
+              {{ total_bookings|default(0) }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-calendar-check fa-2x text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-info shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+              Active Clients
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800">
+              {{ active_clients|default(0) }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-users fa-2x text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-warning shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div
+              class="text-xs font-weight-bold text-warning text-uppercase mb-1"
+            >
+              Avg. Revenue Per Client
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800">
+              ${{ (avg_client_value|default(0))|round(2) }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-dollar-sign fa-2x text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Client Segments Overview -->
+<div class="row mb-4">
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="client-stat client-stat-premium">
+      <h6 class="mb-2"><i class="fas fa-gem me-2"></i>Premium Clients</h6>
+      <h2 class="mb-1">{{ premium_clients_count|default(0) }}</h2>
+      <div class="d-flex justify-content-between">
+        <span
+          >{{ ((premium_clients_count|default(0) / (active_clients|default(1)) *
+          100)|round(1) if (active_clients|default(0)) > 0 else 0) }}% of
+          total</span
+        >
+        <span>${{ (premium_clients_avg_value|default(0))|round(2) }} avg</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="client-stat client-stat-repeat">
+      <h6 class="mb-2"><i class="fas fa-redo me-2"></i>Repeat Clients</h6>
+      <h2 class="mb-1">{{ repeat_clients_count|default(0) }}</h2>
+      <div class="d-flex justify-content-between">
+        <span
+          >{{ ((repeat_clients_count|default(0) / (active_clients|default(1)) *
+          100)|round(1) if (active_clients|default(0)) > 0 else 0) }}% of
+          total</span
+        >
+        <span>${{ (repeat_clients_avg_value|default(0))|round(2) }} avg</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="client-stat client-stat-new">
+      <h6 class="mb-2"><i class="fas fa-user-plus me-2"></i>New Clients</h6>
+      <h2 class="mb-1">{{ new_clients_count|default(0) }}</h2>
+      <div class="d-flex justify-content-between">
+        <span
+          >{{ ((new_clients_count|default(0) / (active_clients|default(1)) *
+          100)|round(1) if (active_clients|default(0)) > 0 else 0) }}% of
+          total</span
+        >
+        <span>${{ (new_clients_avg_value|default(0))|round(2) }} avg</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-3 col-md-6 mb-3">
+    <div class="client-stat client-stat-risk">
+      <h6 class="mb-2">
+        <i class="fas fa-user-clock me-2"></i>At-Risk Clients
+      </h6>
+      <h2 class="mb-1">{{ at_risk_clients_count|default(0) }}</h2>
+      <div class="d-flex justify-content-between">
+        <span
+          >{{ ((at_risk_clients_count|default(0) / (active_clients|default(1)) *
+          100)|round(1) if (active_clients|default(0)) > 0 else 0) }}% of
+          total</span
+        >
+        <span>No recent bookings</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Client Overview Charts -->
+<div class="row">
+  <!-- Client Segments Chart -->
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white">
+        <h5 class="mb-0 text-primary">
+          <i class="fas fa-chart-pie me-2"></i>Client Segment Distribution
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="clientSegmentsChart"></canvas>
+        </div>
+        <div class="text-center mt-3">
+          <div class="chart-legend-item">
+            <span class="legend-color" style="background-color: #6f42c1"></span>
+            <span>Premium Clients</span>
+          </div>
+          <div class="chart-legend-item">
+            <span class="legend-color" style="background-color: #4e73df"></span>
+            <span>Repeat Clients</span>
+          </div>
+          <div class="chart-legend-item">
+            <span class="legend-color" style="background-color: #1cc88a"></span>
+            <span>New Clients</span>
+          </div>
+          <div class="chart-legend-item">
+            <span class="legend-color" style="background-color: #e74a3b"></span>
+            <span>At-Risk Clients</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Booking Frequency Distribution -->
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white">
+        <h5 class="mb-0 text-primary">
+          <i class="fas fa-chart-bar me-2"></i>Booking Frequency Distribution
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="bookingFrequencyChart"></canvas>
+        </div>
+        <div class="text-center mt-3">
+          <div class="chart-legend-item">
+            <span class="legend-color" style="background-color: #e74a3b"></span>
+            <span>Single Booking</span>
+          </div>
+          <div class="chart-legend-item">
+            <span class="legend-color" style="background-color: #f6c23e"></span>
+            <span>2-3 Bookings</span>
+          </div>
+          <div class="chart-legend-item">
+            <span class="legend-color" style="background-color: #4e73df"></span>
+            <span>4-5 Bookings</span>
+          </div>
+          <div class="chart-legend-item">
+            <span class="legend-color" style="background-color: #1cc88a"></span>
+            <span>6+ Bookings</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Client Metrics -->
+<div class="row mb-4">
+  <div class="col-md-3 mb-4">
+    <div class="card border-0 shadow-sm metric-card">
+      <div class="card-body text-center">
+        <div
+          class="rounded-circle bg-primary-soft p-3 mx-auto mb-3"
+          style="width: fit-content"
+        >
+          <i class="fas fa-dollar-sign fa-2x text-primary"></i>
+        </div>
+        <h5 class="card-title">Average Booking Value</h5>
+        <h3 class="mb-0">${{ (avg_booking_value|default(0))|round(2) }}</h3>
+        <p class="text-muted small mb-0">Per booking revenue</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-4">
+    <div class="card border-0 shadow-sm metric-card">
+      <div class="card-body text-center">
+        <div
+          class="rounded-circle bg-success-soft p-3 mx-auto mb-3"
+          style="width: fit-content"
+        >
+          <i class="fas fa-sync-alt fa-2x text-success"></i>
+        </div>
+        <h5 class="card-title">Client Retention Rate</h5>
+        <h3 class="mb-0">{{ (retention_rate|default(0))|round(1) }}%</h3>
+        <p class="text-muted small mb-0">Returning clients</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-4">
+    <div class="card border-0 shadow-sm metric-card">
+      <div class="card-body text-center">
+        <div
+          class="rounded-circle bg-info-soft p-3 mx-auto mb-3"
+          style="width: fit-content"
+        >
+          <i class="fas fa-user-plus fa-2x text-info"></i>
+        </div>
+        <h5 class="card-title">New Client Acquisition</h5>
+        <h3 class="mb-0">{{ new_clients_count|default(0) }}</h3>
+        <p class="text-muted small mb-0">During selected period</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3 mb-4">
+    <div class="card border-0 shadow-sm metric-card">
+      <div class="card-body text-center">
+        <div
+          class="rounded-circle bg-warning-soft p-3 mx-auto mb-3"
+          style="width: fit-content"
+        >
+          <i class="fas fa-calendar-check fa-2x text-warning"></i>
+        </div>
+        <h5 class="card-title">Bookings per Client</h5>
+        <h3 class="mb-0">
+          {{ ((total_bookings|default(0) / (active_clients|default(1)))|round(1)
+          if (active_clients|default(0)) > 0 else 0) }}
+        </h3>
+        <p class="text-muted small mb-0">Average frequency</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Top Clients Section -->
+<div class="row">
+  <!-- Top Clients by Bookings -->
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white">
+        <h5 class="mb-0 text-primary">
+          <i class="fas fa-award me-2"></i>Top Clients by Bookings
+        </h5>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Client</th>
+                <th class="text-center">Bookings</th>
+                <th class="text-end">Total Spent</th>
+                <th class="text-end">Avg. Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for client in top_clients_by_bookings|default([]) %}
+              <tr class="top-client-row">
+                <td>
+                  <div class="d-flex align-items-center">
+                    <div class="me-2">
+                      {% if (client.booking_count|default(0)) >= 6 %}
+                      <span class="badge badge-repeat">Repeat</span>
+                      {% endif %} {% if ((client.total_spent|default(0)) /
+                      (client.booking_count|default(1))) > 300 %}
+                      <span class="badge badge-premium">Premium</span>
+                      {% endif %}
+                    </div>
+                    <div>
+                      <strong
+                        >{{ client.company_name or client.contact_person
+                        }}</strong
+                      >
+                    </div>
+                  </div>
+                </td>
+                <td class="text-center">
+                  {{ client.booking_count|default(0) }}
+                </td>
+                <td class="text-end">
+                  ${{ (client.total_spent|default(0))|round(2) }}
+                </td>
+                <td class="text-end">
+                  ${{ ((client.total_spent|default(0)) /
+                  (client.booking_count|default(1)))|round(2) }}
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="4" class="text-center py-4">
+                  No client data available
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Top Clients by Revenue -->
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white">
+        <h5 class="mb-0 text-primary">
+          <i class="fas fa-trophy me-2"></i>Top Clients by Revenue
+        </h5>
+      </div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-hover mb-0">
+            <thead class="table-light">
+              <tr>
+                <th>Client</th>
+                <th class="text-center">Bookings</th>
+                <th class="text-end">Total Spent</th>
+                <th class="text-end">Avg. Value</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for client in top_clients_by_revenue|default([]) %}
+              <tr class="top-client-row">
+                <td>
+                  <div class="d-flex align-items-center">
+                    <div class="me-2">
+                      {% if (client.booking_count|default(0)) >= 6 %}
+                      <span class="badge badge-repeat">Repeat</span>
+                      {% endif %} {% if ((client.total_spent|default(0)) /
+                      (client.booking_count|default(1))) > 300 %}
+                      <span class="badge badge-premium">Premium</span>
+                      {% endif %}
+                    </div>
+                    <div>
+                      <strong
+                        >{{ client.company_name or client.contact_person
+                        }}</strong
+                      >
+                    </div>
+                  </div>
+                </td>
+                <td class="text-center">
+                  {{ client.booking_count|default(0) }}
+                </td>
+                <td class="text-end">
+                  ${{ (client.total_spent|default(0))|round(2) }}
+                </td>
+                <td class="text-end">
+                  ${{ ((client.total_spent|default(0)) /
+                  (client.booking_count|default(1)))|round(2) }}
+                </td>
+              </tr>
+              {% else %}
+              <tr>
+                <td colspan="4" class="text-center py-4">
+                  No client data available
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Client Trends -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white">
+    <h5 class="mb-0 text-primary">
+      <i class="fas fa-chart-line me-2"></i>Monthly Client Trends
+    </h5>
+  </div>
+  <div class="card-body">
+    <div class="chart-container">
+      <canvas id="clientTrendsChart"></canvas>
+    </div>
+  </div>
+</div>
+
+<!-- Client Segments Analysis -->
+<h5 class="text-primary mb-3">
+  <i class="fas fa-users-cog me-2"></i>Client Segment Analysis
+</h5>
+
+<div class="row">
+  <!-- Premium Clients -->
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm border-0 segment-card segment-premium">
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+          <div
+            class="rounded-circle p-3 me-3"
+            style="background-color: rgba(111, 66, 193, 0.1)"
+          >
+            <i class="fas fa-gem fa-2x text-purple"></i>
+          </div>
+          <div>
+            <h5 class="card-title mb-0">Premium Clients</h5>
+            <div class="text-muted small">High-value customers</div>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4 mb-3">
+            <div class="card bg-light h-100">
+              <div class="card-body text-center py-3">
+                <h6 class="text-muted mb-1">Average Booking Value</h6>
+                <h3>${{ (premium_clients_avg_value|default(0))|round(2) }}</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card bg-light h-100">
+              <div class="card-body text-center py-3">
+                <h6 class="text-muted mb-1">Bookings</h6>
+                <h3>{{ premium_clients_bookings|default(0) }}</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card bg-light h-100">
+              <div class="card-body text-center py-3">
+                <h6 class="text-muted mb-1">% of Revenue</h6>
+                <h3>
+                  {{ ((premium_clients_total|default(0) /
+                  (total_revenue|default(1)) * 100)|round(1) if
+                  (total_revenue|default(0)) > 0 else 0) }}%
+                </h3>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h6 class="mb-2">Premium Client Preferences</h6>
+        <ul class="mb-0">
+          <li>
+            Most popular add-on:
+            <strong
+              >{{ premium_client_preferences.most_popular_addon|default('N/A')
+              if premium_client_preferences else 'N/A' }}</strong
+            >
+          </li>
+          <li>
+            Average add-ons per booking:
+            <strong
+              >{{ premium_client_preferences.avg_addons_per_booking|default(0)
+              if premium_client_preferences else 0 }}</strong
+            >
+          </li>
+          <li>
+            Preferred room:
+            <strong
+              >{{ room_preferences.room_types[2]|default('N/A') if
+              room_preferences and room_preferences.room_types and
+              room_preferences.room_types|length > 2 else 'N/A' }}</strong
+            >
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Repeat Clients -->
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm border-0 segment-card segment-repeat">
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+          <div
+            class="rounded-circle p-3 me-3"
+            style="background-color: rgba(78, 115, 223, 0.1)"
+          >
+            <i class="fas fa-redo fa-2x text-primary"></i>
+          </div>
+          <div>
+            <h5 class="card-title mb-0">Repeat Clients</h5>
+            <div class="text-muted small">3+ bookings in period</div>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4 mb-3">
+            <div class="card bg-light h-100">
+              <div class="card-body text-center py-3">
+                <h6 class="text-muted mb-1">Average Booking Value</h6>
+                <h3>${{ (repeat_clients_avg_value|default(0))|round(2) }}</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card bg-light h-100">
+              <div class="card-body text-center py-3">
+                <h6 class="text-muted mb-1">Bookings</h6>
+                <h3>{{ repeat_clients_bookings|default(0) }}</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card bg-light h-100">
+              <div class="card-body text-center py-3">
+                <h6 class="text-muted mb-1">% of Bookings</h6>
+                <h3>
+                  {{ ((repeat_clients_bookings|default(0) /
+                  (total_bookings|default(1)) * 100)|round(1) if
+                  (total_bookings|default(0)) > 0 else 0) }}%
+                </h3>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h6 class="mb-2">Client Retention</h6>
+        <div class="progress client-progress mb-3">
+          <div
+            class="progress-bar bg-primary"
+            role="progressbar"
+            style="width: {{ retention_rate|default(0) }}%;"
+            aria-valuenow="{{ retention_rate|default(0) }}"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            {{ (retention_rate|default(0))|round(1) }}%
+          </div>
+        </div>
+        <div class="text-muted small">
+          Retention rate for this period based on returning clients
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Clients -->
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm border-0 segment-card segment-new">
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+          <div
+            class="rounded-circle p-3 me-3"
+            style="background-color: rgba(28, 200, 138, 0.1)"
+          >
+            <i class="fas fa-user-plus fa-2x text-success"></i>
+          </div>
+          <div>
+            <h5 class="card-title mb-0">New Clients</h5>
+            <div class="text-muted small">First booking in period</div>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4 mb-3">
+            <div class="card bg-light h-100">
+              <div class="card-body text-center py-3">
+                <h6 class="text-muted mb-1">Average Booking Value</h6>
+                <h3>${{ (new_clients_avg_value|default(0))|round(2) }}</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card bg-light h-100">
+              <div class="card-body text-center py-3">
+                <h6 class="text-muted mb-1">Bookings</h6>
+                <h3>{{ new_clients_bookings|default(0) }}</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card bg-light h-100">
+              <div class="card-body text-center py-3">
+                <h6 class="text-muted mb-1">% of Clients</h6>
+                <h3>
+                  {{ ((new_clients_count|default(0) /
+                  (active_clients|default(1)) * 100)|round(1) if
+                  (active_clients|default(0)) > 0 else 0) }}%
+                </h3>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h6 class="mb-2">New Client Preferences</h6>
+        <ul class="mb-0">
+          <li>
+            Most popular add-on:
+            <strong
+              >{{ new_client_preferences.most_popular_addon|default('N/A') if
+              new_client_preferences else 'N/A' }}</strong
+            >
+          </li>
+          <li>
+            Average add-ons per booking:
+            <strong
+              >{{ new_client_preferences.avg_addons_per_booking|default(0) if
+              new_client_preferences else 0 }}</strong
+            >
+          </li>
+          <li>
+            Preferred room:
+            <strong
+              >{{ room_preferences.room_types[1]|default('N/A') if
+              room_preferences and room_preferences.room_types and
+              room_preferences.room_types|length > 1 else 'N/A' }}</strong
+            >
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- At-Risk Clients -->
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm border-0 segment-card segment-risk">
+      <div class="card-body">
+        <div class="d-flex align-items-center mb-3">
+          <div
+            class="rounded-circle p-3 me-3"
+            style="background-color: rgba(231, 74, 59, 0.1)"
+          >
+            <i class="fas fa-user-clock fa-2x text-danger"></i>
+          </div>
+          <div>
+            <h5 class="card-title mb-0">At-Risk Clients</h5>
+            <div class="text-muted small">No recent bookings (90+ days)</div>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-md-4 mb-3">
+            <div class="card bg-light h-100">
+              <div class="card-body text-center py-3">
+                <h6 class="text-muted mb-1">Historical Value</h6>
+                <h3>${{ (at_risk_clients_avg_value|default(0))|round(2) }}</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card bg-light h-100">
+              <div class="card-body text-center py-3">
+                <h6 class="text-muted mb-1">Past Bookings</h6>
+                <h3>{{ at_risk_clients_bookings|default(0) }}</h3>
+              </div>
+            </div>
+          </div>
+          <div class="col-md-4 mb-3">
+            <div class="card bg-light h-100">
+              <div class="card-body text-center py-3">
+                <h6 class="text-muted mb-1">% of Inactive</h6>
+                <h3>
+                  {{ ((at_risk_clients_count|default(0) /
+                  (active_clients|default(1)) * 100)|round(1) if
+                  (active_clients|default(0)) > 0 else 0) }}%
+                </h3>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <h6 class="mb-2">Reactivation Potential</h6>
+        <div class="d-flex align-items-center">
+          <div class="flex-grow-1 me-3">
+            <div class="progress client-progress">
+              <div
+                class="progress-bar bg-danger"
+                role="progressbar"
+                style="width: 65%"
+                aria-valuenow="65"
+                aria-valuemin="0"
+                aria-valuemax="100"
+              >
+                65%
+              </div>
+            </div>
+          </div>
+          <div>
+            <button class="btn btn-sm btn-outline-danger">
+              <i class="fas fa-paper-plane me-1"></i>Send Reminder
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Room and Add-on Preferences -->
+<div class="row">
+  <!-- Room Preferences -->
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white">
+        <h5 class="mb-0 text-primary">
+          <i class="fas fa-door-open me-2"></i>Room Preferences by Client
+          Segment
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="roomPreferencesChart"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add-on Preferences -->
+  <div class="col-lg-6 mb-4">
+    <div class="card shadow-sm border-0 h-100">
+      <div class="card-header bg-white">
+        <h5 class="mb-0 text-primary">
+          <i class="fas fa-plus-circle me-2"></i>Add-on Popularity & Revenue
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="chart-container">
+          <canvas id="addonPreferencesChart"></canvas>
+        </div>
+        <div class="table-responsive mt-3">
+          <table class="table table-sm">
+            <thead class="table-light">
+              <tr>
+                <th>Add-on Category</th>
+                <th>Popularity</th>
+                <th class="text-end">Revenue</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for addon in addon_preferences|default([]) %}
+              <tr>
+                <td>{{ addon.name|default('N/A') }}</td>
+                <td>
+                  <div class="progress" style="height: 6px">
+                    <div
+                      class="progress-bar"
+                      role="progressbar"
+                      style="width: {{ addon.popularity|default(0) }}%;"
+                      aria-valuenow="{{ addon.popularity|default(0) }}"
+                      aria-valuemin="0"
+                      aria-valuemax="100"
+                    ></div>
+                  </div>
+                  <span class="small">{{ addon.popularity|default(0) }}%</span>
+                </td>
+                <td class="text-end">${{ addon.revenue|default(0) }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Client Retention Analysis -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white">
+    <h5 class="mb-0 text-primary">
+      <i class="fas fa-chart-area me-2"></i>Client Retention Analysis
+    </h5>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      <div class="col-lg-7">
+        <div class="chart-container">
+          <canvas id="retentionChart"></canvas>
+        </div>
+      </div>
+      <div class="col-lg-5">
+        <h6 class="mb-3">Retention Insights</h6>
+        <ul>
+          <li>
+            <strong>Short-term retention (< 1 month):</strong>
+            <span class="text-success"
+              >{{ retention_data.less_than_1_month|default(0) if retention_data
+              else 0 }}%</span
+            >
+            - Strong immediate follow-up bookings
+          </li>
+          <li>
+            <strong>Medium-term retention (1-3 months):</strong>
+            <span class="text-primary"
+              >{{ retention_data.one_to_3_months|default(0) if retention_data
+              else 0 }}%</span
+            >
+            - Good quarterly repeat business
+          </li>
+          <li>
+            <strong>Long-term retention (3-6 months):</strong>
+            <span class="text-warning"
+              >{{ retention_data.three_to_6_months|default(0) if retention_data
+              else 0 }}%</span
+            >
+            - Moderate semi-annual returns
+          </li>
+          <li>
+            <strong>Extended retention (6-12 months):</strong>
+            <span class="text-danger"
+              >{{ retention_data.six_to_12_months|default(0) if retention_data
+              else 0 }}%</span
+            >
+            - Area for improvement
+          </li>
+          <li>
+            <strong>Annual retention (12+ months):</strong>
+            <span class="text-danger"
+              >{{ retention_data.more_than_12_months|default(0) if
+              retention_data else 0 }}%</span
+            >
+            - Significant opportunity for loyalty programs
+          </li>
+        </ul>
+        <div class="alert alert-info mt-3">
+          <i class="fas fa-info-circle me-2"></i>
+          <strong>Retention Opportunity:</strong> Target clients in the 3-6
+          month range with personalized offers to improve long-term retention.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Recommendations -->
+<div class="card shadow-sm border-0 recommendation-card mt-4">
+  <div class="card-header bg-white">
+    <h5 class="mb-0 text-primary">
+      <i class="fas fa-lightbulb me-2"></i>Client Insights & Recommendations
+    </h5>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-6">
+        <h6 class="mb-3">Key Insights</h6>
+        <ul>
+          <li>
+            <strong>Client Distribution:</strong> {{
+            ((premium_clients_count|default(0) / (active_clients|default(1)) *
+            100)|round(1) if (active_clients|default(0)) > 0 else 0) }}% of
+            clients are premium, generating {{
+            ((premium_clients_total|default(0) / (total_revenue|default(1)) *
+            100)|round(1) if (total_revenue|default(0)) > 0 else 0) }}% of total
+            revenue
+          </li>
+          <li>
+            <strong>Booking Patterns:</strong> The average client makes {{
+            ((total_bookings|default(0) / (active_clients|default(1)))|round(1)
+            if (active_clients|default(0)) > 0 else 0) }} bookings per period
+            with an average value of ${{ (avg_booking_value|default(0))|round(2)
+            }}
+          </li>
+          <li>
+            <strong>Add-on Preferences:</strong>
+            <strong
+              >{{ highest_revenue_addon.name|default('N/A') if
+              highest_revenue_addon else 'N/A' }}</strong
+            >
+            is the highest revenue-generating add-on service at ${{
+            highest_revenue_addon.revenue|default(0) if highest_revenue_addon
+            else 0 }}
+          </li>
+          <li>
+            <strong>Room Popularity:</strong> Premium clients strongly prefer
+            the
+            <strong
+              >{{ room_preferences.room_types[2]|default('N/A') if
+              room_preferences and room_preferences.room_types and
+              room_preferences.room_types|length > 2 else 'N/A' }}</strong
+            >, while regular clients favor the
+            <strong
+              >{{ room_preferences.room_types[0]|default('N/A') if
+              room_preferences and room_preferences.room_types and
+              room_preferences.room_types|length > 0 else 'N/A' }}</strong
+            >
+          </li>
+          <li>
+            <strong>Client Acquisition:</strong> {{ new_clients_count|default(0)
+            }} new clients were acquired during this period, with an average
+            booking value of ${{ (new_clients_avg_value|default(0))|round(2) }}
+          </li>
+        </ul>
+      </div>
+
+      <div class="col-md-6">
+        <h6 class="mb-3">Strategic Recommendations</h6>
+        <ul>
+          <li>
+            <strong>Premium Client Retention:</strong> Develop a VIP program
+            offering priority booking and exclusive services for clients with
+            average bookings over $300
+          </li>
+          <li>
+            <strong>Re-engagement Campaign:</strong> Target the {{
+            at_risk_clients_count|default(0) }} at-risk clients with
+            personalized offers based on their past booking preferences
+          </li>
+          <li>
+            <strong>Add-on Growth:</strong> Promote
+            <strong
+              >{{ underutilized_addon.name|default('N/A') if underutilized_addon
+              else 'N/A' }}</strong
+            >
+            add-on service which has high satisfaction ({{
+            underutilized_addon.satisfaction_rate|default(0) if
+            underutilized_addon else 0 }}%) but low utilization ({{
+            underutilized_addon.current_utilization|default(0) if
+            underutilized_addon else 0 }}%)
+          </li>
+          <li>
+            <strong>Client Segment Focus:</strong> Implement tiered pricing and
+            packages specific to each client segment based on their booking
+            patterns and preferences
+          </li>
+          <li>
+            <strong>Loyalty Program:</strong> Develop a structured loyalty
+            program to improve retention beyond the 6-month mark, which
+            currently drops to {{ retention_data.six_to_12_months|default(0) if
+            retention_data else 0 }}%
+          </li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize date pickers
+    flatpickr('.datepicker', {
+      dateFormat: "Y-m-d",
+      maxDate: "today"
+    });
+
+    // Set up chart color schemes
+    const colorScheme = {
+      primary: '#4e73df',
+      success: '#1cc88a',
+      info: '#36b9cc',
+      warning: '#f6c23e',
+      danger: '#e74a3b',
+      purple: '#6f42c1',
+      primaryLight: '#4e73df40',
+      successLight: '#1cc88a40',
+      infoLight: '#36b9cc40',
+      warningLight: '#f6c23e40',
+      dangerLight: '#e74a3b40',
+      purpleLight: '#6f42c140'
+    };
+
+    // Client Segments Chart
+    const clientSegmentsCtx = document.getElementById('clientSegmentsChart').getContext('2d');
+    new Chart(clientSegmentsCtx, {
+      type: 'pie',
+      data: {
+        labels: ['Premium Clients', 'Repeat Clients', 'New Clients', 'At-Risk Clients'],
+        datasets: [{
+          data: [
+            {{ premium_clients_count|default(0) }},
+            {{ (repeat_clients_count|default(0)) - (premium_clients_count|default(0)) }}, // Adjust to avoid double counting
+            {{ new_clients_count|default(0) }},
+            {{ at_risk_clients_count|default(0) }}
+          ],
+          backgroundColor: [colorScheme.purple, colorScheme.primary, colorScheme.success, colorScheme.danger],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.raw;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                return `${label}: ${value} (${percentage}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Booking Frequency Chart
+    const bookingFrequencyCtx = document.getElementById('bookingFrequencyChart').getContext('2d');
+    new Chart(bookingFrequencyCtx, {
+      type: 'bar',
+      data: {
+        labels: ['1 Booking', '2-3 Bookings', '4-5 Bookings', '6+ Bookings'],
+        datasets: [{
+          label: 'Number of Clients',
+          data: [
+            {{ booking_frequency.one_booking|default(0) if booking_frequency else 0 }},
+            {{ booking_frequency.two_to_three|default(0) if booking_frequency else 0 }},
+            {{ booking_frequency.four_to_five|default(0) if booking_frequency else 0 }},
+            {{ booking_frequency.six_plus|default(0) if booking_frequency else 0 }}
+          ],
+          backgroundColor: [
+            colorScheme.dangerLight,
+            colorScheme.warningLight,
+            colorScheme.primaryLight,
+            colorScheme.successLight
+          ],
+          borderColor: [
+            colorScheme.danger,
+            colorScheme.warning,
+            colorScheme.primary,
+            colorScheme.success
+          ],
+          borderWidth: 1
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Number of Clients'
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          }
+        }
+      }
+    });
+
+    // Monthly Client Trends Chart
+    const clientTrendsCtx = document.getElementById('clientTrendsChart').getContext('2d');
+    new Chart(clientTrendsCtx, {
+      type: 'line',
+      data: {
+        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+        datasets: [
+          {
+            label: 'New Clients',
+            data: {{ monthly_trends.new_clients|default([0,0,0,0,0,0,0,0,0,0,0,0])|tojson if monthly_trends else [0,0,0,0,0,0,0,0,0,0,0,0]|tojson }},
+            borderColor: colorScheme.success,
+            backgroundColor: colorScheme.successLight,
+            pointBackgroundColor: colorScheme.success,
+            tension: 0.4,
+            fill: true
+          },
+          {
+            label: 'Returning Clients',
+            data: {{ monthly_trends.returning_clients|default([0,0,0,0,0,0,0,0,0,0,0,0])|tojson if monthly_trends else [0,0,0,0,0,0,0,0,0,0,0,0]|tojson }},
+            borderColor: colorScheme.primary,
+            backgroundColor: colorScheme.primaryLight,
+            pointBackgroundColor: colorScheme.primary,
+            tension: 0.4,
+            fill: true
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Number of Clients'
+            }
+          }
+        },
+        plugins: {
+          tooltip: {
+            mode: 'index',
+            intersect: false
+          }
+        }
+      }
+    });
+
+    // Room Preferences Chart
+    const roomPreferencesCtx = document.getElementById('roomPreferencesChart').getContext('2d');
+    new Chart(roomPreferencesCtx, {
+      type: 'bar',
+      data: {
+        labels: {{ room_preferences.room_types|default([])|tojson if room_preferences else []|tojson }},
+        datasets: [
+          {
+            label: 'Premium Clients',
+            data: {{ room_preferences.premium_clients|default([])|tojson if room_preferences else []|tojson }},
+            backgroundColor: colorScheme.purpleLight,
+            borderColor: colorScheme.purple,
+            borderWidth: 1
+          },
+          {
+            label: 'Regular Clients',
+            data: {{ room_preferences.regular_clients|default([])|tojson if room_preferences else []|tojson }},
+            backgroundColor: colorScheme.primaryLight,
+            borderColor: colorScheme.primary,
+            borderWidth: 1
+          },
+          {
+            label: 'New Clients',
+            data: {{ room_preferences.new_clients|default([])|tojson if room_preferences else []|tojson }},
+            backgroundColor: colorScheme.successLight,
+            borderColor: colorScheme.success,
+            borderWidth: 1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Booking Frequency'
+            }
+          }
+        }
+      }
+    });
+
+    // Add-on Preferences Chart
+    const addonPreferencesCtx = document.getElementById('addonPreferencesChart').getContext('2d');
+    new Chart(addonPreferencesCtx, {
+      type: 'scatter',
+      data: {
+        datasets: [{
+          label: 'Add-on Categories',
+          data: [
+            {% for addon in addon_preferences|default([]) %}
+            {
+              x: {{ addon.popularity|default(0) }},
+              y: {{ addon.revenue|default(0) }},
+              category: "{{ addon.name|default('N/A') }}"
+            },
+            {% endfor %}
+          ],
+          backgroundColor: [
+            colorScheme.primary,
+            colorScheme.success,
+            colorScheme.info,
+            colorScheme.warning,
+            colorScheme.danger
+          ],
+          pointRadius: 10,
+          pointHoverRadius: 15
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Popularity (%)'
+            },
+            min: 0,
+            max: 100
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Revenue ($)'
+            },
+            beginAtZero: true
+          }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const point = context.raw;
+                return `${point.category}: ${point.x}% popularity, ${point.y} revenue`;
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Retention Chart
+    const retentionCtx = document.getElementById('retentionChart').getContext('2d');
+    new Chart(retentionCtx, {
+      type: 'line',
+      data: {
+        labels: ['< 1 month', '1-3 months', '3-6 months', '6-12 months', '12+ months'],
+        datasets: [{
+          label: 'Retention Rate (%)',
+          data: [
+            {{ retention_data.less_than_1_month|default(0) if retention_data else 0 }},
+            {{ retention_data.one_to_3_months|default(0) if retention_data else 0 }},
+            {{ retention_data.three_to_6_months|default(0) if retention_data else 0 }},
+            {{ retention_data.six_to_12_months|default(0) if retention_data else 0 }},
+            {{ retention_data.more_than_12_months|default(0) if retention_data else 0 }}
+          ],
+          borderColor: colorScheme.primary,
+          backgroundColor: colorScheme.primaryLight,
+          tension: 0.4,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 100,
+            title: {
+              display: true,
+              text: 'Retention Rate (%)'
+            }
+          }
+        }
+      }
+    });
+  });
+</script>
+{% endblock %}

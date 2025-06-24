@@ -1,0 +1,553 @@
+{% extends "layout.html" %} {% block title %}Room Utilization Report | Rainbow
+Towers Conference Booking{% endblock %} {% block extra_css %}
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+/>
+<style>
+  .date-range-form .form-control {
+    border-right: none;
+  }
+
+  .date-range-form .input-group-text {
+    background-color: #fff;
+    border-left: none;
+  }
+
+  .utilization-card {
+    border-left: 4px solid;
+    transition: all 0.2s;
+  }
+
+  .utilization-card:hover {
+    transform: translateY(-5px);
+  }
+
+  .utilization-high {
+    border-color: #1cc88a;
+  }
+
+  .utilization-medium {
+    border-color: #f6c23e;
+  }
+
+  .utilization-low {
+    border-color: #e74a3b;
+  }
+
+  .progress {
+    height: 1.5rem;
+  }
+
+  .progress-bar {
+    transition: width 1s ease-in-out;
+  }
+
+  .badge-hours {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    font-size: 0.8rem;
+  }
+
+  .chart-container {
+    position: relative;
+    height: 350px;
+  }
+
+  .chart-legend-item {
+    display: inline-flex;
+    align-items: center;
+    margin-right: 1rem;
+  }
+
+  .legend-color {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    margin-right: 5px;
+    border-radius: 2px;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1>
+    <i class="fas fa-chart-pie text-primary me-2"></i>Room Utilization Report
+  </h1>
+  <a href="{{ url_for('reports') }}" class="btn btn-outline-secondary">
+    <i class="fas fa-arrow-left me-1"></i>Back to Reports
+  </a>
+</div>
+
+<!-- Date Range Selection -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-body">
+    <form
+      method="GET"
+      action="{{ url_for('room_utilization_report') }}"
+      class="row g-3 align-items-end"
+    >
+      <div class="col-md-4">
+        <label class="form-label">Start Date</label>
+        <div class="input-group date-range-form">
+          <input
+            type="text"
+            class="form-control datepicker"
+            name="start_date"
+            value="{{ start_date.strftime('%Y-%m-%d') if start_date else '' }}"
+            placeholder="Select start date"
+          />
+          <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">End Date</label>
+        <div class="input-group date-range-form">
+          <input
+            type="text"
+            class="form-control datepicker"
+            name="end_date"
+            value="{{ end_date.strftime('%Y-%m-%d') if end_date else '' }}"
+            placeholder="Select end date"
+          />
+          <span class="input-group-text"><i class="fas fa-calendar"></i></span>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <button type="submit" class="btn btn-primary w-100">
+          <i class="fas fa-filter me-1"></i>Generate Report
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row mb-4">
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-primary shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div
+              class="text-xs font-weight-bold text-primary text-uppercase mb-1"
+            >
+              Date Range
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800">
+              {{ start_date.strftime('%d %b') }} - {{ end_date.strftime('%d %b
+              %Y') }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-calendar fa-2x text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-success shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div
+              class="text-xs font-weight-bold text-success text-uppercase mb-1"
+            >
+              Avg Utilization Rate
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800">
+              {% set total_util = 0 %} {% for data in utilization_data %} {% set
+              total_util = total_util + data.utilization_pct %} {% endfor %} {{
+              (total_util / utilization_data|length)|round(1) }}%
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-percentage fa-2x text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-info shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
+              Most Utilized Room
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800">
+              {% set highest_util = {'room': 'None', 'pct': 0} %} {% for data in
+              utilization_data %} {% if data.utilization_pct > highest_util.pct
+              %} {% set _ = highest_util.update({'room': data.room.name, 'pct':
+              data.utilization_pct}) %} {% endif %} {% endfor %} {{
+              highest_util.room }}
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-trophy fa-2x text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-xl-3 col-md-6 mb-4">
+    <div class="card border-left-warning shadow h-100 py-2">
+      <div class="card-body">
+        <div class="row no-gutters align-items-center">
+          <div class="col mr-2">
+            <div
+              class="text-xs font-weight-bold text-warning text-uppercase mb-1"
+            >
+              Total Booked Hours
+            </div>
+            <div class="h5 mb-0 font-weight-bold text-gray-800">
+              {% set total_hours = 0 %} {% for data in utilization_data %} {%
+              set total_hours = total_hours + data.booked_hours %} {% endfor %}
+              {{ total_hours|round(1) }} hours
+            </div>
+          </div>
+          <div class="col-auto">
+            <i class="fas fa-clock fa-2x text-gray-300"></i>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Utilization Chart -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white">
+    <h5 class="mb-0 text-primary">
+      <i class="fas fa-chart-bar me-2"></i>Room Utilization Comparison
+    </h5>
+  </div>
+  <div class="card-body">
+    <div class="chart-container">
+      <canvas id="utilizationChart"></canvas>
+    </div>
+    <div class="text-center mt-3">
+      <div class="chart-legend-item">
+        <span class="legend-color" style="background-color: #4e73df"></span>
+        <span>Available Hours</span>
+      </div>
+      <div class="chart-legend-item">
+        <span class="legend-color" style="background-color: #1cc88a"></span>
+        <span>Booked Hours</span>
+      </div>
+      <div class="chart-legend-item">
+        <span class="legend-color" style="background-color: #36b9cc"></span>
+        <span>Utilization %</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Detailed Utilization Data -->
+<div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-white">
+    <h5 class="mb-0 text-primary">
+      <i class="fas fa-table me-2"></i>Detailed Utilization Data
+    </h5>
+  </div>
+  <div class="card-body p-0">
+    <div class="table-responsive">
+      <table class="table table-hover mb-0">
+        <thead class="table-light">
+          <tr>
+            <th>Room</th>
+            <th>Capacity</th>
+            <th>Booked Hours</th>
+            <th>Available Hours</th>
+            <th>Utilization Rate</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for data in utilization_data %}
+          <tr>
+            <td>
+              <strong>{{ data.room.name }}</strong>
+            </td>
+            <td>{{ data.room.capacity }} people</td>
+            <td>{{ data.booked_hours|round(1) }} hours</td>
+            <td>{{ data.total_available_hours }} hours</td>
+            <td>
+              <div class="d-flex align-items-center">
+                <div class="progress flex-grow-1 me-2">
+                  <div
+                    class="progress-bar {% if data.utilization_pct >= 70 %}bg-success{% elif data.utilization_pct >= 40 %}bg-warning{% else %}bg-danger{% endif %}"
+                    role="progressbar"
+                    style="width: {{ data.utilization_pct }}%;"
+                    aria-valuenow="{{ data.utilization_pct }}"
+                    aria-valuemin="0"
+                    aria-valuemax="100"
+                  >
+                    {{ data.utilization_pct }}%
+                  </div>
+                </div>
+              </div>
+            </td>
+            <td>
+              <span
+                class="badge bg-{% if data.utilization_pct >= 70 %}success{% elif data.utilization_pct >= 40 %}warning{% else %}danger{% endif %}"
+              >
+                {% if data.utilization_pct >= 70 %}High{% elif
+                data.utilization_pct >= 40 %}Medium{% else %}Low{% endif %}
+              </span>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Room Utilization Cards -->
+<h5 class="text-primary mb-3">
+  <i class="fas fa-chart-pie me-2"></i>Room Utilization Breakdown
+</h5>
+
+<div class="row">
+  {% for data in utilization_data %}
+  <div class="col-lg-6 col-xl-4 mb-4">
+    <div
+      class="card shadow-sm border-0 utilization-card {% if data.utilization_pct >= 70 %}utilization-high{% elif data.utilization_pct >= 40 %}utilization-medium{% else %}utilization-low{% endif %}"
+    >
+      <div class="card-body position-relative">
+        <span class="badge bg-primary badge-hours"
+          >{{ data.booked_hours|round(1) }} hours</span
+        >
+        <h5 class="card-title mb-1">{{ data.room.name }}</h5>
+        <div class="text-muted small mb-3">
+          Capacity: {{ data.room.capacity }} people
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="small">Utilization Rate:</span>
+          <span class="fw-bold">{{ data.utilization_pct }}%</span>
+        </div>
+        <div class="progress mb-3">
+          <div
+            class="progress-bar {% if data.utilization_pct >= 70 %}bg-success{% elif data.utilization_pct >= 40 %}bg-warning{% else %}bg-danger{% endif %}"
+            role="progressbar"
+            style="width: {{ data.utilization_pct }}%;"
+            aria-valuenow="{{ data.utilization_pct }}"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            {{ data.utilization_pct }}%
+          </div>
+        </div>
+
+        <div class="d-flex justify-content-between small text-muted">
+          <span>{{ data.booked_hours|round(1) }} booked hours</span>
+          <span>{{ data.total_available_hours }} available hours</span>
+        </div>
+      </div>
+      <div class="card-footer bg-white border-0">
+        <a
+          href="{{ url_for('calendar') }}?room={{ data.room.id }}"
+          class="btn btn-sm btn-outline-primary"
+        >
+          <i class="fas fa-calendar-alt me-1"></i>View Calendar
+        </a>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Recommendations -->
+<div class="card shadow-sm border-0 mt-4">
+  <div class="card-header bg-white">
+    <h5 class="mb-0 text-primary">
+      <i class="fas fa-lightbulb me-2"></i>Recommendations
+    </h5>
+  </div>
+  <div class="card-body">
+    <div class="row">
+      <div class="col-md-6">
+        <h6 class="mb-3">Low Utilization Rooms</h6>
+        <ul class="list-group mb-4">
+          {% set low_util_count = 0 %} {% for data in utilization_data %} {% if
+          data.utilization_pct < 40 %} {% set low_util_count = low_util_count +
+          1 %}
+          <li
+            class="list-group-item d-flex justify-content-between align-items-center"
+          >
+            {{ data.room.name }}
+            <span class="badge bg-danger rounded-pill"
+              >{{ data.utilization_pct }}%</span
+            >
+          </li>
+          {% endif %} {% endfor %} {% if low_util_count == 0 %}
+          <li class="list-group-item text-muted">
+            No rooms with low utilization.
+          </li>
+          {% endif %}
+        </ul>
+
+        <h6>Suggestions for Low-Utilization Rooms:</h6>
+        <ul>
+          <li>Consider promotional rates during low-demand periods</li>
+          <li>Offer bundled packages with popular add-ons</li>
+          <li>Target marketing to new client segments</li>
+          <li>Evaluate room amenities and features</li>
+        </ul>
+      </div>
+
+      <div class="col-md-6">
+        <h6 class="mb-3">High Utilization Rooms</h6>
+        <ul class="list-group mb-4">
+          {% set high_util_count = 0 %} {% for data in utilization_data %} {% if
+          data.utilization_pct >= 70 %} {% set high_util_count = high_util_count
+          + 1 %}
+          <li
+            class="list-group-item d-flex justify-content-between align-items-center"
+          >
+            {{ data.room.name }}
+            <span class="badge bg-success rounded-pill"
+              >{{ data.utilization_pct }}%</span
+            >
+          </li>
+          {% endif %} {% endfor %} {% if high_util_count == 0 %}
+          <li class="list-group-item text-muted">
+            No rooms with high utilization.
+          </li>
+          {% endif %}
+        </ul>
+
+        <h6>Recommendations for High-Demand Rooms:</h6>
+        <ul>
+          <li>Consider adjusting pricing to optimize revenue</li>
+          <li>Evaluate if similar rooms could be added</li>
+          <li>Identify the features that make these rooms popular</li>
+          <li>Implement premium booking options for guaranteed availability</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize date pickers
+    flatpickr('.datepicker', {
+      dateFormat: "Y-m-d",
+      maxDate: "today"
+    });
+
+    // Initialize charts
+    const ctx = document.getElementById('utilizationChart').getContext('2d');
+
+    // Prepare data for chart
+    const roomNames = [{% for data in utilization_data %}'{{ data.room.name }}',{% endfor %}];
+    const bookedHours = [{% for data in utilization_data %}{{ data.booked_hours|round(1) }},{% endfor %}];
+    const availableHours = [{% for data in utilization_data %}{{ data.total_available_hours }},{% endfor %}];
+    const utilizationRates = [{% for data in utilization_data %}{{ data.utilization_pct }},{% endfor %}];
+
+    new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: roomNames,
+        datasets: [
+          {
+            label: 'Available Hours',
+            data: availableHours,
+            backgroundColor: '#4e73df40',
+            borderColor: '#4e73df',
+            borderWidth: 1,
+            order: 3
+          },
+          {
+            label: 'Booked Hours',
+            data: bookedHours,
+            backgroundColor: '#1cc88a40',
+            borderColor: '#1cc88a',
+            borderWidth: 1,
+            order: 2
+          },
+          {
+            label: 'Utilization %',
+            data: utilizationRates,
+            type: 'line',
+            borderColor: '#36b9cc',
+            borderWidth: 2,
+            pointBackgroundColor: '#36b9cc',
+            pointRadius: 4,
+            lineTension: 0.3,
+            fill: false,
+            order: 1,
+            yAxisID: 'percentage'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: {
+            grid: {
+              display: false
+            }
+          },
+          y: {
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Hours'
+            }
+          },
+          percentage: {
+            position: 'right',
+            beginAtZero: true,
+            max: 100,
+            title: {
+              display: true,
+              text: 'Utilization %'
+            },
+            grid: {
+              display: false
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.dataset.label || '';
+                const value = context.parsed.y;
+
+                if (label === 'Utilization %') {
+                  return `${label}: ${value}%`;
+                }
+                return `${label}: ${value} hours`;
+              }
+            }
+          }
+        }
+      }
+    });
+
+    // Animation for progress bars
+    const progressBars = document.querySelectorAll('.progress-bar');
+    setTimeout(() => {
+      progressBars.forEach(bar => {
+        bar.style.width = bar.getAttribute('aria-valuenow') + '%';
+      });
+    }, 200);
+  });
+</script>
+{% endblock %}

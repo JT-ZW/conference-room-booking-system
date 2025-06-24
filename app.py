@@ -33,15 +33,20 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 
-# Enhanced Flask configuration for CSRF
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-key-change-in-production-' + str(datetime.now().timestamp()))
-app.config['WTF_CSRF_ENABLED'] = True
-app.config['WTF_CSRF_TIME_LIMIT'] = 3600  # 1 hour
-app.config['WTF_CSRF_SSL_STRICT'] = False  # For development
-app.config['SESSION_COOKIE_SECURE'] = False  # For development (set to True in production with HTTPS)
+# Enhanced Flask configuration for production
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'fallback-key-change-in-production-' + str(datetime.now().timestamp()))
+
+# Session configuration - FIXED FOR PRODUCTION
+app.config['SESSION_COOKIE_SECURE'] = False  # IMPORTANT: Changed to False
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=24)
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)  # Changed to 1 hour
+app.config['SESSION_REFRESH_EACH_REQUEST'] = True
+
+# CSRF configuration - FIXED FOR PRODUCTION
+app.config['WTF_CSRF_ENABLED'] = True
+app.config['WTF_CSRF_TIME_LIMIT'] = 3600
+app.config['WTF_CSRF_SSL_STRICT'] = False  # IMPORTANT: Changed to False
 
 # Supabase Configuration
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
@@ -84,6 +89,27 @@ def csrf_error(e):
 def inject_now():
     """Inject the current datetime into templates."""
     return {'now': datetime.now(UTC)}
+
+@app.before_request
+def validate_session():
+    """Simplified session validation for production"""
+    # Skip validation for static files and auth routes
+    if (request.endpoint and 
+        (request.endpoint.startswith('static') or 
+         request.endpoint in ['login', 'logout', 'debug'] or
+         request.path.startswith('/static/'))):
+        return
+    
+    # Add debug logging
+    print(f"DEBUG: Route: {request.endpoint}, Authenticated: {current_user.is_authenticated}")
+    
+    # If user is authenticated but no supabase session, log them out
+    if current_user.is_authenticated and 'supabase_session' not in session:
+        print("DEBUG: No supabase_session found, logging out")
+        logout_user()
+        session.clear()
+        flash('Session expired. Please log in again.', 'warning')
+        return redirect(url_for('login'))
 
 @app.template_filter('parse_datetime')
 def parse_datetime_filter(date_string):
@@ -171,25 +197,42 @@ def load_user(user_id):
         return None
 
 def authenticate_user(email, password):
-    """Authenticate user with Supabase"""
+    """Authenticate user with Supabase and set up session properly"""
     try:
+        print(f"DEBUG: Attempting to authenticate user: {email}")
+        
         response = supabase.auth.sign_in_with_password({
             "email": email,
             "password": password
         })
         
-        if response.user:
+        if response.user and response.session:
+            print(f"DEBUG: Supabase authentication successful")
+            
+            # Clear any existing session data first
+            session.clear()
+            
+            # IMPORTANT: Set session as permanent
+            session.permanent = True
+            
             session['supabase_session'] = {
                 'access_token': response.session.access_token,
                 'refresh_token': response.session.refresh_token,
                 'user_id': response.user.id
             }
+            session['created_at'] = datetime.now(UTC).isoformat()
+            session['user_id'] = response.user.id  # Add this for Flask-Login
+            
+            print(f"DEBUG: Session created successfully")
             return User(response.user.__dict__)
-        return None
+        else:
+            print("DEBUG: Authentication failed - no user or session")
+            return None
+            
     except Exception as e:
-        print(f"Authentication error: {e}")
+        print(f"DEBUG: Authentication error: {e}")
         return None
-
+    
 def create_user_supabase(email, password, first_name, last_name, role='staff'):
     """Create new user in Supabase"""
     try:
@@ -2807,6 +2850,7 @@ def client_analysis_report():
         flash(f'Error generating client analysis report: {str(e)}', 'danger')
         return redirect(url_for('reports'))
 
+
 @app.route('/reports/revenue')
 @login_required
 def revenue_report():
@@ -3492,6 +3536,18 @@ def debug_test_update(room_id):
             'message': f'Error testing update for room {room_id}'
         })
 
+@app.route('/debug')
+def debug_info():
+    """Debug endpoint to check session status"""
+    return jsonify({
+        'authenticated': current_user.is_authenticated,
+        'user_id': getattr(current_user, 'id', None),
+        'session_keys': list(session.keys()),
+        'has_supabase_session': 'supabase_session' in session,
+        'secret_key_set': bool(app.config.get('SECRET_KEY')),
+        'session_permanent': session.permanent if hasattr(session, 'permanent') else False,
+        'environment': os.environ.get('FLASK_ENV', 'development')
+    })
 # ===============================
 # Error Handlers
 # ===============================

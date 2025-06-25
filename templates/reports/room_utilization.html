@@ -16,11 +16,13 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
 
   .utilization-card {
     border-left: 4px solid;
-    transition: all 0.2s;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
   }
 
   .utilization-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-3px);
+    box-shadow: 0 0.25rem 2rem 0 rgba(58, 59, 69, 0.2);
   }
 
   .utilization-high {
@@ -41,6 +43,12 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
 
   .progress-bar {
     transition: width 1s ease-in-out;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: white;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.3);
   }
 
   .badge-hours {
@@ -52,13 +60,14 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
 
   .chart-container {
     position: relative;
-    height: 350px;
+    height: 400px;
   }
 
   .chart-legend-item {
     display: inline-flex;
     align-items: center;
-    margin-right: 1rem;
+    margin-right: 1.5rem;
+    margin-bottom: 0.5rem;
   }
 
   .legend-color {
@@ -68,19 +77,89 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     margin-right: 5px;
     border-radius: 2px;
   }
+
+  .debug-info {
+    background-color: #f8f9fc;
+    border: 1px solid #e3e6f0;
+    border-radius: 0.35rem;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    color: #5a5c69;
+  }
+
+  .stats-card {
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .stats-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+  }
+
+  .empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+  }
+
+  .recommendations-section {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+
+  .recommendations-section .card {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    backdrop-filter: blur(10px);
+  }
 </style>
 {% endblock %} {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h1>
     <i class="fas fa-chart-pie text-primary me-2"></i>Room Utilization Report
   </h1>
-  <a href="{{ url_for('reports') }}" class="btn btn-outline-secondary">
-    <i class="fas fa-arrow-left me-1"></i>Back to Reports
-  </a>
+  <div>
+    <a href="{{ url_for('reports') }}" class="btn btn-outline-secondary me-2">
+      <i class="fas fa-arrow-left me-1"></i>Back to Reports
+    </a>
+    <button class="btn btn-primary" onclick="window.print()">
+      <i class="fas fa-print me-1"></i>Print Report
+    </button>
+  </div>
 </div>
+
+<!-- Debug Information (only shown in development or with debug parameter) -->
+{% if config.DEBUG or request.args.get('debug') %}
+<div class="debug-info">
+  <strong><i class="fas fa-bug me-1"></i>Debug Info:</strong>
+  Rooms loaded: {{ utilization_data|length if utilization_data else 0 }} | Date
+  range: {{ start_date.strftime('%Y-%m-%d') if start_date else 'None' }} to {{
+  end_date.strftime('%Y-%m-%d') if end_date else 'None' }} | Total revenue: ${{
+  summary.total_revenue if summary else 0 }} | Template render time: {{
+  moment().format('YYYY-MM-DD HH:mm:ss') if moment else now.strftime('%Y-%m-%d
+  %H:%M:%S') }}
+  <br />
+  <small class="text-muted">
+    Data integrity: {% if utilization_data %}✅ Room data loaded{% else %}❌ No
+    room data{% endif %} | {% if summary and summary.total_bookings > 0 %}✅
+    Bookings found{% else %}❌ No bookings{% endif %}
+  </small>
+</div>
+{% endif %}
 
 <!-- Date Range Selection -->
 <div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-gradient-primary">
+    <h6 class="m-0 font-weight-bold text-white">
+      <i class="fas fa-calendar-alt me-1"></i>Report Parameters
+    </h6>
+  </div>
   <div class="card-body">
     <form
       method="GET"
@@ -125,7 +204,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
 <!-- Summary Cards -->
 <div class="row mb-4">
   <div class="col-xl-3 col-md-6 mb-4">
-    <div class="card border-left-primary shadow h-100 py-2">
+    <div class="card border-left-primary shadow h-100 py-2 stats-card">
       <div class="card-body">
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
@@ -134,9 +213,8 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             >
               Date Range
             </div>
-            <div class="h5 mb-0 font-weight-bold text-gray-800">
-              {{ start_date.strftime('%d %b') }} - {{ end_date.strftime('%d %b
-              %Y') }}
+            <div class="h6 mb-0 font-weight-bold text-gray-800">
+              {{ overview.date_range if overview else 'No data' }}
             </div>
           </div>
           <div class="col-auto">
@@ -148,7 +226,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   </div>
 
   <div class="col-xl-3 col-md-6 mb-4">
-    <div class="card border-left-success shadow h-100 py-2">
+    <div class="card border-left-success shadow h-100 py-2 stats-card">
       <div class="card-body">
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
@@ -158,9 +236,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
               Avg Utilization Rate
             </div>
             <div class="h5 mb-0 font-weight-bold text-gray-800">
-              {% set total_util = 0 %} {% for data in utilization_data %} {% set
-              total_util = total_util + data.utilization_pct %} {% endfor %} {{
-              (total_util / utilization_data|length)|round(1) }}%
+              {{ overview.avg_utilization_rate if overview else '0%' }}
             </div>
           </div>
           <div class="col-auto">
@@ -172,19 +248,15 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   </div>
 
   <div class="col-xl-3 col-md-6 mb-4">
-    <div class="card border-left-info shadow h-100 py-2">
+    <div class="card border-left-info shadow h-100 py-2 stats-card">
       <div class="card-body">
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
               Most Utilized Room
             </div>
-            <div class="h5 mb-0 font-weight-bold text-gray-800">
-              {% set highest_util = {'room': 'None', 'pct': 0} %} {% for data in
-              utilization_data %} {% if data.utilization_pct > highest_util.pct
-              %} {% set _ = highest_util.update({'room': data.room.name, 'pct':
-              data.utilization_pct}) %} {% endif %} {% endfor %} {{
-              highest_util.room }}
+            <div class="h6 mb-0 font-weight-bold text-gray-800">
+              {{ overview.most_utilized_room if overview else 'No data' }}
             </div>
           </div>
           <div class="col-auto">
@@ -196,7 +268,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   </div>
 
   <div class="col-xl-3 col-md-6 mb-4">
-    <div class="card border-left-warning shadow h-100 py-2">
+    <div class="card border-left-warning shadow h-100 py-2 stats-card">
       <div class="card-body">
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
@@ -206,9 +278,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
               Total Booked Hours
             </div>
             <div class="h5 mb-0 font-weight-bold text-gray-800">
-              {% set total_hours = 0 %} {% for data in utilization_data %} {%
-              set total_hours = total_hours + data.booked_hours %} {% endfor %}
-              {{ total_hours|round(1) }} hours
+              {{ overview.total_booked_hours if overview else '0 hours' }}
             </div>
           </div>
           <div class="col-auto">
@@ -219,6 +289,9 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     </div>
   </div>
 </div>
+
+<!-- Main Content -->
+{% if utilization_data and utilization_data|length > 0 %}
 
 <!-- Utilization Chart -->
 <div class="card shadow-sm border-0 mb-4">
@@ -264,6 +337,8 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             <th>Capacity</th>
             <th>Booked Hours</th>
             <th>Available Hours</th>
+            <th>Bookings</th>
+            <th>Revenue</th>
             <th>Utilization Rate</th>
             <th>Status</th>
           </tr>
@@ -275,11 +350,13 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
               <strong>{{ data.room.name }}</strong>
             </td>
             <td>{{ data.room.capacity }} people</td>
-            <td>{{ data.booked_hours|round(1) }} hours</td>
+            <td>{{ data.booked_hours }} hours</td>
             <td>{{ data.total_available_hours }} hours</td>
+            <td>{{ data.bookings_count }}</td>
+            <td>${{ "%.2f"|format(data.revenue) }}</td>
             <td>
               <div class="d-flex align-items-center">
-                <div class="progress flex-grow-1 me-2">
+                <div class="progress flex-grow-1 me-2" style="min-width: 100px">
                   <div
                     class="progress-bar {% if data.utilization_pct >= 70 %}bg-success{% elif data.utilization_pct >= 40 %}bg-warning{% else %}bg-danger{% endif %}"
                     role="progressbar"
@@ -322,11 +399,13 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     >
       <div class="card-body position-relative">
         <span class="badge bg-primary badge-hours"
-          >{{ data.booked_hours|round(1) }} hours</span
+          >{{ data.booked_hours }} hours</span
         >
         <h5 class="card-title mb-1">{{ data.room.name }}</h5>
         <div class="text-muted small mb-3">
-          Capacity: {{ data.room.capacity }} people
+          <i class="fas fa-users me-1"></i>Capacity: {{ data.room.capacity }}
+          people | <i class="fas fa-calendar-check me-1"></i>{{
+          data.bookings_count }} bookings
         </div>
 
         <div class="d-flex justify-content-between align-items-center mb-1">
@@ -346,9 +425,19 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
           </div>
         </div>
 
-        <div class="d-flex justify-content-between small text-muted">
-          <span>{{ data.booked_hours|round(1) }} booked hours</span>
+        <div class="d-flex justify-content-between small text-muted mb-2">
+          <span>{{ data.booked_hours }} booked hours</span>
           <span>{{ data.total_available_hours }} available hours</span>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center">
+          <strong class="text-success"
+            >Revenue: ${{ "%.2f"|format(data.revenue) }}</strong
+          >
+          <span class="badge bg-info">
+            ${{ "%.2f"|format(data.revenue / data.bookings_count) if
+            data.bookings_count > 0 else 0 }} avg
+          </span>
         </div>
       </div>
       <div class="card-footer bg-white border-0">
@@ -365,37 +454,48 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
 </div>
 
 <!-- Recommendations -->
-<div class="card shadow-sm border-0 mt-4">
-  <div class="card-header bg-white">
-    <h5 class="mb-0 text-primary">
-      <i class="fas fa-lightbulb me-2"></i>Recommendations
+<div class="card shadow-sm border-0 mt-4 recommendations-section">
+  <div class="card-header bg-transparent border-0">
+    <h5 class="mb-0 text-white">
+      <i class="fas fa-lightbulb me-2"></i>Insights & Recommendations
     </h5>
   </div>
   <div class="card-body">
     <div class="row">
       <div class="col-md-6">
-        <h6 class="mb-3">Low Utilization Rooms</h6>
-        <ul class="list-group mb-4">
-          {% set low_util_count = 0 %} {% for data in utilization_data %} {% if
-          data.utilization_pct < 40 %} {% set low_util_count = low_util_count +
-          1 %}
-          <li
-            class="list-group-item d-flex justify-content-between align-items-center"
-          >
-            {{ data.room.name }}
-            <span class="badge bg-danger rounded-pill"
-              >{{ data.utilization_pct }}%</span
-            >
-          </li>
-          {% endif %} {% endfor %} {% if low_util_count == 0 %}
-          <li class="list-group-item text-muted">
-            No rooms with low utilization.
-          </li>
-          {% endif %}
-        </ul>
+        <div class="card mb-4">
+          <div class="card-header">
+            <h6 class="mb-0 text-danger">
+              <i class="fas fa-exclamation-triangle me-1"></i>Low Utilization
+              Rooms
+            </h6>
+          </div>
+          <div class="card-body">
+            <ul class="list-group list-group-flush">
+              {% set low_util_rooms = [] %} {% for data in utilization_data %}
+              {% if data.utilization_pct < 40 %} {% set _ =
+              low_util_rooms.append(data) %} {% endif %} {% endfor %} {% if
+              low_util_rooms %} {% for data in low_util_rooms %}
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center"
+              >
+                {{ data.room.name }}
+                <span class="badge bg-danger rounded-pill"
+                  >{{ data.utilization_pct }}%</span
+                >
+              </li>
+              {% endfor %} {% else %}
+              <li class="list-group-item text-muted">
+                <i class="fas fa-check-circle me-1"></i>No rooms with low
+                utilization.
+              </li>
+              {% endif %}
+            </ul>
+          </div>
+        </div>
 
-        <h6>Suggestions for Low-Utilization Rooms:</h6>
-        <ul>
+        <h6 class="text-white">Suggestions for Low-Utilization Rooms:</h6>
+        <ul class="text-white-50">
           <li>Consider promotional rates during low-demand periods</li>
           <li>Offer bundled packages with popular add-ons</li>
           <li>Target marketing to new client segments</li>
@@ -404,28 +504,38 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
       </div>
 
       <div class="col-md-6">
-        <h6 class="mb-3">High Utilization Rooms</h6>
-        <ul class="list-group mb-4">
-          {% set high_util_count = 0 %} {% for data in utilization_data %} {% if
-          data.utilization_pct >= 70 %} {% set high_util_count = high_util_count
-          + 1 %}
-          <li
-            class="list-group-item d-flex justify-content-between align-items-center"
-          >
-            {{ data.room.name }}
-            <span class="badge bg-success rounded-pill"
-              >{{ data.utilization_pct }}%</span
-            >
-          </li>
-          {% endif %} {% endfor %} {% if high_util_count == 0 %}
-          <li class="list-group-item text-muted">
-            No rooms with high utilization.
-          </li>
-          {% endif %}
-        </ul>
+        <div class="card mb-4">
+          <div class="card-header">
+            <h6 class="mb-0 text-success">
+              <i class="fas fa-star me-1"></i>High Utilization Rooms
+            </h6>
+          </div>
+          <div class="card-body">
+            <ul class="list-group list-group-flush">
+              {% set high_util_rooms = [] %} {% for data in utilization_data %}
+              {% if data.utilization_pct >= 70 %} {% set _ =
+              high_util_rooms.append(data) %} {% endif %} {% endfor %} {% if
+              high_util_rooms %} {% for data in high_util_rooms %}
+              <li
+                class="list-group-item d-flex justify-content-between align-items-center"
+              >
+                {{ data.room.name }}
+                <span class="badge bg-success rounded-pill"
+                  >{{ data.utilization_pct }}%</span
+                >
+              </li>
+              {% endfor %} {% else %}
+              <li class="list-group-item text-muted">
+                <i class="fas fa-info-circle me-1"></i>No rooms with high
+                utilization yet.
+              </li>
+              {% endif %}
+            </ul>
+          </div>
+        </div>
 
-        <h6>Recommendations for High-Demand Rooms:</h6>
-        <ul>
+        <h6 class="text-white">Recommendations for High-Demand Rooms:</h6>
+        <ul class="text-white-50">
           <li>Consider adjusting pricing to optimize revenue</li>
           <li>Evaluate if similar rooms could be added</li>
           <li>Identify the features that make these rooms popular</li>
@@ -435,7 +545,38 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     </div>
   </div>
 </div>
-{% endblock %} {% block extra_js %}
+
+{% else %}
+<!-- Empty State - No Data -->
+<div class="card shadow border-0">
+  <div class="card-body">
+    <div class="empty-state">
+      <i class="fas fa-chart-line text-muted"></i>
+      <h4 class="text-muted mb-3">No Utilization Data Available</h4>
+      <p class="text-muted mb-4">
+        No room utilization data found for the selected date range. This could
+        mean:
+      </p>
+      <ul
+        class="text-muted text-start"
+        style="max-width: 400px; margin: 0 auto"
+      >
+        <li>No bookings exist for this time period</li>
+        <li>No rooms are configured in the system</li>
+        <li>The selected date range might be too narrow</li>
+      </ul>
+      <div class="mt-4">
+        <a href="{{ url_for('calendar') }}" class="btn btn-primary me-2">
+          <i class="fas fa-calendar-plus me-1"></i>View Booking Calendar
+        </a>
+        <a href="{{ url_for('rooms') }}" class="btn btn-outline-primary">
+          <i class="fas fa-cog me-1"></i>Manage Rooms
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %} {% endblock %} {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -446,12 +587,13 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
       maxDate: "today"
     });
 
-    // Initialize charts
+    {% if utilization_data and utilization_data|length > 0 %}
+    // Initialize charts only if we have data
     const ctx = document.getElementById('utilizationChart').getContext('2d');
 
     // Prepare data for chart
     const roomNames = [{% for data in utilization_data %}'{{ data.room.name }}',{% endfor %}];
-    const bookedHours = [{% for data in utilization_data %}{{ data.booked_hours|round(1) }},{% endfor %}];
+    const bookedHours = [{% for data in utilization_data %}{{ data.booked_hours }},{% endfor %}];
     const availableHours = [{% for data in utilization_data %}{{ data.total_available_hours }},{% endfor %}];
     const utilizationRates = [{% for data in utilization_data %}{{ data.utilization_pct }},{% endfor %}];
 
@@ -481,9 +623,10 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             data: utilizationRates,
             type: 'line',
             borderColor: '#36b9cc',
-            borderWidth: 2,
+            borderWidth: 3,
             pointBackgroundColor: '#36b9cc',
-            pointRadius: 4,
+            pointRadius: 6,
+            pointHoverRadius: 8,
             lineTension: 0.3,
             fill: false,
             order: 1,
@@ -494,10 +637,18 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
       options: {
         responsive: true,
         maintainAspectRatio: false,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
         scales: {
           x: {
             grid: {
               display: false
+            },
+            ticks: {
+              maxRotation: 45,
+              minRotation: 0
             }
           },
           y: {
@@ -545,9 +696,24 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     const progressBars = document.querySelectorAll('.progress-bar');
     setTimeout(() => {
       progressBars.forEach(bar => {
-        bar.style.width = bar.getAttribute('aria-valuenow') + '%';
+        const targetWidth = bar.getAttribute('aria-valuenow') + '%';
+        bar.style.width = targetWidth;
       });
-    }, 200);
+    }, 300);
+    {% endif %}
+
+    // Data logging for debugging
+    console.log("🔍 Room Utilization Report loaded successfully");
+    console.log("📊 Rooms with data:", {{ utilization_data|length if utilization_data else 0 }});
+    console.log("📊 Date range:", "{{ start_date.strftime('%Y-%m-%d') if start_date else 'None' }}", "to", "{{ end_date.strftime('%Y-%m-%d') if end_date else 'None' }}");
+    console.log("📊 Summary:", {{ summary|tojson if summary else '{}' }});
+
+    {% if utilization_data %}
+    console.log("📂 Room breakdown:");
+    {% for data in utilization_data %}
+    console.log("  - {{ data.room.name }}: {{ data.utilization_pct }}% ({{ data.booked_hours }}h / {{ data.total_available_hours }}h)");
+    {% endfor %}
+    {% endif %}
   });
 </script>
 {% endblock %}

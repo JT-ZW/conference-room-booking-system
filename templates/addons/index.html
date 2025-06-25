@@ -2,13 +2,15 @@
 Booking{% endblock %} {% block extra_css %}
 <style>
   .category-card {
-    transition: transform 0.2s;
+    transition: transform 0.2s ease-in-out;
     border-left: 4px solid #4e73df;
     margin-bottom: 1.5rem;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
   }
 
   .category-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-3px);
+    box-shadow: 0 0.25rem 2rem 0 rgba(58, 59, 69, 0.2);
   }
 
   .addon-item {
@@ -16,12 +18,14 @@ Booking{% endblock %} {% block extra_css %}
     border-radius: 0.35rem;
     border: 1px solid #e3e6f0;
     margin-bottom: 0.5rem;
-    transition: all 0.2s;
+    transition: all 0.2s ease-in-out;
+    background-color: #fff;
   }
 
   .addon-item:hover {
     border-color: #4e73df;
     background-color: #f8f9fa;
+    transform: translateY(-1px);
   }
 
   .addon-item .addon-price {
@@ -32,6 +36,11 @@ Booking{% endblock %} {% block extra_css %}
 
   .addon-inactive {
     opacity: 0.6;
+    background-color: #f8f9fa;
+  }
+
+  .addon-inactive .addon-price {
+    color: #6c757d;
   }
 
   .category-header {
@@ -42,11 +51,46 @@ Booking{% endblock %} {% block extra_css %}
 
   .badge-addon-count {
     background-color: #4e73df;
+    font-size: 0.75rem;
   }
 
   .booking-count-badge {
     font-size: 0.75rem;
     padding: 0.25rem 0.5rem;
+  }
+
+  .debug-info {
+    background-color: #f8f9fc;
+    border: 1px solid #e3e6f0;
+    border-radius: 0.35rem;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    color: #5a5c69;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+  }
+
+  .empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+  }
+
+  .stats-card {
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .stats-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .progress-sm {
+    height: 0.5rem;
   }
 </style>
 {% endblock %} {% block content %}
@@ -69,15 +113,35 @@ Booking{% endblock %} {% block extra_css %}
   </div>
 </div>
 
+<!-- Debug Information (only shown in development or with debug parameter) -->
+{% if config.DEBUG or request.args.get('debug') %}
+<div class="debug-info">
+  <strong><i class="fas fa-bug me-1"></i>Debug Info:</strong>
+  Categories loaded: {{ categories|length if categories else 0 }} | Total addons
+  in stats: {{ stats.total_addons if stats else 0 }} | Active addons: {{
+  stats.active_addons if stats else 0 }} | Template render time: {{
+  moment().format('YYYY-MM-DD HH:mm:ss') if moment else now.strftime('%Y-%m-%d
+  %H:%M:%S') }}
+  <br />
+  <small class="text-muted">
+    Data integrity: {% if categories %}✅ Categories loaded{% else %}❌ No
+    categories{% endif %} | {% if stats and stats.total_addons > 0 %}✅ Stats
+    calculated{% else %}❌ No addon stats{% endif %}
+  </small>
+</div>
+{% endif %}
+
 <!-- Overview Section with Real Statistics -->
 <div class="card shadow mb-4">
-  <div class="card-header py-3">
-    <h6 class="m-0 font-weight-bold text-primary">Add-on Services Overview</h6>
+  <div class="card-header py-3 bg-gradient-primary">
+    <h6 class="m-0 font-weight-bold text-white">
+      <i class="fas fa-chart-pie me-1"></i>Add-on Services Overview
+    </h6>
   </div>
   <div class="card-body">
     <div class="row">
       <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-primary shadow h-100 py-2">
+        <div class="card border-left-primary shadow h-100 py-2 stats-card">
           <div class="card-body">
             <div class="row no-gutters align-items-center">
               <div class="col mr-2">
@@ -99,7 +163,7 @@ Booking{% endblock %} {% block extra_css %}
       </div>
 
       <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-success shadow h-100 py-2">
+        <div class="card border-left-success shadow h-100 py-2 stats-card">
           <div class="card-body">
             <div class="row no-gutters align-items-center">
               <div class="col mr-2">
@@ -121,7 +185,7 @@ Booking{% endblock %} {% block extra_css %}
       </div>
 
       <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-info shadow h-100 py-2">
+        <div class="card border-left-info shadow h-100 py-2 stats-card">
           <div class="card-body">
             <div class="row no-gutters align-items-center">
               <div class="col mr-2">
@@ -143,7 +207,7 @@ Booking{% endblock %} {% block extra_css %}
       </div>
 
       <div class="col-xl-3 col-md-6 mb-4">
-        <div class="card border-left-warning shadow h-100 py-2">
+        <div class="card border-left-warning shadow h-100 py-2 stats-card">
           <div class="card-body">
             <div class="row no-gutters align-items-center">
               <div class="col mr-2">
@@ -181,26 +245,32 @@ Booking{% endblock %} {% block extra_css %}
       </div>
     </div>
 
-    <p class="mb-0">
-      Add-on services are additional products and services that can be booked
-      alongside conference rooms. {% if stats and stats.total_addons > 0 %}
-      Currently {{ stats.addons_with_usage }} out of {{ stats.total_addons }}
-      add-ons ({{ stats.usage_rate }}%) have been used in bookings. {% endif %}
-      Use these to provide clients with enhanced experiences and additional
-      revenue opportunities.
-    </p>
+    <div class="row">
+      <div class="col-12">
+        <p class="mb-0 text-gray-600">
+          <i class="fas fa-info-circle me-1"></i>
+          Add-on services are additional products and services that can be
+          booked alongside conference rooms. {% if stats and stats.total_addons
+          > 0 %} Currently <strong>{{ stats.addons_with_usage }}</strong> out of
+          <strong>{{ stats.total_addons }}</strong> add-ons (<strong
+            >{{ stats.usage_rate }}%</strong
+          >) have been used in bookings. {% else %} Start by creating categories
+          and adding your first add-on services. {% endif %}
+        </p>
+      </div>
+    </div>
   </div>
 </div>
 
 <!-- Add-ons by Category -->
-{% if categories %} {% for category in categories %}
+{% if categories and categories|length > 0 %} {% for category in categories %}
 <div class="card shadow-sm border-0 category-card">
   <div
     class="card-header bg-white d-flex justify-content-between align-items-center"
   >
     <h5 class="mb-0 text-primary">
       <i class="fas fa-tag me-2"></i>{{ category.name }}
-      <span class="badge rounded-pill badge-addon-count text-white">
+      <span class="badge rounded-pill badge-addon-count text-white ms-2">
         {{ category.addons|length if category.addons else 0 }}
       </span>
     </h5>
@@ -208,7 +278,7 @@ Booking{% endblock %} {% block extra_css %}
       <button
         class="btn btn-sm btn-outline-secondary dropdown-toggle"
         type="button"
-        id="categoryActions{{ category.id }}"
+        id="categoryActions{{ category.id if category.id else 'uncategorized' }}"
         data-bs-toggle="dropdown"
         aria-expanded="false"
       >
@@ -216,23 +286,26 @@ Booking{% endblock %} {% block extra_css %}
       </button>
       <ul
         class="dropdown-menu dropdown-menu-end shadow animated--fade-in"
-        aria-labelledby="categoryActions{{ category.id }}"
+        aria-labelledby="categoryActions{{ category.id if category.id else 'uncategorized' }}"
       >
+        {% if category.id %}
         <li>
           <a
             class="dropdown-item"
             href="#"
             data-bs-toggle="modal"
             data-bs-target="#editCategoryModal{{ category.id }}"
-            ><i class="fas fa-edit me-1"></i>Edit Category</a
           >
+            <i class="fas fa-edit me-1"></i>Edit Category
+          </a>
         </li>
         <li>
           <a
             class="dropdown-item"
             href="{{ url_for('new_addon') }}?category={{ category.id }}"
-            ><i class="fas fa-plus me-1"></i>Add to Category</a
           >
+            <i class="fas fa-plus me-1"></i>Add to Category
+          </a>
         </li>
         <li><hr class="dropdown-divider" /></li>
         <li>
@@ -241,52 +314,77 @@ Booking{% endblock %} {% block extra_css %}
             href="#"
             data-bs-toggle="modal"
             data-bs-target="#deleteCategoryModal{{ category.id }}"
-            ><i class="fas fa-trash me-1"></i>Delete Category</a
           >
+            <i class="fas fa-trash me-1"></i>Delete Category
+          </a>
         </li>
+        {% else %}
+        <li>
+          <span class="dropdown-item text-muted">
+            <i class="fas fa-info-circle me-1"></i>Uncategorized items
+          </span>
+        </li>
+        <li>
+          <a class="dropdown-item" href="{{ url_for('new_addon') }}">
+            <i class="fas fa-plus me-1"></i>Create Add-on
+          </a>
+        </li>
+        {% endif %}
       </ul>
     </div>
   </div>
+
   <div class="card-body">
     {% if category.description %}
-    <p class="text-muted mb-3">{{ category.description }}</p>
+    <p class="text-muted mb-3">
+      <i class="fas fa-quote-left me-1"></i>{{ category.description }}
+    </p>
     {% endif %}
 
     <div class="row">
-      {% if category.addons %} {% for addon in category.addons %}
-      <div class="col-md-6 col-lg-4">
+      {% if category.addons and category.addons|length > 0 %} {% for addon in
+      category.addons %}
+      <div class="col-md-6 col-lg-4 mb-3">
         <div
           class="addon-item {% if not addon.is_active %}addon-inactive{% endif %}"
         >
           <div class="d-flex justify-content-between align-items-start mb-2">
-            <h6 class="mb-0">{{ addon.name }}</h6>
+            <h6 class="mb-0 text-dark">{{ addon.name }}</h6>
             <span class="addon-price">${{ "%.2f"|format(addon.price) }}</span>
           </div>
+
           {% if addon.description %}
           <p class="text-muted small mb-2">{{ addon.description }}</p>
           {% endif %}
+
           <div class="d-flex justify-content-between align-items-center">
             <div>
               <span
                 class="badge {% if addon.is_active %}bg-success{% else %}bg-secondary{% endif %}"
               >
-                {% if addon.is_active %}Active{% else %}Inactive{% endif %}
+                {% if addon.is_active %}
+                <i class="fas fa-check me-1"></i>Active {% else %}
+                <i class="fas fa-pause me-1"></i>Inactive {% endif %}
               </span>
-              {% if addon.booking_count > 0 %}
+
+              {% if addon.booking_count and addon.booking_count > 0 %}
               <span
                 class="badge bg-info booking-count-badge ms-1"
                 title="Used in {{ addon.booking_count }} booking(s)"
+                data-bs-toggle="tooltip"
               >
-                {{ addon.booking_count }} booking{{ 's' if addon.booking_count
-                != 1 else '' }}
+                <i class="fas fa-calendar-check me-1"></i>{{ addon.booking_count
+                }}
               </span>
               {% endif %}
             </div>
-            <div>
+
+            <div class="btn-group" role="group">
               <a
                 href="{{ url_for('edit_addon', id=addon.id) }}"
                 class="btn btn-sm btn-outline-warning"
                 title="Edit add-on"
+                data-bs-toggle="tooltip"
               >
                 <i class="fas fa-edit"></i>
               </a>
@@ -296,7 +394,13 @@ Booking{% endblock %} {% block extra_css %}
                 data-bs-toggle="modal"
                 data-bs-target="#deleteAddonModal{{ addon.id }}"
                 title="Delete add-on"
+                {%
+                if
+                addon.booking_count
+                and
+                addon.booking_count
               >
+                0 %}disabled{% endif %} >
                 <i class="fas fa-trash"></i>
               </button>
             </div>
@@ -305,14 +409,27 @@ Booking{% endblock %} {% block extra_css %}
       </div>
       {% endfor %} {% else %}
       <div class="col-12">
-        <div class="alert alert-light text-center py-3">
-          <p class="mb-2">No add-ons in this category yet.</p>
+        <div class="empty-state">
+          <i class="fas fa-inbox"></i>
+          <h6 class="text-muted">No add-ons in this category yet</h6>
+          <p class="text-muted mb-3">
+            Add your first service or equipment to this category.
+          </p>
+          {% if category.id %}
           <a
             href="{{ url_for('new_addon') }}?category={{ category.id }}"
             class="btn btn-sm btn-outline-primary"
           >
             <i class="fas fa-plus me-1"></i>Add to This Category
           </a>
+          {% else %}
+          <a
+            href="{{ url_for('new_addon') }}"
+            class="btn btn-sm btn-outline-primary"
+          >
+            <i class="fas fa-plus me-1"></i>Create Add-on
+          </a>
+          {% endif %}
         </div>
       </div>
       {% endif %}
@@ -320,17 +437,22 @@ Booking{% endblock %} {% block extra_css %}
   </div>
 </div>
 
+<!-- Modals for categories with IDs only -->
+{% if category.id %}
 <!-- Edit Category Modal -->
 <div
   class="modal fade"
   id="editCategoryModal{{ category.id }}"
   tabindex="-1"
+  aria-labelledby="editCategoryModalLabel{{ category.id }}"
   aria-hidden="true"
 >
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Edit Category</h5>
+        <h5 class="modal-title" id="editCategoryModalLabel{{ category.id }}">
+          <i class="fas fa-edit me-1"></i>Edit Category
+        </h5>
         <button
           type="button"
           class="btn-close"
@@ -366,6 +488,7 @@ Booking{% endblock %} {% block extra_css %}
               id="categoryDescription{{ category.id }}"
               name="description"
               rows="3"
+              placeholder="Describe this category..."
             >
 {{ category.description if category.description else '' }}</textarea
             >
@@ -377,9 +500,11 @@ Booking{% endblock %} {% block extra_css %}
             class="btn btn-secondary"
             data-bs-dismiss="modal"
           >
-            Cancel
+            <i class="fas fa-times me-1"></i>Cancel
           </button>
-          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-save me-1"></i>Save Changes
+          </button>
         </div>
       </form>
     </div>
@@ -391,12 +516,16 @@ Booking{% endblock %} {% block extra_css %}
   class="modal fade"
   id="deleteCategoryModal{{ category.id }}"
   tabindex="-1"
+  aria-labelledby="deleteCategoryModalLabel{{ category.id }}"
   aria-hidden="true"
 >
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Delete Category</h5>
+        <h5 class="modal-title" id="deleteCategoryModalLabel{{ category.id }}">
+          <i class="fas fa-exclamation-triangle me-1 text-danger"></i>Delete
+          Category
+        </h5>
         <button
           type="button"
           class="btn-close"
@@ -412,14 +541,15 @@ Booking{% endblock %} {% block extra_css %}
         {% if category.addons and category.addons|length > 0 %}
         <div class="alert alert-danger">
           <i class="fas fa-exclamation-triangle me-1"></i>
-          This category contains {{ category.addons|length }} add-on(s).
-          Deleting this category will affect these add-ons.
+          This category contains
+          <strong>{{ category.addons|length }}</strong> add-on(s). You must move
+          or delete these add-ons before deleting this category.
         </div>
         {% endif %}
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          Cancel
+          <i class="fas fa-times me-1"></i>Cancel
         </button>
         <form
           action="{{ url_for('delete_addon_category', id=category.id) }}"
@@ -436,13 +566,15 @@ Booking{% endblock %} {% block extra_css %}
             and
             category.addons|length
           >
-            0 %}disabled{% endif %} > Delete Category
+            0 %}disabled{% endif %} > <i class="fas fa-trash me-1"></i>Delete
+            Category
           </button>
         </form>
       </div>
     </div>
   </div>
 </div>
+{% endif %}
 
 <!-- Delete Add-on Modals -->
 {% if category.addons %} {% for addon in category.addons %}
@@ -450,12 +582,16 @@ Booking{% endblock %} {% block extra_css %}
   class="modal fade"
   id="deleteAddonModal{{ addon.id }}"
   tabindex="-1"
+  aria-labelledby="deleteAddonModalLabel{{ addon.id }}"
   aria-hidden="true"
 >
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">Delete Add-on</h5>
+        <h5 class="modal-title" id="deleteAddonModalLabel{{ addon.id }}">
+          <i class="fas fa-exclamation-triangle me-1 text-danger"></i>Delete
+          Add-on
+        </h5>
         <button
           type="button"
           class="btn-close"
@@ -468,17 +604,18 @@ Booking{% endblock %} {% block extra_css %}
           Are you sure you want to delete the add-on
           <strong>{{ addon.name }}</strong>?
         </p>
-        {% if addon.booking_count > 0 %}
+        {% if addon.booking_count and addon.booking_count > 0 %}
         <div class="alert alert-danger">
           <i class="fas fa-exclamation-triangle me-1"></i>
-          This add-on is used in {{ addon.booking_count }} booking(s). Deleting
-          it will affect these bookings.
+          This add-on is used in
+          <strong>{{ addon.booking_count }}</strong> booking(s). You cannot
+          delete it while it's being used in active bookings.
         </div>
         {% endif %}
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          Cancel
+          <i class="fas fa-times me-1"></i>Cancel
         </button>
         <form
           action="{{ url_for('delete_addon', id=addon.id) }}"
@@ -492,8 +629,11 @@ Booking{% endblock %} {% block extra_css %}
             {%
             if
             addon.booking_count
+            and
+            addon.booking_count
           >
-            0 %}disabled{% endif %} > Delete Add-on
+            0 %}disabled{% endif %} > <i class="fas fa-trash me-1"></i>Delete
+            Add-on
           </button>
         </form>
       </div>
@@ -501,26 +641,44 @@ Booking{% endblock %} {% block extra_css %}
   </div>
 </div>
 {% endfor %} {% endif %} {% endfor %} {% else %}
-<div class="alert alert-info text-center py-4">
-  <h4 class="alert-heading mb-3">No Categories Yet</h4>
-  <p class="mb-3">Start by creating your first add-on category.</p>
-  <button
-    type="button"
-    class="btn btn-primary"
-    data-bs-toggle="modal"
-    data-bs-target="#newCategoryModal"
-  >
-    <i class="fas fa-folder-plus me-1"></i>Create Category
-  </button>
+<!-- Empty State - No Categories -->
+<div class="card shadow border-0">
+  <div class="card-body">
+    <div class="empty-state">
+      <i class="fas fa-folder-open text-primary"></i>
+      <h4 class="text-primary mb-3">No Categories Yet</h4>
+      <p class="text-muted mb-4">
+        Start by creating your first add-on category to organize your services
+        and equipment. Categories help you group related add-ons together for
+        better organization.
+      </p>
+      <button
+        type="button"
+        class="btn btn-primary btn-lg"
+        data-bs-toggle="modal"
+        data-bs-target="#newCategoryModal"
+      >
+        <i class="fas fa-folder-plus me-2"></i>Create Your First Category
+      </button>
+    </div>
+  </div>
 </div>
 {% endif %}
 
 <!-- New Category Modal -->
-<div class="modal fade" id="newCategoryModal" tabindex="-1" aria-hidden="true">
+<div
+  class="modal fade"
+  id="newCategoryModal"
+  tabindex="-1"
+  aria-labelledby="newCategoryModalLabel"
+  aria-hidden="true"
+>
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title">New Category</h5>
+        <h5 class="modal-title" id="newCategoryModalLabel">
+          <i class="fas fa-folder-plus me-1"></i>New Category
+        </h5>
         <button
           type="button"
           class="btn-close"
@@ -532,13 +690,15 @@ Booking{% endblock %} {% block extra_css %}
         {{ csrf_token() }}
         <div class="modal-body">
           <div class="mb-3">
-            <label for="categoryName" class="form-label">Category Name</label>
+            <label for="categoryName" class="form-label"
+              >Category Name <span class="text-danger">*</span></label
+            >
             <input
               type="text"
               class="form-control"
               id="categoryName"
               name="name"
-              placeholder="e.g., Audio/Visual Equipment"
+              placeholder="e.g., Audio/Visual Equipment, Catering Services"
               required
             />
           </div>
@@ -551,7 +711,7 @@ Booking{% endblock %} {% block extra_css %}
               id="categoryDescription"
               name="description"
               rows="3"
-              placeholder="Describe the category..."
+              placeholder="Describe what types of add-ons belong in this category..."
             ></textarea>
           </div>
         </div>
@@ -561,9 +721,11 @@ Booking{% endblock %} {% block extra_css %}
             class="btn btn-secondary"
             data-bs-dismiss="modal"
           >
-            Cancel
+            <i class="fas fa-times me-1"></i>Cancel
           </button>
-          <button type="submit" class="btn btn-primary">Create Category</button>
+          <button type="submit" class="btn btn-primary">
+            <i class="fas fa-plus me-1"></i>Create Category
+          </button>
         </div>
       </form>
     </div>
@@ -581,50 +743,85 @@ Booking{% endblock %} {% block extra_css %}
       return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 
-    // Add animation to category cards on scroll
+    // Add smooth animation to category cards on scroll
     const categoryCards = document.querySelectorAll(".category-card");
 
-    const animateOnScroll = function () {
-      categoryCards.forEach((card) => {
-        const cardPosition = card.getBoundingClientRect();
-
-        // If card is in viewport
-        if (cardPosition.top < window.innerHeight && cardPosition.bottom > 0) {
-          card.style.opacity = "1";
-          card.style.transform = "translateY(0)";
-        }
-      });
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
     };
 
-    // Set initial state
-    categoryCards.forEach((card) => {
-      card.style.opacity = "0";
-      card.style.transform = "translateY(20px)";
-      card.style.transition = "opacity 0.5s ease, transform 0.5s ease";
+    const observer = new IntersectionObserver(function(entries) {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    }, observerOptions);
+
+    // Set initial state and observe cards
+    categoryCards.forEach((card, index) => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      card.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
+      observer.observe(card);
     });
 
-    // Run on load
-    animateOnScroll();
-
-    // Run on scroll
-    window.addEventListener("scroll", animateOnScroll);
-
-    // Form submission handling
+    // Form submission handling with loading states
     const forms = document.querySelectorAll("form");
     forms.forEach((form) => {
       form.addEventListener("submit", function (e) {
         const submitBtn = form.querySelector('button[type="submit"]');
-        if (submitBtn) {
+        if (submitBtn && !submitBtn.disabled) {
+          const originalText = submitBtn.innerHTML;
           submitBtn.disabled = true;
-          submitBtn.innerHTML =
-            '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+          submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Processing...';
+
+          // Re-enable after 10 seconds as fallback
+          setTimeout(() => {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalText;
+          }, 10000);
         }
       });
     });
 
-    console.log(
-      "Add-ons page loaded successfully with {{ categories|length if categories else 0 }} categories"
-    );
+    // Enhanced modal handling
+    const modals = document.querySelectorAll('.modal');
+    modals.forEach(modal => {
+      modal.addEventListener('shown.bs.modal', function () {
+        const firstInput = modal.querySelector('input[type="text"]');
+        if (firstInput) {
+          firstInput.focus();
+        }
+      });
+    });
+
+    // Data validation and logging
+    const categoriesCount = {{ categories|length if categories else 0 }};
+    const totalAddons = {{ stats.total_addons if stats else 0 }};
+    const activeAddons = {{ stats.active_addons if stats else 0 }};
+
+    console.log("🔍 Add-ons page loaded successfully");
+    console.log("📊 Categories:", categoriesCount);
+    console.log("📊 Total Add-ons:", totalAddons);
+    console.log("📊 Active Add-ons:", activeAddons);
+    console.log("📊 Statistics:", {{ stats|tojson if stats else '{}' }});
+
+    {% if categories %}
+    console.log("📂 Category breakdown:");
+    {% for category in categories %}
+    console.log("  - {{ category.name }}: {{ category.addons|length if category.addons else 0 }} addons");
+    {% endfor %}
+    {% endif %}
+
+    // Show success message if page loads with data
+    if (categoriesCount > 0 || totalAddons > 0) {
+      console.log("✅ Data loaded successfully from database");
+    } else {
+      console.log("ℹ️ No categories or addons found - this might be a new installation");
+    }
   });
 </script>
 {% endblock %}

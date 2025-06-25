@@ -1,9 +1,8 @@
-{% extends "layout.html" %} {% block title %}Popular Add-ons Report | Rainbow
-Towers Conference Booking{% endblock %} {% block extra_css %}
-<link
-  rel="stylesheet"
-  href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
-/>
+{% extends "layout.html" %} 
+{% block title %}Popular Add-ons Report | Rainbow Towers Conference Booking{% endblock %} 
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
 <style>
   .date-range-form .form-control {
     border-right: none;
@@ -16,11 +15,13 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
 
   .addon-card {
     border-left: 4px solid;
-    transition: all 0.2s;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
   }
 
   .addon-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-3px);
+    box-shadow: 0 0.25rem 2rem 0 rgba(58, 59, 69, 0.2);
   }
 
   .addon-high {
@@ -37,10 +38,12 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
 
   .progress {
     height: 1.5rem;
+    border-radius: 0.5rem;
   }
 
   .progress-bar {
     transition: width 1s ease-in-out;
+    border-radius: 0.5rem;
   }
 
   .chart-container {
@@ -56,11 +59,11 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   }
 
   .addon-stat-card {
-    transition: all 0.3s;
+    transition: all 0.3s ease-in-out;
   }
 
   .addon-stat-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-3px);
     box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
   }
 
@@ -98,17 +101,78 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   .popularity-low {
     background-color: #e74a3b;
   }
+
+  .debug-info {
+    background-color: #f8f9fc;
+    border: 1px solid #e3e6f0;
+    border-radius: 0.35rem;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    color: #5a5c69;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+  }
+
+  .empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+  }
+
+  .stats-card {
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .stats-card:hover {
+    transform: translateY(-2px);
+  }
 </style>
-{% endblock %} {% block content %}
+{% endblock %} 
+
+{% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h1><i class="fas fa-star text-warning me-2"></i>Popular Add-ons Report</h1>
-  <a href="{{ url_for('reports') }}" class="btn btn-outline-secondary">
-    <i class="fas fa-arrow-left me-1"></i>Back to Reports
-  </a>
+  <h1>
+    <i class="fas fa-star text-warning me-2"></i>Popular Add-ons Report
+  </h1>
+  <div>
+    <a href="{{ url_for('reports') }}" class="btn btn-outline-secondary me-2">
+      <i class="fas fa-arrow-left me-1"></i>Back to Reports
+    </a>
+    <button class="btn btn-primary" onclick="window.print()">
+      <i class="fas fa-print me-1"></i>Print Report
+    </button>
+  </div>
 </div>
+
+<!-- Debug Information (only shown in development or with debug parameter) -->
+{% if config.DEBUG or request.args.get('debug') %}
+<div class="debug-info">
+  <strong><i class="fas fa-bug me-1"></i>Debug Info:</strong>
+  Add-ons loaded: {{ addon_data|length if addon_data else 0 }} |
+  Categories: {{ category_data|length if category_data else 0 }} |
+  Date range: {{ start_date.strftime('%Y-%m-%d') if start_date else 'None' }} to {{ end_date.strftime('%Y-%m-%d') if end_date else 'None' }} |
+  Total revenue: ${{ total_addon_revenue if total_addon_revenue else 0 }} |
+  Template render time: {{ moment().format('YYYY-MM-DD HH:mm:ss') if moment else now.strftime('%Y-%m-%d %H:%M:%S') }}
+  <br>
+  <small class="text-muted">
+    Data integrity: {% if addon_data %}✅ Add-on data loaded{% else %}❌ No add-on data{% endif %} |
+    {% if category_data %}✅ Category data loaded{% else %}❌ No category data{% endif %}
+  </small>
+</div>
+{% endif %}
 
 <!-- Date Range Selection -->
 <div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-gradient-primary">
+    <h6 class="m-0 font-weight-bold text-white">
+      <i class="fas fa-calendar-alt me-1"></i>Report Parameters
+    </h6>
+  </div>
   <div class="card-body">
     <form
       method="GET"
@@ -153,18 +217,19 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
 <!-- Summary Cards -->
 <div class="row mb-4">
   <div class="col-xl-3 col-md-6 mb-4">
-    <div class="card border-left-primary shadow h-100 py-2">
+    <div class="card border-left-primary shadow h-100 py-2 stats-card">
       <div class="card-body">
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
-            <div
-              class="text-xs font-weight-bold text-primary text-uppercase mb-1"
-            >
+            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">
               Date Range
             </div>
-            <div class="h5 mb-0 font-weight-bold text-gray-800">
-              {{ start_date.strftime('%d %b') }} - {{ end_date.strftime('%d %b
-              %Y') }}
+            <div class="h6 mb-0 font-weight-bold text-gray-800">
+              {% if start_date and end_date %}
+              {{ start_date.strftime('%d %b') }} - {{ end_date.strftime('%d %b %Y') }}
+              {% else %}
+              No date range
+              {% endif %}
             </div>
           </div>
           <div class="col-auto">
@@ -176,17 +241,15 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   </div>
 
   <div class="col-xl-3 col-md-6 mb-4">
-    <div class="card border-left-success shadow h-100 py-2">
+    <div class="card border-left-success shadow h-100 py-2 stats-card">
       <div class="card-body">
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
-            <div
-              class="text-xs font-weight-bold text-success text-uppercase mb-1"
-            >
-              Total Revenue From Add-ons
+            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">
+              Total Add-on Revenue
             </div>
             <div class="h5 mb-0 font-weight-bold text-gray-800">
-              ${{ total_addon_revenue|round(2) }}
+              ${{ "%.2f"|format(total_addon_revenue) if total_addon_revenue else "0.00" }}
             </div>
           </div>
           <div class="col-auto">
@@ -198,7 +261,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   </div>
 
   <div class="col-xl-3 col-md-6 mb-4">
-    <div class="card border-left-info shadow h-100 py-2">
+    <div class="card border-left-info shadow h-100 py-2 stats-card">
       <div class="card-body">
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
@@ -206,7 +269,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
               Add-on Bookings
             </div>
             <div class="h5 mb-0 font-weight-bold text-gray-800">
-              {{ total_addon_bookings }}
+              {{ total_addon_bookings if total_addon_bookings else 0 }}
             </div>
           </div>
           <div class="col-auto">
@@ -218,17 +281,15 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   </div>
 
   <div class="col-xl-3 col-md-6 mb-4">
-    <div class="card border-left-warning shadow h-100 py-2">
+    <div class="card border-left-warning shadow h-100 py-2 stats-card">
       <div class="card-body">
         <div class="row no-gutters align-items-center">
           <div class="col mr-2">
-            <div
-              class="text-xs font-weight-bold text-warning text-uppercase mb-1"
-            >
+            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">
               Avg. Add-ons Per Booking
             </div>
             <div class="h5 mb-0 font-weight-bold text-gray-800">
-              {{ avg_addons_per_booking|round(1) }}
+              {{ "%.1f"|format(avg_addons_per_booking) if avg_addons_per_booking else "0.0" }}
             </div>
           </div>
           <div class="col-auto">
@@ -239,6 +300,9 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     </div>
   </div>
 </div>
+
+<!-- Main Content -->
+{% if addon_data and addon_data|length > 0 %}
 
 <!-- Top Add-ons by Revenue -->
 <div class="card shadow-sm border-0 mb-4">
@@ -255,6 +319,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
 </div>
 
 <!-- Add-on Usage by Category -->
+{% if category_data and category_data|length > 0 %}
 <div class="card shadow-sm border-0 mb-4">
   <div class="card-header bg-white">
     <h5 class="mb-0 text-primary">
@@ -282,12 +347,15 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             <tbody>
               {% for category in category_data %}
               <tr>
-                <td><strong>{{ category.name }}</strong></td>
-                <td class="text-center">{{ category.bookings }}</td>
-                <td class="text-end">${{ category.revenue|round(2) }}</td>
+                <td><strong>{{ category.name if category.name else 'Unknown Category' }}</strong></td>
+                <td class="text-center">{{ category.bookings if category.bookings else 0 }}</td>
+                <td class="text-end">${{ "%.2f"|format(category.revenue) if category.revenue else "0.00" }}</td>
                 <td class="text-end">
-                  {{ (category.revenue / total_addon_revenue * 100)|round(1) if
-                  total_addon_revenue > 0 else 0 }}%
+                  {% if total_addon_revenue and total_addon_revenue > 0 and category.revenue %}
+                  {{ "%.1f"|format(category.revenue / total_addon_revenue * 100) }}%
+                  {% else %}
+                  0.0%
+                  {% endif %}
                 </td>
               </tr>
               {% endfor %}
@@ -298,6 +366,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     </div>
   </div>
 </div>
+{% endif %}
 
 <!-- Detailed Add-on Performance -->
 <h5 class="text-primary mb-3">
@@ -308,31 +377,31 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   {% for addon in addon_data %}
   <div class="col-lg-4 mb-4">
     <div
-      class="card shadow-sm border-0 addon-card {% if addon.popularity >= 70 %}addon-high{% elif addon.popularity >= 40 %}addon-medium{% else %}addon-low{% endif %}"
+      class="card shadow-sm border-0 addon-card {% if addon.popularity and addon.popularity >= 70 %}addon-high{% elif addon.popularity and addon.popularity >= 40 %}addon-medium{% else %}addon-low{% endif %}"
     >
       <div class="card-body">
         <div class="d-flex justify-content-between mb-2">
-          <h5 class="card-title mb-0">{{ addon.name }}</h5>
+          <h5 class="card-title mb-0">{{ addon.name if addon.name else 'Unknown Add-on' }}</h5>
           <span
-            class="badge {% if addon.popularity >= 70 %}bg-success{% elif addon.popularity >= 40 %}bg-warning{% else %}bg-danger{% endif %}"
+            class="badge {% if addon.popularity and addon.popularity >= 70 %}bg-success{% elif addon.popularity and addon.popularity >= 40 %}bg-warning{% else %}bg-danger{% endif %}"
           >
-            {{ addon.popularity }}% Popularity
+            {{ "%.1f"|format(addon.popularity) if addon.popularity else "0.0" }}% Popularity
           </span>
         </div>
         <div class="text-muted small mb-3">
-          Category: {{ addon.category_name }}
+          Category: {{ addon.category_name if addon.category_name else 'Uncategorized' }}
         </div>
 
         <div class="d-flex justify-content-between align-items-center mb-1">
           <span class="small">Booking Frequency:</span>
-          <span class="fw-bold">{{ addon.bookings }} times</span>
+          <span class="fw-bold">{{ addon.bookings if addon.bookings else 0 }} times</span>
         </div>
         <div class="progress mb-3">
           <div
-            class="progress-bar {% if addon.popularity >= 70 %}bg-success{% elif addon.popularity >= 40 %}bg-warning{% else %}bg-danger{% endif %}"
+            class="progress-bar {% if addon.popularity and addon.popularity >= 70 %}bg-success{% elif addon.popularity and addon.popularity >= 40 %}bg-warning{% else %}bg-danger{% endif %}"
             role="progressbar"
-            style="width: {{ addon.popularity }}%;"
-            aria-valuenow="{{ addon.popularity }}"
+            style="width: {{ "%.0f"|format(addon.popularity) if addon.popularity else 0 }}%;"
+            aria-valuenow="{{ "%.0f"|format(addon.popularity) if addon.popularity else 0 }}"
             aria-valuemin="0"
             aria-valuemax="100"
           ></div>
@@ -342,30 +411,33 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
           <div class="col-6">
             <div class="text-center">
               <div class="small text-muted">Price</div>
-              <div class="fw-bold">${{ addon.price }}</div>
+              <div class="fw-bold">${{ "%.2f"|format(addon.price) if addon.price else "0.00" }}</div>
             </div>
           </div>
           <div class="col-6">
             <div class="text-center">
               <div class="small text-muted">Revenue</div>
-              <div class="fw-bold">${{ addon.revenue|round(2) }}</div>
+              <div class="fw-bold">${{ "%.2f"|format(addon.revenue) if addon.revenue else "0.00" }}</div>
             </div>
           </div>
         </div>
 
         <div class="d-flex justify-content-between text-muted small">
-          <span
-            >{{ (addon.revenue / total_addon_revenue * 100)|round(1) if
-            total_addon_revenue > 0 else 0 }}% of total revenue</span
-          >
-          {% if addon.trend > 0 %}
-          <span class="text-success"
-            ><i class="fas fa-arrow-up"></i> {{ addon.trend }}%</span
-          >
-          {% elif addon.trend < 0 %}
-          <span class="text-danger"
-            ><i class="fas fa-arrow-down"></i> {{ addon.trend|abs }}%</span
-          >
+          <span>
+            {% if total_addon_revenue and total_addon_revenue > 0 and addon.revenue %}
+            {{ "%.1f"|format(addon.revenue / total_addon_revenue * 100) }}% of total revenue
+            {% else %}
+            0.0% of total revenue
+            {% endif %}
+          </span>
+          {% if addon.trend and addon.trend > 0 %}
+          <span class="text-success">
+            <i class="fas fa-arrow-up"></i> {{ "%.1f"|format(addon.trend) }}%
+          </span>
+          {% elif addon.trend and addon.trend < 0 %}
+          <span class="text-danger">
+            <i class="fas fa-arrow-down"></i> {{ "%.1f"|format(addon.trend|abs) }}%
+          </span>
           {% else %}
           <span><i class="fas fa-minus"></i> No change</span>
           {% endif %}
@@ -377,6 +449,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
 </div>
 
 <!-- Growth Opportunities -->
+{% if growth_opportunities and growth_opportunities|length > 0 %}
 <div class="card shadow-sm border-0 mt-4 mb-4">
   <div class="card-header bg-white">
     <h5 class="mb-0 text-primary">
@@ -396,11 +469,11 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
           <ol class="mb-0">
             {% for opportunity in growth_opportunities %}
             <li class="mb-2">
-              <strong>{{ opportunity.name }}</strong> - {{ opportunity.reason }}
+              <strong>{{ opportunity.name if opportunity.name else 'Unknown' }}</strong> - {{ opportunity.reason if opportunity.reason else 'Growth potential identified' }}
               <div class="mt-1">
-                <span class="badge badge-{{ opportunity.type }}"
-                  >{{ opportunity.potential }}% Growth Potential</span
-                >
+                <span class="badge bg-{{ opportunity.type if opportunity.type else 'primary' }}">
+                  {{ "%.1f"|format(opportunity.potential) if opportunity.potential else "0" }}% Growth Potential
+                </span>
               </div>
             </li>
             {% endfor %}
@@ -410,8 +483,10 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     </div>
   </div>
 </div>
+{% endif %}
 
 <!-- Add-on Combinations Analysis -->
+{% if addon_combinations and addon_combinations|length > 0 %}
 <div class="card shadow-sm border-0 mb-4">
   <div class="card-header bg-white">
     <h5 class="mb-0 text-primary">
@@ -425,28 +500,32 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         <div class="border rounded p-3">
           <div class="d-flex align-items-center mb-2">
             <div class="me-3">
-              <span class="badge bg-primary rounded-pill"
-                >{{ combo.frequency }} times</span
-              >
+              <span class="badge bg-primary rounded-pill">
+                {{ combo.frequency if combo.frequency else 0 }} times
+              </span>
             </div>
-            <h6 class="mb-0">{{ combo.names|join(" + ") }}</h6>
+            <h6 class="mb-0">
+              {% if combo.names %}
+              {{ combo.names|join(" + ") }}
+              {% else %}
+              Unknown Combination
+              {% endif %}
+            </h6>
           </div>
           <div class="small mb-2">
-            <strong>Combined Revenue:</strong> ${{ combo.revenue|round(2) }}
+            <strong>Combined Revenue:</strong> ${{ "%.2f"|format(combo.revenue) if combo.revenue else "0.00" }}
           </div>
-          <div class="small mb-0 text-muted">{{ combo.insight }}</div>
+          <div class="small mb-0 text-muted">{{ combo.insight if combo.insight else 'Popular combination among clients' }}</div>
         </div>
       </div>
       {% endfor %}
     </div>
   </div>
 </div>
+{% endif %}
 
 <!-- Recommendations -->
-<div
-  class="card shadow-sm border-0 mt-4"
-  style="border-left: 4px solid #f6c23e !important"
->
+<div class="card shadow-sm border-0 mt-4" style="border-left: 4px solid #f6c23e !important">
   <div class="card-header bg-white">
     <h5 class="mb-0 text-primary">
       <i class="fas fa-lightbulb me-2"></i>Insights & Recommendations
@@ -459,33 +538,33 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         <ul>
           <li>
             <strong>Most Popular Category:</strong>
-            {% set most_popular_category = namespace(name="None", bookings=0) %}
-            {% for category in category_data %} {% if category.bookings >
-            most_popular_category.bookings %} {% set most_popular_category.name
-            = category.name %} {% set most_popular_category.bookings =
-            category.bookings %} {% endif %} {% endfor %}
-            <span class="text-primary">{{ most_popular_category.name }}</span>
-            is the most frequently booked category with {{
-            most_popular_category.bookings }} bookings.
+            {% if category_data and category_data|length > 0 %}
+            {% set most_popular_category = category_data|sort(attribute='bookings', reverse=true)|first %}
+            <span class="text-primary">{{ most_popular_category.name if most_popular_category.name else 'Unknown' }}</span>
+            is the most frequently booked category with {{ most_popular_category.bookings if most_popular_category.bookings else 0 }} bookings.
+            {% else %}
+            <span class="text-muted">No category data available.</span>
+            {% endif %}
           </li>
           <li>
             <strong>Highest Revenue Add-on:</strong>
-            {% set highest_revenue = namespace(name="None", revenue=0) %} {% for
-            addon in addon_data %} {% if addon.revenue > highest_revenue.revenue
-            %} {% set highest_revenue.name = addon.name %} {% set
-            highest_revenue.revenue = addon.revenue %} {% endif %} {% endfor %}
-            <span class="text-primary">{{ highest_revenue.name }}</span>
-            generated the highest revenue at ${{
-            highest_revenue.revenue|round(2) }}.
+            {% if addon_data and addon_data|length > 0 %}
+            {% set highest_revenue = addon_data|sort(attribute='revenue', reverse=true)|first %}
+            <span class="text-primary">{{ highest_revenue.name if highest_revenue.name else 'Unknown' }}</span>
+            generated the highest revenue at ${{ "%.2f"|format(highest_revenue.revenue) if highest_revenue.revenue else "0.00" }}.
+            {% else %}
+            <span class="text-muted">No add-on data available.</span>
+            {% endif %}
           </li>
           <li>
-            <strong>Add-on Usage Rate:</strong> {{ addon_usage_rate|round(1) }}%
+            <strong>Add-on Usage Rate:</strong> 
+            {{ "%.1f"|format(addon_usage_rate) if addon_usage_rate else "0.0" }}% 
             of all bookings included at least one add-on service.
           </li>
           <li>
-            <strong>Revenue Contribution:</strong> Add-ons contribute {{
-            addon_revenue_percentage|round(1) }}% to overall revenue during this
-            period.
+            <strong>Revenue Contribution:</strong> Add-ons contribute 
+            {{ "%.1f"|format(addon_revenue_percentage) if addon_revenue_percentage else "0.0" }}% 
+            to overall revenue during this period.
           </li>
         </ul>
       </div>
@@ -494,36 +573,58 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         <h6 class="mb-3">Strategic Recommendations</h6>
         <ul>
           <li>
-            <strong>Bundle Opportunities:</strong> Create package deals
-            combining the most popular add-on combinations to increase overall
-            adoption.
+            <strong>Bundle Opportunities:</strong> Create package deals combining the most popular add-on combinations to increase overall adoption.
           </li>
           <li>
-            <strong>Pricing Optimization:</strong> Consider reviewing prices for
-            low-performing add-ons with high-growth potential to improve
-            adoption rates.
+            <strong>Pricing Optimization:</strong> Consider reviewing prices for low-performing add-ons with high-growth potential to improve adoption rates.
           </li>
           <li>
-            <strong>Staff Training:</strong> Train staff to proactively
-            recommend high-value add-ons that complement specific types of
-            bookings.
+            <strong>Staff Training:</strong> Train staff to proactively recommend high-value add-ons that complement specific types of bookings.
           </li>
           <li>
-            <strong>Marketing Focus:</strong> Highlight underutilized add-ons
-            with high satisfaction rates in promotional materials to boost
-            awareness.
+            <strong>Marketing Focus:</strong> Highlight underutilized add-ons with high satisfaction rates in promotional materials to boost awareness.
           </li>
           <li>
-            <strong>New Add-on Potential:</strong> Based on booking patterns and
-            client feedback, consider introducing new complementary services to
-            fill gaps in current offerings.
+            <strong>New Add-on Potential:</strong> Based on booking patterns and client feedback, consider introducing new complementary services to fill gaps in current offerings.
           </li>
         </ul>
       </div>
     </div>
   </div>
 </div>
-{% endblock %} {% block extra_js %}
+
+{% else %}
+<!-- Empty State - No Data -->
+<div class="card shadow border-0">
+  <div class="card-body">
+    <div class="empty-state">
+      <i class="fas fa-star text-muted"></i>
+      <h4 class="text-muted mb-3">No Add-on Data Available</h4>
+      <p class="text-muted mb-4">
+        No add-on usage data found for the selected date range. This could mean:
+      </p>
+      <ul class="text-muted text-start" style="max-width: 400px; margin: 0 auto;">
+        <li>No bookings with add-ons exist for this time period</li>
+        <li>No add-on services are configured in the system</li>
+        <li>The selected date range might be too narrow</li>
+        <li>All bookings were room-only without additional services</li>
+      </ul>
+      <div class="mt-4">
+        <a href="{{ url_for('addons') }}" class="btn btn-primary me-2">
+          <i class="fas fa-plus me-1"></i>Manage Add-ons
+        </a>
+        <a href="{{ url_for('bookings') }}" class="btn btn-outline-primary">
+          <i class="fas fa-calendar-check me-1"></i>View Bookings
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %} 
+
+{% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
@@ -547,15 +648,16 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
       warningLight: '#f6c23e40',
     };
 
+    {% if addon_data and addon_data|length > 0 %}
     // Revenue Chart
     const revenueCtx = document.getElementById('revenueChart').getContext('2d');
     new Chart(revenueCtx, {
       type: 'bar',
       data: {
-        labels: [{% for addon in top_revenue_addons %}'{{ addon.name }}',{% endfor %}],
+        labels: [{% for addon in addon_data[:10] %}'{{ addon.name }}',{% endfor %}],
         datasets: [{
           label: 'Revenue ($)',
-          data: [{% for addon in top_revenue_addons %}{{ addon.revenue }},{% endfor %}],
+          data: [{% for addon in addon_data[:10] %}{{ addon.revenue if addon.revenue else 0 }},{% endfor %}],
           backgroundColor: colorScheme.successLight,
           borderColor: colorScheme.success,
           borderWidth: 1
@@ -569,19 +671,34 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             beginAtZero: true,
             ticks: {
               callback: function(value) {
-                return '$' + value;
+                return '$' + value.toFixed(2);
               }
+            }
+          },
+          x: {
+            ticks: {
+              maxRotation: 45,
+              minRotation: 0
             }
           }
         },
         plugins: {
           legend: {
             display: false
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                return 'Revenue: $' + context.parsed.y.toFixed(2);
+              }
+            }
           }
         }
       }
     });
+    {% endif %}
 
+    {% if category_data and category_data|length > 0 %}
     // Category Usage Chart
     const categoryCtx = document.getElementById('categoryUsageChart').getContext('2d');
     new Chart(categoryCtx, {
@@ -589,7 +706,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
       data: {
         labels: [{% for category in category_data %}'{{ category.name }}',{% endfor %}],
         datasets: [{
-          data: [{% for category in category_data %}{{ category.revenue }},{% endfor %}],
+          data: [{% for category in category_data %}{{ category.revenue if category.revenue else 0 }},{% endfor %}],
           backgroundColor: [
             colorScheme.primary,
             colorScheme.success,
@@ -600,7 +717,8 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             '#9932CC',
             '#20B2AA'
           ],
-          borderWidth: 1
+          borderWidth: 2,
+          borderColor: '#ffffff'
         }]
       },
       options: {
@@ -616,7 +734,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
                 const label = context.label || '';
                 const value = context.raw;
                 const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                const percentage = Math.round((value / total) * 100);
+                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
                 return `${label}: $${value.toFixed(2)} (${percentage}%)`;
               }
             }
@@ -624,7 +742,9 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         }
       }
     });
+    {% endif %}
 
+    {% if growth_opportunities and growth_opportunities|length > 0 %}
     // Growth Opportunities Chart
     const growthCtx = document.getElementById('growthOpportunitiesChart').getContext('2d');
     new Chart(growthCtx, {
@@ -633,16 +753,16 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         labels: [{% for opportunity in growth_opportunities %}'{{ opportunity.name }}',{% endfor %}],
         datasets: [{
           label: 'Current Usage (%)',
-          data: [{% for opportunity in growth_opportunities %}{{ opportunity.current_usage }},{% endfor %}],
+          data: [{% for opportunity in growth_opportunities %}{{ opportunity.current_usage if opportunity.current_usage else 0 }},{% endfor %}],
           backgroundColor: colorScheme.primaryLight,
           borderColor: colorScheme.primary,
-          borderWidth: 1
+          borderWidth: 2
         }, {
           label: 'Potential Usage (%)',
-          data: [{% for opportunity in growth_opportunities %}{{ opportunity.current_usage + opportunity.potential }},{% endfor %}],
+          data: [{% for opportunity in growth_opportunities %}{{ (opportunity.current_usage if opportunity.current_usage else 0) + (opportunity.potential if opportunity.potential else 0) }},{% endfor %}],
           backgroundColor: colorScheme.successLight,
           borderColor: colorScheme.success,
-          borderWidth: 1
+          borderWidth: 2
         }]
       },
       options: {
@@ -659,14 +779,30 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         }
       }
     });
+    {% endif %}
 
     // Animation for progress bars
     const progressBars = document.querySelectorAll('.progress-bar');
     setTimeout(() => {
       progressBars.forEach(bar => {
-        bar.style.width = bar.getAttribute('aria-valuenow') + '%';
+        const targetWidth = bar.getAttribute('aria-valuenow') + '%';
+        bar.style.width = targetWidth;
       });
-    }, 200);
+    }, 300);
+
+    // Data logging for debugging
+    console.log("🔍 Popular Add-ons Report loaded successfully");
+    console.log("📊 Add-ons:", {{ addon_data|length if addon_data else 0 }});
+    console.log("📊 Categories:", {{ category_data|length if category_data else 0 }});
+    console.log("📊 Date range:", "{{ start_date.strftime('%Y-%m-%d') if start_date else 'None' }}", "to", "{{ end_date.strftime('%Y-%m-%d') if end_date else 'None' }}");
+    console.log("📊 Total addon revenue:", {{ total_addon_revenue if total_addon_revenue else 0 }});
+
+    {% if addon_data %}
+    console.log("📂 Add-on breakdown:");
+    {% for addon in addon_data[:5] %}
+    console.log("  - {{ addon.name if addon.name else 'Unknown' }}: {{ "%.1f"|format(addon.popularity) if addon.popularity else "0.0" }}% popularity, ${{ "%.2f"|format(addon.revenue) if addon.revenue else "0.00" }} revenue");
+    {% endfor %}
+    {% endif %}
   });
 </script>
 {% endblock %}

@@ -1,147 +1,265 @@
-<!-- Updated revenue.html template with fixes for all Decimal arithmetic -->
+{% extends "layout.html" %} 
+{% block title %}Revenue Report | Rainbow Towers Conference Booking{% endblock %} 
 
-{% extends "layout.html" %} {% block title %}Revenue Report | Rainbow Towers
-Conference Booking{% endblock %} {% block extra_css %}
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
 <style>
   .date-range-form .form-control {
-    width: auto;
-    display: inline-block;
+    border-right: none;
+  }
+
+  .date-range-form .input-group-text {
+    background-color: #fff;
+    border-left: none;
   }
 
   .revenue-card {
-    border-left: 4px solid #4e73df;
+    border-left: 4px solid;
+    transition: all 0.2s ease-in-out;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
   }
 
-  .revenue-card .h5 {
+  .revenue-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 0.25rem 2rem 0 rgba(58, 59, 69, 0.2);
+  }
+
+  .revenue-card-total {
+    border-color: #4e73df;
+  }
+
+  .revenue-card-room {
+    border-color: #1cc88a;
+  }
+
+  .revenue-card-addon {
+    border-color: #36b9cc;
+  }
+
+  .revenue-value {
+    font-size: 2rem;
+    font-weight: bold;
     color: #5a5c69;
   }
 
-  .revenue-card .revenue-value {
-    font-size: 1.5rem;
-    font-weight: bold;
-    color: #4e73df;
+  .revenue-percentage {
+    font-size: 0.875rem;
+    color: #858796;
   }
 
   .chart-container {
-    height: 300px;
+    position: relative;
+    height: 350px;
   }
 
   .category-revenue {
-    margin-bottom: 1rem;
+    margin-bottom: 1.5rem;
     padding-bottom: 1rem;
     border-bottom: 1px solid rgba(0, 0, 0, 0.1);
   }
 
   .category-revenue:last-child {
     border-bottom: none;
+    margin-bottom: 0;
   }
 
   .category-name {
-    font-weight: bold;
+    font-weight: 600;
     color: #4e73df;
   }
 
   .progress {
-    height: 20px;
+    height: 1.25rem;
+    border-radius: 0.5rem;
+  }
+
+  .progress-bar {
+    border-radius: 0.5rem;
+  }
+
+  .stats-card {
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .stats-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .debug-info {
+    background-color: #f8f9fc;
+    border: 1px solid #e3e6f0;
+    border-radius: 0.35rem;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    font-size: 0.875rem;
+    color: #5a5c69;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: #6c757d;
+  }
+
+  .empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    opacity: 0.3;
+  }
+
+  .booking-row:hover {
+    background-color: rgba(78, 115, 223, 0.05);
   }
 </style>
-{% endblock %} {% block content %}
+{% endblock %} 
+
+{% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
-  <h1><i class="fas fa-chart-line text-primary me-2"></i>Revenue Report</h1>
-  <a href="{{ url_for('reports') }}" class="btn btn-outline-secondary">
-    <i class="fas fa-arrow-left me-1"></i>Back to Reports
-  </a>
+  <h1>
+    <i class="fas fa-chart-line text-primary me-2"></i>Revenue Report
+  </h1>
+  <div>
+    <a href="{{ url_for('reports') }}" class="btn btn-outline-secondary me-2">
+      <i class="fas fa-arrow-left me-1"></i>Back to Reports
+    </a>
+    <button class="btn btn-primary" onclick="window.print()">
+      <i class="fas fa-print me-1"></i>Print Report
+    </button>
+  </div>
 </div>
+
+<!-- Debug Information (only shown in development or with debug parameter) -->
+{% if config.DEBUG or request.args.get('debug') %}
+<div class="debug-info">
+  <strong><i class="fas fa-bug me-1"></i>Debug Info:</strong>
+  Bookings loaded: {{ bookings|length if bookings else 0 }} |
+  Date range: {{ start_date.strftime('%Y-%m-%d') if start_date else 'None' }} to {{ end_date.strftime('%Y-%m-%d') if end_date else 'None' }} |
+  Total revenue: ${{ total_revenue if total_revenue else 0 }} |
+  Template render time: {{ moment().format('YYYY-MM-DD HH:mm:ss') if moment else now.strftime('%Y-%m-%d %H:%M:%S') }}
+  <br>
+  <small class="text-muted">
+    Data integrity: {% if bookings %}✅ Booking data loaded{% else %}❌ No booking data{% endif %} |
+    {% if room_revenues %}✅ Room revenue calculated{% else %}❌ No room revenue{% endif %} |
+    {% if addon_revenues %}✅ Addon revenue calculated{% else %}❌ No addon revenue{% endif %}
+  </small>
+</div>
+{% endif %}
 
 <!-- Date Range Filter -->
 <div class="card shadow-sm border-0 mb-4">
+  <div class="card-header bg-gradient-primary">
+    <h6 class="m-0 font-weight-bold text-white">
+      <i class="fas fa-calendar-alt me-1"></i>Report Parameters
+    </h6>
+  </div>
   <div class="card-body">
-    <form
-      method="GET"
-      action="{{ url_for('revenue_report') }}"
-      class="date-range-form"
-    >
-      <div class="row align-items-end">
-        <div class="col-md-4">
-          <label class="form-label">Start Date</label>
+    <form method="GET" action="{{ url_for('revenue_report') }}" class="row g-3 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label">Start Date</label>
+        <div class="input-group date-range-form">
           <input
-            type="date"
+            type="text"
+            class="form-control datepicker"
             name="start_date"
-            class="form-control"
-            value="{{ start_date.strftime('%Y-%m-%d') }}"
+            value="{{ start_date.strftime('%Y-%m-%d') if start_date else '' }}"
+            placeholder="Select start date"
           />
+          <span class="input-group-text"><i class="fas fa-calendar"></i></span>
         </div>
-        <div class="col-md-4">
-          <label class="form-label">End Date</label>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">End Date</label>
+        <div class="input-group date-range-form">
           <input
-            type="date"
+            type="text"
+            class="form-control datepicker"
             name="end_date"
-            class="form-control"
-            value="{{ end_date.strftime('%Y-%m-%d') }}"
+            value="{{ end_date.strftime('%Y-%m-%d') if end_date else '' }}"
+            placeholder="Select end date"
           />
+          <span class="input-group-text"><i class="fas fa-calendar"></i></span>
         </div>
-        <div class="col-md-4">
-          <button type="submit" class="btn btn-primary">
-            <i class="fas fa-filter me-1"></i>Apply Filter
-          </button>
-          <a
-            href="{{ url_for('revenue_report') }}"
-            class="btn btn-outline-secondary"
-          >
-            <i class="fas fa-redo me-1"></i>Reset
-          </a>
-        </div>
+      </div>
+      <div class="col-md-4">
+        <button type="submit" class="btn btn-primary me-2">
+          <i class="fas fa-filter me-1"></i>Apply Filter
+        </button>
+        <a href="{{ url_for('revenue_report') }}" class="btn btn-outline-secondary">
+          <i class="fas fa-redo me-1"></i>Reset
+        </a>
       </div>
     </form>
   </div>
 </div>
 
-<!-- Revenue Summary -->
+<!-- Revenue Summary Cards -->
 <div class="row mb-4">
-  <div class="col-md-4">
-    <div class="card shadow-sm border-0 revenue-card">
-      <div class="card-body">
-        <div class="h5 mb-2">Total Revenue</div>
-        <div class="revenue-value">${{ total_revenue }}</div>
-        <div class="text-muted">{{ bookings|length }} bookings</div>
+  <div class="col-md-4 mb-3">
+    <div class="card shadow-sm border-0 revenue-card revenue-card-total stats-card">
+      <div class="card-body text-center">
+        <div class="mb-2">
+          <i class="fas fa-dollar-sign fa-2x text-primary mb-2"></i>
+          <h5 class="card-title mb-0">Total Revenue</h5>
+        </div>
+        <div class="revenue-value text-primary">${{ "%.2f"|format(total_revenue) if total_revenue else "0.00" }}</div>
+        <div class="revenue-percentage mt-2">
+          <i class="fas fa-calendar-check me-1"></i>{{ bookings|length if bookings else 0 }} bookings
+          {% if bookings and bookings|length > 0 %}
+          <br><small>Avg: ${{ "%.2f"|format(total_revenue / bookings|length) }}</small>
+          {% endif %}
+        </div>
       </div>
     </div>
   </div>
-  <div class="col-md-4">
-    <div class="card shadow-sm border-0 revenue-card">
-      <div class="card-body">
-        <div class="h5 mb-2">Room Revenue</div>
-        <div class="revenue-value">${{ room_revenue }}</div>
-        {% set decimal_class = total_revenue.__class__ %} {% if total_revenue >
-        0 %} {% set room_percentage = ((room_revenue / total_revenue) *
-        decimal_class('100')).quantize(decimal_class('0.1')) %}
-        <div class="text-muted">{{ room_percentage }}% of total revenue</div>
-        {% else %}
-        <div class="text-muted">0% of total revenue</div>
-        {% endif %}
+  
+  <div class="col-md-4 mb-3">
+    <div class="card shadow-sm border-0 revenue-card revenue-card-room stats-card">
+      <div class="card-body text-center">
+        <div class="mb-2">
+          <i class="fas fa-door-open fa-2x text-success mb-2"></i>
+          <h5 class="card-title mb-0">Room Revenue</h5>
+        </div>
+        <div class="revenue-value text-success">${{ "%.2f"|format(room_revenue) if room_revenue else "0.00" }}</div>
+        <div class="revenue-percentage mt-2">
+          {% if total_revenue and total_revenue > 0 %}
+          {% set room_percentage = (room_revenue / total_revenue * 100) %}
+          <i class="fas fa-percentage me-1"></i>{{ "%.1f"|format(room_percentage) }}% of total
+          {% else %}
+          <i class="fas fa-percentage me-1"></i>0% of total
+          {% endif %}
+        </div>
       </div>
     </div>
   </div>
-  <div class="col-md-4">
-    <div class="card shadow-sm border-0 revenue-card">
-      <div class="card-body">
-        <div class="h5 mb-2">Add-on Revenue</div>
-        <div class="revenue-value">${{ addon_revenue }}</div>
-        {% if total_revenue > 0 %} {% set addon_percentage = ((addon_revenue /
-        total_revenue) * decimal_class('100')).quantize(decimal_class('0.1')) %}
-        <div class="text-muted">{{ addon_percentage }}% of total revenue</div>
-        {% else %}
-        <div class="text-muted">0% of total revenue</div>
-        {% endif %}
+  
+  <div class="col-md-4 mb-3">
+    <div class="card shadow-sm border-0 revenue-card revenue-card-addon stats-card">
+      <div class="card-body text-center">
+        <div class="mb-2">
+          <i class="fas fa-plus-circle fa-2x text-info mb-2"></i>
+          <h5 class="card-title mb-0">Add-on Revenue</h5>
+        </div>
+        <div class="revenue-value text-info">${{ "%.2f"|format(addon_revenue) if addon_revenue else "0.00" }}</div>
+        <div class="revenue-percentage mt-2">
+          {% if total_revenue and total_revenue > 0 %}
+          {% set addon_percentage = (addon_revenue / total_revenue * 100) %}
+          <i class="fas fa-percentage me-1"></i>{{ "%.1f"|format(addon_percentage) }}% of total
+          {% else %}
+          <i class="fas fa-percentage me-1"></i>0% of total
+          {% endif %}
+        </div>
       </div>
     </div>
   </div>
 </div>
 
+<!-- Main Content -->
+{% if bookings and bookings|length > 0 %}
+
 <!-- Revenue Charts -->
 <div class="row mb-4">
   <!-- Revenue by Room -->
-  <div class="col-md-6">
+  <div class="col-md-6 mb-4">
     <div class="card shadow-sm border-0 h-100">
       <div class="card-header bg-white">
         <h5 class="mb-0 text-primary">
@@ -149,6 +267,7 @@ Conference Booking{% endblock %} {% block extra_css %}
         </h5>
       </div>
       <div class="card-body">
+        {% if room_revenues and room_revenues|length > 0 %}
         <div class="chart-container">
           <canvas id="roomRevenueChart"></canvas>
         </div>
@@ -156,52 +275,49 @@ Conference Booking{% endblock %} {% block extra_css %}
         <div class="mt-4">
           {% for room, revenue in room_revenues.items() %}
           <div class="category-revenue">
-            <div class="d-flex justify-content-between mb-1">
+            <div class="d-flex justify-content-between align-items-center mb-2">
               <span class="category-name">{{ room }}</span>
-              <span class="fw-bold">${{ revenue }}</span>
+              <span class="fw-bold">${{ "%.2f"|format(revenue) }}</span>
             </div>
-            <div class="d-flex justify-content-between mb-1 small text-muted">
+            <div class="d-flex justify-content-between mb-2 small text-muted">
               <span>Contribution to Total Revenue</span>
-              {% if total_revenue > 0 %} {% set room_percentage = ((revenue /
-              total_revenue) *
-              decimal_class('100')).quantize(decimal_class('0.1')) %}
-              <span>{{ room_percentage }}%</span>
+              {% if total_revenue and total_revenue > 0 %}
+              {% set room_percentage = (revenue / total_revenue * 100) %}
+              <span>{{ "%.1f"|format(room_percentage) }}%</span>
               {% else %}
               <span>0%</span>
               {% endif %}
             </div>
             <div class="progress">
-              {% if total_revenue > 0 %} {% set room_percentage_value =
-              ((revenue / total_revenue) *
-              decimal_class('100')).quantize(decimal_class('0')) %}
+              {% if total_revenue and total_revenue > 0 %}
+              {% set progress_width = (revenue / total_revenue * 100) %}
               <div
-                class="progress-bar"
+                class="progress-bar bg-primary"
                 role="progressbar"
-                style="width: {{ room_percentage_value }}%"
-                aria-valuenow="{{ room_percentage_value }}"
+                style="width: {{ "%.0f"|format(progress_width) }}%"
+                aria-valuenow="{{ "%.0f"|format(progress_width) }}"
                 aria-valuemin="0"
                 aria-valuemax="100"
               ></div>
               {% else %}
-              <div
-                class="progress-bar"
-                role="progressbar"
-                style="width: 0%"
-                aria-valuenow="0"
-                aria-valuemin="0"
-                aria-valuemax="100"
-              ></div>
+              <div class="progress-bar bg-primary" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
               {% endif %}
             </div>
           </div>
           {% endfor %}
         </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+          <i class="fas fa-chart-pie fa-3x mb-3 opacity-25"></i>
+          <p>No room revenue data available for this period</p>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
 
   <!-- Revenue by Add-on Category -->
-  <div class="col-md-6">
+  <div class="col-md-6 mb-4">
     <div class="card shadow-sm border-0 h-100">
       <div class="card-header bg-white">
         <h5 class="mb-0 text-primary">
@@ -209,6 +325,7 @@ Conference Booking{% endblock %} {% block extra_css %}
         </h5>
       </div>
       <div class="card-body">
+        {% if addon_revenues and addon_revenues|length > 0 %}
         <div class="chart-container">
           <canvas id="addonRevenueChart"></canvas>
         </div>
@@ -216,56 +333,53 @@ Conference Booking{% endblock %} {% block extra_css %}
         <div class="mt-4">
           {% for category, revenue in addon_revenues.items() %}
           <div class="category-revenue">
-            <div class="d-flex justify-content-between mb-1">
+            <div class="d-flex justify-content-between align-items-center mb-2">
               <span class="category-name">{{ category }}</span>
-              <span class="fw-bold">${{ revenue }}</span>
+              <span class="fw-bold">${{ "%.2f"|format(revenue) }}</span>
             </div>
-            <div class="d-flex justify-content-between mb-1 small text-muted">
+            <div class="d-flex justify-content-between mb-2 small text-muted">
               <span>Contribution to Add-on Revenue</span>
-              {% if addon_revenue > 0 %} {% set category_percentage = ((revenue
-              / addon_revenue) *
-              decimal_class('100')).quantize(decimal_class('0.1')) %}
-              <span>{{ category_percentage }}%</span>
+              {% if addon_revenue and addon_revenue > 0 %}
+              {% set category_percentage = (revenue / addon_revenue * 100) %}
+              <span>{{ "%.1f"|format(category_percentage) }}%</span>
               {% else %}
               <span>0%</span>
               {% endif %}
             </div>
             <div class="progress">
-              {% if addon_revenue > 0 %} {% set category_percentage_value =
-              ((revenue / addon_revenue) *
-              decimal_class('100')).quantize(decimal_class('0')) %}
+              {% if addon_revenue and addon_revenue > 0 %}
+              {% set progress_width = (revenue / addon_revenue * 100) %}
               <div
                 class="progress-bar bg-success"
                 role="progressbar"
-                style="width: {{ category_percentage_value }}%"
-                aria-valuenow="{{ category_percentage_value }}"
+                style="width: {{ "%.0f"|format(progress_width) }}%"
+                aria-valuenow="{{ "%.0f"|format(progress_width) }}"
                 aria-valuemin="0"
                 aria-valuemax="100"
               ></div>
               {% else %}
-              <div
-                class="progress-bar bg-success"
-                role="progressbar"
-                style="width: 0%"
-                aria-valuenow="0"
-                aria-valuemin="0"
-                aria-valuemax="100"
-              ></div>
+              <div class="progress-bar bg-success" role="progressbar" style="width: 0%" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
               {% endif %}
             </div>
           </div>
           {% endfor %}
         </div>
+        {% else %}
+        <div class="text-center py-4 text-muted">
+          <i class="fas fa-plus-circle fa-3x mb-3 opacity-25"></i>
+          <p>No add-on revenue data available for this period</p>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
 </div>
 
-<!-- Recent Bookings -->
+<!-- Recent Bookings Table -->
 <div class="card shadow-sm border-0 mb-4">
   <div class="card-header bg-white">
     <h5 class="mb-0 text-primary">
-      <i class="fas fa-list me-2"></i>Recent Bookings
+      <i class="fas fa-list me-2"></i>Revenue Breakdown by Booking
     </h5>
   </div>
   <div class="card-body p-0">
@@ -273,102 +387,235 @@ Conference Booking{% endblock %} {% block extra_css %}
       <table class="table table-hover mb-0">
         <thead class="table-light">
           <tr>
-            <th>Booking</th>
+            <th>Booking Details</th>
             <th>Client</th>
             <th>Room</th>
             <th>Date</th>
             <th class="text-end">Room Charges</th>
             <th class="text-end">Add-on Charges</th>
-            <th class="text-end">Total</th>
+            <th class="text-end">Total Revenue</th>
           </tr>
         </thead>
         <tbody>
           {% for booking in bookings %}
-          <tr>
+          <tr class="booking-row">
             <td>
-              <a
-                href="{{ url_for('view_booking', id=booking.id) }}"
-                class="text-decoration-none"
-              >
-                {{ booking.title }}
-              </a>
+              <div>
+                <a href="{{ url_for('view_booking', id=booking.id) }}" class="text-decoration-none fw-bold">
+                  {{ booking.title }}
+                </a>
+                <br>
+                <small class="text-muted">ID: {{ booking.id }}</small>
+              </div>
             </td>
             <td>
-              {{ booking.client.company_name or booking.client.contact_person }}
+              {% if booking.client %}
+              <div>
+                <span class="fw-bold">{{ booking.client.company_name or booking.client.contact_person }}</span>
+                {% if booking.client.company_name and booking.client.contact_person %}
+                <br><small class="text-muted">{{ booking.client.contact_person }}</small>
+                {% endif %}
+              </div>
+              {% else %}
+              <span class="text-muted">Unknown Client</span>
+              {% endif %}
             </td>
-            <td>{{ booking.room.name }}</td>
-            <td>{{ booking.start_time.strftime('%d %b %Y') }}</td>
-            <td class="text-end">${{ booking.room_rate }}</td>
-            <td class="text-end">${{ booking.addons_total }}</td>
-            <td class="text-end fw-bold">${{ booking.total_price }}</td>
-          </tr>
-          {% else %}
-          <tr>
-            <td colspan="7" class="text-center py-4">
-              <p class="text-muted mb-0">
-                No bookings found in the selected date range
-              </p>
+            <td>
+              {% if booking.room %}
+              <span class="fw-bold">{{ booking.room.name }}</span>
+              {% else %}
+              <span class="text-muted">Unknown Room</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if booking.start_time %}
+              <div>
+                <span class="fw-bold">{{ booking.start_time.strftime('%d %b %Y') }}</span>
+                <br>
+                <small class="text-muted">
+                  {{ booking.start_time.strftime('%H:%M') }} - 
+                  {{ booking.end_time.strftime('%H:%M') if booking.end_time else 'N/A' }}
+                </small>
+              </div>
+              {% else %}
+              <span class="text-muted">N/A</span>
+              {% endif %}
+            </td>
+            <td class="text-end">
+              <span class="fw-bold text-primary">${{ "%.2f"|format(booking.room_rate) if booking.room_rate else "0.00" }}</span>
+            </td>
+            <td class="text-end">
+              <span class="fw-bold text-success">${{ "%.2f"|format(booking.addons_total) if booking.addons_total else "0.00" }}</span>
+            </td>
+            <td class="text-end">
+              <span class="fw-bold text-dark">${{ "%.2f"|format(booking.total_price) if booking.total_price else "0.00" }}</span>
             </td>
           </tr>
           {% endfor %}
         </tbody>
+        <tfoot class="table-light">
+          <tr>
+            <th colspan="4" class="text-end">Totals:</th>
+            <th class="text-end">${{ "%.2f"|format(room_revenue) if room_revenue else "0.00" }}</th>
+            <th class="text-end">${{ "%.2f"|format(addon_revenue) if addon_revenue else "0.00" }}</th>
+            <th class="text-end">${{ "%.2f"|format(total_revenue) if total_revenue else "0.00" }}</th>
+          </tr>
+        </tfoot>
       </table>
     </div>
   </div>
 </div>
-{% endblock %} {% block extra_js %}
+
+{% else %}
+<!-- Empty State - No Data -->
+<div class="card shadow border-0">
+  <div class="card-body">
+    <div class="empty-state">
+      <i class="fas fa-chart-line text-muted"></i>
+      <h4 class="text-muted mb-3">No Revenue Data Available</h4>
+      <p class="text-muted mb-4">
+        No confirmed bookings found for the selected date range. This could mean:
+      </p>
+      <ul class="text-muted text-start" style="max-width: 400px; margin: 0 auto;">
+        <li>No confirmed bookings exist for this time period</li>
+        <li>All bookings are still tentative or cancelled</li>
+        <li>The selected date range might be too narrow</li>
+      </ul>
+      <div class="mt-4">
+        <a href="{{ url_for('calendar') }}" class="btn btn-primary me-2">
+          <i class="fas fa-calendar-plus me-1"></i>View Booking Calendar
+        </a>
+        <a href="{{ url_for('bookings') }}" class="btn btn-outline-primary">
+          <i class="fas fa-list me-1"></i>Manage Bookings
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %} 
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   document.addEventListener('DOMContentLoaded', function() {
-      // Revenue by Room Chart
-      const roomCtx = document.getElementById('roomRevenueChart').getContext('2d');
-      const roomRevenueChart = new Chart(roomCtx, {
-          type: 'doughnut',
-          data: {
-              labels: [{% for room, revenue in room_revenues.items() %}'{{ room }}',{% endfor %}],
-              datasets: [{
-                  data: [{% for room, revenue in room_revenues.items() %}{{ revenue }},{% endfor %}],
-                  backgroundColor: [
-                      '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796',
-                      '#5a5c69', '#2e59d9', '#17a673', '#2c9faf', '#ffbf00', '#d52a1a'
-                  ],
-                  hoverOffset: 4
-              }]
-          },
-          options: {
-              maintainAspectRatio: false,
-              plugins: {
-                  legend: {
-                      position: 'bottom'
-                  }
-              }
-          }
-      });
+    // Initialize date pickers
+    flatpickr('.datepicker', {
+      dateFormat: "Y-m-d",
+      maxDate: "today"
+    });
 
-      // Revenue by Add-on Category Chart
-      const addonCtx = document.getElementById('addonRevenueChart').getContext('2d');
-      const addonRevenueChart = new Chart(addonCtx, {
-          type: 'doughnut',
-          data: {
-              labels: [{% for category, revenue in addon_revenues.items() %}'{{ category }}',{% endfor %}],
-              datasets: [{
-                  data: [{% for category, revenue in addon_revenues.items() %}{{ revenue }},{% endfor %}],
-                  backgroundColor: [
-                      '#1cc88a', '#4e73df', '#36b9cc', '#f6c23e', '#e74a3b', '#858796',
-                      '#5a5c69', '#17a673', '#2e59d9', '#2c9faf', '#ffbf00', '#d52a1a'
-                  ],
-                  hoverOffset: 4
-              }]
+    {% if room_revenues and room_revenues|length > 0 %}
+    // Revenue by Room Chart
+    const roomCtx = document.getElementById('roomRevenueChart').getContext('2d');
+    const roomRevenueChart = new Chart(roomCtx, {
+      type: 'doughnut',
+      data: {
+        labels: [{% for room, revenue in room_revenues.items() %}'{{ room }}',{% endfor %}],
+        datasets: [{
+          data: [{% for room, revenue in room_revenues.items() %}{{ revenue }},{% endfor %}],
+          backgroundColor: [
+            '#4e73df', '#1cc88a', '#36b9cc', '#f6c23e', '#e74a3b', '#858796',
+            '#5a5c69', '#2e59d9', '#17a673', '#2c9faf', '#ffbf00', '#d52a1a'
+          ],
+          borderWidth: 2,
+          borderColor: '#ffffff',
+          hoverOffset: 8
+        }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              padding: 20,
+              usePointStyle: true
+            }
           },
-          options: {
-              maintainAspectRatio: false,
-              plugins: {
-                  legend: {
-                      position: 'bottom'
-                  }
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.parsed;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((value / total) * 100).toFixed(1);
+                return `${label}: $${value.toFixed(2)} (${percentage}%)`;
               }
+            }
           }
-      });
+        }
+      }
+    });
+    {% endif %}
+
+    {% if addon_revenues and addon_revenues|length > 0 %}
+    // Revenue by Add-on Category Chart
+    const addonCtx = document.getElementById('addonRevenueChart').getContext('2d');
+    const addonRevenueChart = new Chart(addonCtx, {
+      type: 'doughnut',
+      data: {
+        labels: [{% for category, revenue in addon_revenues.items() %}'{{ category }}',{% endfor %}],
+        datasets: [{
+          data: [{% for category, revenue in addon_revenues.items() %}{{ revenue }},{% endfor %}],
+          backgroundColor: [
+            '#1cc88a', '#4e73df', '#36b9cc', '#f6c23e', '#e74a3b', '#858796',
+            '#5a5c69', '#17a673', '#2e59d9', '#2c9faf', '#ffbf00', '#d52a1a'
+          ],
+          borderWidth: 2,
+          borderColor: '#ffffff',
+          hoverOffset: 8
+        }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              padding: 20,
+              usePointStyle: true
+            }
+          },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const label = context.label || '';
+                const value = context.parsed;
+                const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                const percentage = ((value / total) * 100).toFixed(1);
+                return `${label}: $${value.toFixed(2)} (${percentage}%)`;
+              }
+            }
+          }
+        }
+      }
+    });
+    {% endif %}
+
+    // Data logging for debugging
+    console.log("🔍 Revenue Report loaded successfully");
+    console.log("📊 Bookings:", {{ bookings|length if bookings else 0 }});
+    console.log("📊 Date range:", "{{ start_date.strftime('%Y-%m-%d') if start_date else 'None' }}", "to", "{{ end_date.strftime('%Y-%m-%d') if end_date else 'None' }}");
+    console.log("📊 Total revenue:", {{ total_revenue if total_revenue else 0 }});
+    console.log("📊 Room revenue:", {{ room_revenue if room_revenue else 0 }});
+    console.log("📊 Addon revenue:", {{ addon_revenue if addon_revenue else 0 }});
+
+    {% if room_revenues %}
+    console.log("📂 Room revenue breakdown:");
+    {% for room, revenue in room_revenues.items() %}
+    console.log("  - {{ room }}: ${{ revenue }}");
+    {% endfor %}
+    {% endif %}
+
+    {% if addon_revenues %}
+    console.log("📂 Addon revenue breakdown:");
+    {% for category, revenue in addon_revenues.items() %}
+    console.log("  - {{ category }}: ${{ revenue }}");
+    {% endfor %}
+    {% endif %}
   });
 </script>
 {% endblock %}

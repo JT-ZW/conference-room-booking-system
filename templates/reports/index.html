@@ -2,63 +2,242 @@
 Booking{% endblock %} {% block extra_css %}
 <style>
   .report-card {
-    transition: transform 0.2s;
+    transition: all 0.3s ease-in-out;
     border-left: 4px solid;
+    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
+    min-height: 320px;
   }
 
   .report-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-8px);
+    box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.25);
   }
 
   .report-utilization {
     border-color: #4e73df;
   }
+
   .report-revenue {
     border-color: #1cc88a;
   }
+
   .report-clients {
     border-color: #36b9cc;
   }
+
   .report-popular {
     border-color: #f6c23e;
   }
+
+  .report-icon-wrapper {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 1rem;
+  }
+
+  .bg-primary-soft {
+    background-color: rgba(78, 115, 223, 0.1);
+  }
+
+  .bg-success-soft {
+    background-color: rgba(28, 200, 138, 0.1);
+  }
+
+  .bg-info-soft {
+    background-color: rgba(54, 185, 204, 0.1);
+  }
+
+  .bg-warning-soft {
+    background-color: rgba(246, 194, 62, 0.1);
+  }
+
+  .feature-list {
+    list-style: none;
+    padding-left: 0;
+  }
+
+  .feature-list li {
+    padding: 0.25rem 0;
+    position: relative;
+    padding-left: 1.5rem;
+  }
+
+  .feature-list li:before {
+    content: "✓";
+    position: absolute;
+    left: 0;
+    color: #1cc88a;
+    font-weight: bold;
+  }
+
+  .stats-overview {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+  }
+
+  .stats-card {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    backdrop-filter: blur(10px);
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .stats-card:hover {
+    transform: translateY(-2px);
+    background: rgba(255, 255, 255, 0.15);
+  }
+
+  .page-header {
+    background: linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #4facfe 100%);
+    padding: 2rem 0;
+    margin-bottom: 2rem;
+    border-radius: 0.75rem;
+    color: white;
+  }
+
+  .quick-actions {
+    background-color: #f8f9fc;
+    border-radius: 0.75rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .btn-report {
+    transition: all 0.2s ease-in-out;
+    border-radius: 0.5rem;
+    font-weight: 600;
+    padding: 0.75rem 1.5rem;
+  }
+
+  .btn-report:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.15);
+  }
 </style>
 {% endblock %} {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h1><i class="fas fa-chart-bar text-primary me-2"></i>Reports</h1>
+<!-- Page Header -->
+<div class="page-header text-center">
+  <div class="container">
+    <h1 class="display-5 mb-3">
+      <i class="fas fa-chart-bar me-3"></i>Reports & Analytics
+    </h1>
+    <p class="lead mb-0">
+      Comprehensive insights into your conference room booking performance
+    </p>
+  </div>
 </div>
 
+<!-- Overview Statistics -->
+{% if stats %}
+<div class="stats-overview rounded-3 mb-4">
+  <div class="container py-4">
+    <div class="row text-center">
+      <div class="col-md-3 mb-3">
+        <div class="stats-card rounded p-3 h-100">
+          <i class="fas fa-calendar-check fa-2x mb-2"></i>
+          <h4 class="mb-1">{{ stats.current_month_bookings }}</h4>
+          <small>Bookings This Month</small>
+        </div>
+      </div>
+      <div class="col-md-3 mb-3">
+        <div class="stats-card rounded p-3 h-100">
+          <i class="fas fa-dollar-sign fa-2x mb-2"></i>
+          <h4 class="mb-1">
+            ${{ "%.0f"|format(stats.current_month_revenue) }}
+          </h4>
+          <small>Revenue This Month</small>
+        </div>
+      </div>
+      <div class="col-md-3 mb-3">
+        <div class="stats-card rounded p-3 h-100">
+          <i class="fas fa-door-open fa-2x mb-2"></i>
+          <h4 class="mb-1">{{ stats.active_rooms }}</h4>
+          <small>Active Rooms</small>
+        </div>
+      </div>
+      <div class="col-md-3 mb-3">
+        <div class="stats-card rounded p-3 h-100">
+          <i class="fas fa-chart-line fa-2x mb-2"></i>
+          <h4 class="mb-1">{{ stats.utilization_rate }}%</h4>
+          <small>Utilization Rate</small>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Quick Actions -->
+<div class="quick-actions">
+  <div class="row align-items-center">
+    <div class="col-md-8">
+      <h5 class="mb-2">
+        <i class="fas fa-bolt text-primary me-2"></i>Quick Actions
+      </h5>
+      <p class="text-muted mb-md-0">
+        Generate reports for specific date ranges or export data for further
+        analysis.
+      </p>
+    </div>
+    <div class="col-md-4 text-md-end">
+      <button class="btn btn-primary me-2" onclick="showDateRangeModal()">
+        <i class="fas fa-calendar-alt me-1"></i>Custom Date Range
+      </button>
+      <button class="btn btn-outline-primary" onclick="window.print()">
+        <i class="fas fa-print me-1"></i>Print Reports
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Reports Grid -->
 <div class="row">
   <!-- Room Utilization Report -->
   <div class="col-lg-6 mb-4">
     <div class="card shadow-sm border-0 h-100 report-card report-utilization">
-      <div class="card-body">
-        <div class="d-flex align-items-center mb-3">
-          <div class="rounded-circle bg-primary-soft p-3 me-3">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-start mb-3">
+          <div class="report-icon-wrapper bg-primary-soft me-3">
             <i class="fas fa-chart-pie fa-2x text-primary"></i>
           </div>
-          <div>
-            <h5 class="card-title mb-0">Room Utilization</h5>
-            <div class="text-muted small">Analyze conference room usage</div>
+          <div class="flex-grow-1">
+            <h5 class="card-title mb-1">Room Utilization Analysis</h5>
+            <div class="text-muted small">Track conference room efficiency</div>
           </div>
         </div>
-        <p class="card-text">
-          Track how efficiently your conference rooms are being used. Identify
-          peak usage periods and opportunities for optimization.
+
+        <p class="card-text mb-3">
+          Analyze how efficiently your conference rooms are being utilized.
+          Identify peak usage periods, underutilized spaces, and optimization
+          opportunities.
         </p>
-        <ul class="mb-0">
-          <li>Utilization rates by room</li>
-          <li>Daily and monthly usage patterns</li>
-          <li>Occupancy trends over time</li>
+
+        <ul class="feature-list mb-4 flex-grow-1">
+          <li>Utilization rates by room and time period</li>
+          <li>Peak vs. off-peak usage analysis</li>
+          <li>Room capacity vs. actual usage</li>
+          <li>Revenue per room analysis</li>
+          <li>Booking frequency patterns</li>
         </ul>
-      </div>
-      <div class="card-footer bg-white border-0">
-        <a
-          href="{{ url_for('room_utilization_report') }}"
-          class="btn btn-primary"
-        >
-          <i class="fas fa-chart-pie me-1"></i>View Report
-        </a>
+
+        <div class="mt-auto">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <small class="text-muted">
+              <i class="fas fa-clock me-1"></i>Last updated: Today
+            </small>
+            <span class="badge bg-primary">Popular</span>
+          </div>
+          <a
+            href="{{ url_for('room_utilization_report') }}"
+            class="btn btn-primary btn-report w-100"
+          >
+            <i class="fas fa-chart-pie me-2"></i>View Utilization Report
+          </a>
+        </div>
       </div>
     </div>
   </div>
@@ -66,30 +245,45 @@ Booking{% endblock %} {% block extra_css %}
   <!-- Revenue Report -->
   <div class="col-lg-6 mb-4">
     <div class="card shadow-sm border-0 h-100 report-card report-revenue">
-      <div class="card-body">
-        <div class="d-flex align-items-center mb-3">
-          <div class="rounded-circle bg-success-soft p-3 me-3">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-start mb-3">
+          <div class="report-icon-wrapper bg-success-soft me-3">
             <i class="fas fa-dollar-sign fa-2x text-success"></i>
           </div>
-          <div>
-            <h5 class="card-title mb-0">Revenue Report</h5>
-            <div class="text-muted small">Financial performance analysis</div>
+          <div class="flex-grow-1">
+            <h5 class="card-title mb-1">Revenue & Financial Analysis</h5>
+            <div class="text-muted small">Monitor financial performance</div>
           </div>
         </div>
-        <p class="card-text">
-          Get insights into your booking revenue streams. Analyze income from
-          room bookings and add-on services.
+
+        <p class="card-text mb-3">
+          Get comprehensive insights into your booking revenue streams. Track
+          income from room bookings, add-on services, and identify growth
+          opportunities.
         </p>
-        <ul class="mb-0">
-          <li>Revenue by room and service type</li>
-          <li>Monthly and quarterly financial trends</li>
-          <li>Add-on contribution to overall revenue</li>
+
+        <ul class="feature-list mb-4 flex-grow-1">
+          <li>Revenue breakdown by room and service</li>
+          <li>Monthly and quarterly trends</li>
+          <li>Add-on service contribution analysis</li>
+          <li>Average booking value tracking</li>
+          <li>Seasonal revenue patterns</li>
         </ul>
-      </div>
-      <div class="card-footer bg-white border-0">
-        <a href="{{ url_for('revenue_report') }}" class="btn btn-success">
-          <i class="fas fa-dollar-sign me-1"></i>View Report
-        </a>
+
+        <div class="mt-auto">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <small class="text-muted">
+              <i class="fas fa-clock me-1"></i>Real-time data
+            </small>
+            <span class="badge bg-success">Essential</span>
+          </div>
+          <a
+            href="{{ url_for('revenue_report') }}"
+            class="btn btn-success btn-report w-100"
+          >
+            <i class="fas fa-dollar-sign me-2"></i>View Revenue Report
+          </a>
+        </div>
       </div>
     </div>
   </div>
@@ -97,30 +291,44 @@ Booking{% endblock %} {% block extra_css %}
   <!-- Client Analysis -->
   <div class="col-lg-6 mb-4">
     <div class="card shadow-sm border-0 h-100 report-card report-clients">
-      <div class="card-body">
-        <div class="d-flex align-items-center mb-3">
-          <div class="rounded-circle bg-info-soft p-3 me-3">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-start mb-3">
+          <div class="report-icon-wrapper bg-info-soft me-3">
             <i class="fas fa-users fa-2x text-info"></i>
           </div>
-          <div>
-            <h5 class="card-title mb-0">Client Analysis</h5>
-            <div class="text-muted small">Customer booking patterns</div>
+          <div class="flex-grow-1">
+            <h5 class="card-title mb-1">Client Behavior Analysis</h5>
+            <div class="text-muted small">Understand customer patterns</div>
           </div>
         </div>
-        <p class="card-text">
-          Understand your client base and their booking behavior. Identify your
-          most valuable customers.
+
+        <p class="card-text mb-3">
+          Understand your client base and their booking behaviors. Identify your
+          most valuable customers and develop targeted retention strategies.
         </p>
-        <ul class="mb-0">
+
+        <ul class="feature-list mb-4 flex-grow-1">
           <li>Top clients by booking frequency</li>
-          <li>Booking value by client</li>
-          <li>Client retention metrics</li>
+          <li>Customer lifetime value analysis</li>
+          <li>Booking patterns and preferences</li>
+          <li>Client retention and churn rates</li>
+          <li>Segment-based insights</li>
         </ul>
-      </div>
-      <div class="card-footer bg-white border-0">
-        <a href="{{ url_for('client_analysis_report') }}" class="btn btn-info">
-          <i class="fas fa-users me-1"></i>View Report
-        </a>
+
+        <div class="mt-auto">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <small class="text-muted">
+              <i class="fas fa-clock me-1"></i>Updated daily
+            </small>
+            <span class="badge bg-info">Insights</span>
+          </div>
+          <a
+            href="{{ url_for('client_analysis_report') }}"
+            class="btn btn-info btn-report w-100"
+          >
+            <i class="fas fa-users me-2"></i>View Client Analysis
+          </a>
+        </div>
       </div>
     </div>
   </div>
@@ -128,35 +336,276 @@ Booking{% endblock %} {% block extra_css %}
   <!-- Popular Add-ons -->
   <div class="col-lg-6 mb-4">
     <div class="card shadow-sm border-0 h-100 report-card report-popular">
-      <div class="card-body">
-        <div class="d-flex align-items-center mb-3">
-          <div class="rounded-circle bg-warning-soft p-3 me-3">
+      <div class="card-body d-flex flex-column">
+        <div class="d-flex align-items-start mb-3">
+          <div class="report-icon-wrapper bg-warning-soft me-3">
             <i class="fas fa-star fa-2x text-warning"></i>
           </div>
-          <div>
-            <h5 class="card-title mb-0">Popular Add-ons</h5>
-            <div class="text-muted small">Service popularity analysis</div>
+          <div class="flex-grow-1">
+            <h5 class="card-title mb-1">Add-on Service Analytics</h5>
+            <div class="text-muted small">Optimize service offerings</div>
           </div>
         </div>
-        <p class="card-text">
+
+        <p class="card-text mb-3">
           Discover which add-on services are most popular among your clients.
-          Identify opportunities for upselling.
+          Identify upselling opportunities and optimize your service portfolio.
         </p>
-        <ul class="mb-0">
-          <li>Most-booked add-on services</li>
-          <li>Add-on usage by client type</li>
-          <li>Trends in service popularity</li>
+
+        <ul class="feature-list mb-4 flex-grow-1">
+          <li>Most popular add-on services</li>
+          <li>Revenue contribution by service</li>
+          <li>Usage patterns and trends</li>
+          <li>Cross-selling opportunities</li>
+          <li>Service performance metrics</li>
         </ul>
-      </div>
-      <div class="card-footer bg-white border-0">
-        <a
-          href="{{ url_for('popular_addons_report') }}"
-          class="btn btn-warning"
-        >
-          <i class="fas fa-star me-1"></i>View Report
-        </a>
+
+        <div class="mt-auto">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <small class="text-muted">
+              <i class="fas fa-clock me-1"></i>Updated hourly
+            </small>
+            <span class="badge bg-warning">Growth</span>
+          </div>
+          <a
+            href="{{ url_for('popular_addons_report') }}"
+            class="btn btn-warning btn-report w-100"
+          >
+            <i class="fas fa-star me-2"></i>View Add-on Analytics
+          </a>
+        </div>
       </div>
     </div>
   </div>
 </div>
+
+<!-- Additional Information -->
+<div class="row mt-4">
+  <div class="col-md-8">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white">
+        <h6 class="mb-0 text-primary">
+          <i class="fas fa-info-circle me-2"></i>Report Information
+        </h6>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          <div class="col-md-6">
+            <h6>Data Sources</h6>
+            <ul class="text-muted">
+              <li>Real-time booking data</li>
+              <li>Room configuration settings</li>
+              <li>Client information database</li>
+              <li>Add-on service records</li>
+            </ul>
+          </div>
+          <div class="col-md-6">
+            <h6>Report Features</h6>
+            <ul class="text-muted">
+              <li>Interactive charts and graphs</li>
+              <li>Exportable data formats</li>
+              <li>Custom date range filtering</li>
+              <li>Automated insights and recommendations</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white">
+        <h6 class="mb-0 text-primary">
+          <i class="fas fa-question-circle me-2"></i>Need Help?
+        </h6>
+      </div>
+      <div class="card-body">
+        <p class="text-muted mb-3">
+          Having trouble with reports or need custom analytics?
+        </p>
+        <div class="d-grid gap-2">
+          <button
+            class="btn btn-outline-primary btn-sm"
+            onclick="showHelpModal()"
+          >
+            <i class="fas fa-book me-1"></i>View Documentation
+          </button>
+          <button
+            class="btn btn-outline-secondary btn-sm"
+            onclick="contactSupport()"
+          >
+            <i class="fas fa-headset me-1"></i>Contact Support
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Custom Date Range Modal -->
+<div
+  class="modal fade"
+  id="dateRangeModal"
+  tabindex="-1"
+  aria-labelledby="dateRangeModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="dateRangeModalLabel">
+          <i class="fas fa-calendar-alt me-2"></i>Custom Date Range
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <form id="dateRangeForm">
+          <div class="row">
+            <div class="col-md-6 mb-3">
+              <label class="form-label">Start Date</label>
+              <input
+                type="date"
+                class="form-control"
+                id="startDate"
+                name="start_date"
+                required
+              />
+            </div>
+            <div class="col-md-6 mb-3">
+              <label class="form-label">End Date</label>
+              <input
+                type="date"
+                class="form-control"
+                id="endDate"
+                name="end_date"
+                required
+              />
+            </div>
+          </div>
+          <div class="mb-3">
+            <label class="form-label">Report Type</label>
+            <select
+              class="form-control"
+              id="reportType"
+              name="report_type"
+              required
+            >
+              <option value="">Select a report...</option>
+              <option value="room_utilization">Room Utilization</option>
+              <option value="revenue">Revenue Analysis</option>
+              <option value="client_analysis">Client Analysis</option>
+              <option value="popular_addons">Add-on Analytics</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          onclick="generateCustomReport()"
+        >
+          <i class="fas fa-chart-bar me-1"></i>Generate Report
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Add animation to report cards
+    const reportCards = document.querySelectorAll('.report-card');
+
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: '0px 0px -50px 0px'
+    };
+
+    const observer = new IntersectionObserver(function(entries) {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.style.opacity = '1';
+          entry.target.style.transform = 'translateY(0)';
+        }
+      });
+    }, observerOptions);
+
+    // Set initial state and observe cards
+    reportCards.forEach((card, index) => {
+      card.style.opacity = '0';
+      card.style.transform = 'translateY(20px)';
+      card.style.transition = `opacity 0.6s ease ${index * 0.1}s, transform 0.6s ease ${index * 0.1}s`;
+      observer.observe(card);
+    });
+
+    console.log("📊 Reports page loaded successfully");
+    {% if stats %}
+    console.log("📈 Statistics loaded:", {{ stats|tojson }});
+    {% endif %}
+  });
+
+  function showDateRangeModal() {
+    const modal = new bootstrap.Modal(document.getElementById('dateRangeModal'));
+    modal.show();
+  }
+
+  function generateCustomReport() {
+    const form = document.getElementById('dateRangeForm');
+    const formData = new FormData(form);
+
+    const startDate = formData.get('start_date');
+    const endDate = formData.get('end_date');
+    const reportType = formData.get('report_type');
+
+    if (!startDate || !endDate || !reportType) {
+      alert('Please fill in all fields');
+      return;
+    }
+
+    let reportUrl = '';
+    switch(reportType) {
+      case 'room_utilization':
+        reportUrl = `{{ url_for('room_utilization_report') }}?start_date=${startDate}&end_date=${endDate}`;
+        break;
+      case 'revenue':
+        reportUrl = `{{ url_for('revenue_report') }}?start_date=${startDate}&end_date=${endDate}`;
+        break;
+      case 'client_analysis':
+        reportUrl = `{{ url_for('client_analysis_report') }}?start_date=${startDate}&end_date=${endDate}`;
+        break;
+      case 'popular_addons':
+        reportUrl = `{{ url_for('popular_addons_report') }}?start_date=${startDate}&end_date=${endDate}`;
+        break;
+    }
+
+    if (reportUrl) {
+      window.location.href = reportUrl;
+    }
+  }
+
+  function showHelpModal() {
+    alert('Documentation feature coming soon!');
+  }
+
+  function contactSupport() {
+    alert('Support contact feature coming soon!');
+  }
+</script>
 {% endblock %}

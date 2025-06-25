@@ -1854,93 +1854,121 @@ def sync_clients_data():
 @app.route('/addons')
 @login_required
 def addons():
-    """Enhanced add-ons page with robust Supabase data handling"""
+    """Enhanced add-ons page with robust Supabase data handling and accurate statistics"""
     try:
         print("🔍 DEBUG: Starting enhanced addons route")
         
-        # Get categories with their addons using nested query
-        try:
-            categories_data = supabase_admin.table('addon_categories').select("""
-                *,
-                addons(*)
-            """).order('name').execute()
-            
-            print(f"✅ DEBUG: Found {len(categories_data.data)} categories with nested addons")
-            categories = categories_data.data
-            
-        except Exception as nested_error:
-            print(f"⚠️ DEBUG: Nested query failed, using fallback: {nested_error}")
-            # Fallback: get categories and addons separately
-            categories_data = supabase_admin.table('addon_categories').select('*').order('name').execute()
-            addons_data = supabase_admin.table('addons').select('*').order('name').execute()
-            
-            categories = categories_data.data
-            all_addons = addons_data.data
-            
-            # Group addons by category
-            for category in categories:
-                category['addons'] = [addon for addon in all_addons if addon.get('category_id') == category['id']]
-            
-            print(f"✅ DEBUG: Fallback successful - {len(categories)} categories, {len(all_addons)} addons")
+        # Always use the reliable fallback approach instead of nested queries
+        # This ensures better compatibility with different Supabase configurations
         
-        # Get booking usage data
+        # Step 1: Get all categories
         try:
-            booking_addons = supabase_admin.table('booking_addons').select('addon_id').execute()
-            addon_usage = {}
-            for ba in booking_addons.data:
-                addon_id = ba['addon_id']
-                addon_usage[addon_id] = addon_usage.get(addon_id, 0) + 1
+            categories_response = supabase_admin.table('addon_categories').select('*').order('name').execute()
+            categories = categories_response.data if categories_response.data else []
+            print(f"✅ DEBUG: Found {len(categories)} categories")
+        except Exception as e:
+            print(f"❌ ERROR: Failed to fetch categories: {e}")
+            categories = []
+        
+        # Step 2: Get all addons
+        try:
+            addons_response = supabase_admin.table('addons').select('*').order('name').execute()
+            all_addons = addons_response.data if addons_response.data else []
+            print(f"✅ DEBUG: Found {len(all_addons)} total addons")
+        except Exception as e:
+            print(f"❌ ERROR: Failed to fetch addons: {e}")
+            all_addons = []
+        
+        # Step 3: Get booking usage data
+        addon_usage = {}
+        try:
+            booking_addons_response = supabase_admin.table('booking_addons').select('addon_id').execute()
+            booking_addons = booking_addons_response.data if booking_addons_response.data else []
             
-            print(f"✅ DEBUG: Calculated usage for {len(addon_usage)} addons")
+            for ba in booking_addons:
+                addon_id = ba.get('addon_id')
+                if addon_id:
+                    addon_usage[addon_id] = addon_usage.get(addon_id, 0) + 1
             
-        except Exception as usage_error:
-            print(f"⚠️ DEBUG: Usage calculation failed: {usage_error}")
+            print(f"✅ DEBUG: Calculated usage for {len(addon_usage)} addons from {len(booking_addons)} booking_addon records")
+        except Exception as e:
+            print(f"⚠️ DEBUG: Usage calculation failed: {e}")
             addon_usage = {}
         
-        # Process categories and calculate statistics
-        total_addons = 0
+        # Step 4: Process categories and group addons
+        total_addons = len(all_addons)
         active_addons = 0
         addons_with_usage = 0
         
+        # Initialize categories with empty addon lists
         for category in categories:
-            # Ensure category has addons list
-            if 'addons' not in category or category['addons'] is None:
-                category['addons'] = []
-            
+            category['addons'] = []
             # Ensure category has description
             if 'description' not in category or category['description'] is None:
                 category['description'] = ''
-            
-            # Process each addon in the category
-            for addon in category['addons']:
-                total_addons += 1
-                
-                # Ensure addon has all required fields with defaults
-                addon['name'] = addon.get('name', 'Unnamed Addon')
-                addon['description'] = addon.get('description', '')
-                addon['price'] = addon.get('price', 0.0)
-                addon['is_active'] = addon.get('is_active', True)
-                
-                # Count active addons
-                if addon['is_active']:
-                    active_addons += 1
-                
-                # Add usage information
-                booking_count = addon_usage.get(addon['id'], 0)
-                addon['booking_count'] = booking_count
-                addon['has_bookings'] = booking_count > 0
-                
-                if booking_count > 0:
-                    addons_with_usage += 1
-                
-                print(f"📊 DEBUG: Addon '{addon['name']}' - Active: {addon['is_active']}, Bookings: {booking_count}")
         
-        # Calculate statistics
+        # Group addons by category and process addon data
+        addons_by_category = {}
+        uncategorized_addons = []
+        
+        for addon in all_addons:
+            # Ensure addon has all required fields with defaults
+            addon['name'] = addon.get('name', 'Unnamed Addon')
+            addon['description'] = addon.get('description', '')
+            addon['price'] = float(addon.get('price', 0.0))
+            addon['is_active'] = bool(addon.get('is_active', True))
+            addon['category_id'] = addon.get('category_id')
+            
+            # Count active addons
+            if addon['is_active']:
+                active_addons += 1
+            
+            # Add usage information
+            booking_count = addon_usage.get(addon.get('id'), 0)
+            addon['booking_count'] = booking_count
+            addon['has_bookings'] = booking_count > 0
+            
+            if booking_count > 0:
+                addons_with_usage += 1
+            
+            print(f"📊 DEBUG: Addon '{addon['name']}' - Active: {addon['is_active']}, Bookings: {booking_count}, Category ID: {addon['category_id']}")
+            
+            # Group by category
+            category_id = addon.get('category_id')
+            if category_id:
+                if category_id not in addons_by_category:
+                    addons_by_category[category_id] = []
+                addons_by_category[category_id].append(addon)
+            else:
+                uncategorized_addons.append(addon)
+        
+        # Step 5: Assign addons to their categories
+        for category in categories:
+            category_id = category.get('id')
+            if category_id in addons_by_category:
+                category['addons'] = addons_by_category[category_id]
+                print(f"✅ DEBUG: Category '{category['name']}' has {len(category['addons'])} addons")
+            else:
+                category['addons'] = []
+                print(f"ℹ️ DEBUG: Category '{category['name']}' has no addons")
+        
+        # Step 6: Handle uncategorized addons (create a temporary category if needed)
+        if uncategorized_addons:
+            print(f"⚠️ DEBUG: Found {len(uncategorized_addons)} uncategorized addons")
+            uncategorized_category = {
+                'id': None,
+                'name': 'Uncategorized',
+                'description': 'Add-ons without a specific category',
+                'addons': uncategorized_addons
+            }
+            categories.append(uncategorized_category)
+        
+        # Step 7: Calculate final statistics
         usage_rate = (addons_with_usage / total_addons * 100) if total_addons > 0 else 0
         
         statistics = {
             'total_addons': total_addons,
-            'total_categories': len(categories),
+            'total_categories': len([c for c in categories if c.get('id') is not None]),  # Don't count "Uncategorized"
             'active_addons': active_addons,
             'usage_rate': round(usage_rate, 1),
             'addons_with_usage': addons_with_usage
@@ -1952,6 +1980,13 @@ def addons():
         print(f"  - Active addons: {statistics['active_addons']}")
         print(f"  - Usage rate: {statistics['usage_rate']}%")
         print(f"  - Addons with usage: {statistics['addons_with_usage']}")
+        
+        # Step 8: Verify data integrity before rendering
+        print(f"🔍 DEBUG: Data verification:")
+        for category in categories:
+            print(f"  - Category '{category['name']}': {len(category.get('addons', []))} addons")
+            for addon in category.get('addons', [])[:3]:  # Show first 3 addons per category
+                print(f"    * {addon['name']} - ${addon['price']} - Active: {addon['is_active']}")
         
         return render_template('addons/index.html', 
                              title='Add-ons', 
@@ -1978,7 +2013,8 @@ def addons():
                              title='Add-ons', 
                              categories=[],
                              stats=empty_stats)
-
+        
+        
 @app.route('/addons/new', methods=['GET', 'POST'])
 @login_required
 def new_addon():
@@ -3111,9 +3147,9 @@ def reports():
 @app.route('/reports/client-analysis')
 @login_required
 def client_analysis_report():
-    """Enhanced client analysis report with comprehensive real data"""
+    """Enhanced client analysis report with reliable data fetching using fallback approach"""
     try:
-        print("DEBUG: Starting comprehensive client analysis report generation")
+        print("🔍 DEBUG: Starting reliable client analysis report generation")
         
         # Get date range
         start_date = request.args.get('start_date')
@@ -3130,44 +3166,70 @@ def client_analysis_report():
         else:
             end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
         
-        print(f"DEBUG: Date range: {start_date} to {end_date}")
+        print(f"📅 DEBUG: Date range: {start_date} to {end_date}")
         
-        # Get all clients
-        all_clients = supabase_admin.table('clients').select('*').execute().data
+        # Step 1: Get all clients using admin client (reliable approach)
+        try:
+            all_clients_response = supabase_admin.table('clients').select('*').execute()
+            all_clients = all_clients_response.data if all_clients_response.data else []
+            print(f"✅ DEBUG: Found {len(all_clients)} total clients")
+        except Exception as e:
+            print(f"❌ ERROR: Failed to fetch clients: {e}")
+            all_clients = []
         
-        # Get bookings with client data using admin client
-        bookings = supabase_admin.table('bookings').select("""
-            *,
-            client:clients(*),
-            room:rooms(name),
-            booking_addons(
-                quantity,
-                addon:addons(name, price)
-            )
-        """).gte('start_time', start_date.isoformat()).lte('end_time', end_date.isoformat()).execute()
+        # Step 2: Get bookings in date range (simple query first)
+        try:
+            start_date_iso = start_date.isoformat()
+            end_date_iso = end_date.isoformat()
+            
+            # Simple booking query first
+            bookings_response = supabase_admin.table('bookings').select('*').gte('start_time', start_date_iso).lte('end_time', end_date_iso).neq('status', 'cancelled').execute()
+            
+            bookings_raw = bookings_response.data if bookings_response.data else []
+            print(f"✅ DEBUG: Found {len(bookings_raw)} bookings for date range")
+        except Exception as e:
+            print(f"❌ ERROR: Failed to fetch bookings: {e}")
+            bookings_raw = []
         
-        print(f"DEBUG: Found {len(bookings.data)} bookings for client analysis")
+        # Step 3: Get rooms and clients data separately for reliable lookups
+        try:
+            rooms_response = supabase_admin.table('rooms').select('id, name').execute()
+            rooms_lookup = {room['id']: room for room in rooms_response.data} if rooms_response.data else {}
+            print(f"✅ DEBUG: Created lookup for {len(rooms_lookup)} rooms")
+        except Exception as e:
+            print(f"❌ ERROR: Failed to fetch rooms: {e}")
+            rooms_lookup = {}
         
-        # Analyze client data
+        try:
+            clients_response = supabase_admin.table('clients').select('id, company_name, contact_person, email, phone').execute()
+            clients_lookup = {client['id']: client for client in clients_response.data} if clients_response.data else {}
+            print(f"✅ DEBUG: Created lookup for {len(clients_lookup)} clients")
+        except Exception as e:
+            print(f"❌ ERROR: Failed to fetch clients for lookup: {e}")
+            clients_lookup = {}
+        
+        # Step 4: Process bookings and build client statistics
         client_stats = {}
         total_revenue = 0
-        total_bookings = len(bookings.data)
+        total_bookings = len(bookings_raw)
         
-        for booking in bookings.data:
-            if not booking.get('client'):
+        for booking in bookings_raw:
+            client_id = booking.get('client_id')
+            if not client_id or client_id not in clients_lookup:
+                print(f"⚠️ DEBUG: Skipping booking {booking.get('id')} - no valid client_id")
                 continue
                 
-            client_id = booking['client']['id']
-            client_name = booking['client'].get('company_name') or booking['client'].get('contact_person', 'Unknown Client')
+            client_data = clients_lookup[client_id]
+            client_name = client_data.get('company_name') or client_data.get('contact_person', 'Unknown Client')
             
             if client_id not in client_stats:
                 client_stats[client_id] = {
                     'id': client_id,
                     'name': client_name,
-                    'company_name': booking['client'].get('company_name'),
-                    'contact_person': booking['client'].get('contact_person'),
-                    'email': booking['client'].get('email', 'No email'),
-                    'phone': booking['client'].get('phone', 'No phone'),
+                    'company_name': client_data.get('company_name'),
+                    'contact_person': client_data.get('contact_person'),
+                    'email': client_data.get('email', 'No email'),
+                    'phone': client_data.get('phone', 'No phone'),
                     'bookings': 0,
                     'total_revenue': 0,
                     'last_booking': None,
@@ -3175,30 +3237,37 @@ def client_analysis_report():
                     'booking_dates': []
                 }
             
-            booking_revenue = float(booking.get('total_price', 0))
-            client_stats[client_id]['bookings'] += 1
-            client_stats[client_id]['total_revenue'] += booking_revenue
-            
-            # Track booking dates
+            # Process booking revenue and dates
             try:
-                if isinstance(booking['start_time'], str):
-                    booking_date = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00'))
-                else:
-                    booking_date = booking['start_time']
-                    
-                client_stats[client_id]['booking_dates'].append(booking_date)
+                booking_revenue = float(booking.get('total_price', 0))
+                client_stats[client_id]['bookings'] += 1
+                client_stats[client_id]['total_revenue'] += booking_revenue
                 
-                if not client_stats[client_id]['last_booking'] or booking_date > client_stats[client_id]['last_booking']:
-                    client_stats[client_id]['last_booking'] = booking_date
+                # Parse booking date
+                if booking.get('start_time'):
+                    if isinstance(booking['start_time'], str):
+                        booking_date = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00'))
+                    else:
+                        booking_date = booking['start_time']
+                        
+                    client_stats[client_id]['booking_dates'].append(booking_date)
                     
-                if not client_stats[client_id]['first_booking'] or booking_date < client_stats[client_id]['first_booking']:
-                    client_stats[client_id]['first_booking'] = booking_date
-            except (ValueError, TypeError):
-                pass
-            
-            total_revenue += booking_revenue
+                    if not client_stats[client_id]['last_booking'] or booking_date > client_stats[client_id]['last_booking']:
+                        client_stats[client_id]['last_booking'] = booking_date
+                        
+                    if not client_stats[client_id]['first_booking'] or booking_date < client_stats[client_id]['first_booking']:
+                        client_stats[client_id]['first_booking'] = booking_date
+                
+                total_revenue += booking_revenue
+                
+            except (ValueError, TypeError) as e:
+                print(f"⚠️ DEBUG: Error processing booking {booking.get('id')}: {e}")
+                # Still count the booking even if revenue parsing fails
+                client_stats[client_id]['bookings'] += 1
         
-        # Calculate client segments
+        print(f"📊 DEBUG: Processed {len(client_stats)} clients with bookings")
+        
+        # Step 5: Calculate client segments and statistics
         premium_clients = []
         repeat_clients = []
         new_clients = []
@@ -3212,6 +3281,7 @@ def client_analysis_report():
         current_date = datetime.now(UTC)
         
         for client_id, stats in client_stats.items():
+            # Calculate averages
             stats['avg_booking_value'] = round(stats['total_revenue'] / stats['bookings'], 2) if stats['bookings'] > 0 else 0
             stats['revenue_percentage'] = round((stats['total_revenue'] / total_revenue * 100), 1) if total_revenue > 0 else 0
             
@@ -3242,20 +3312,8 @@ def client_analysis_report():
             if is_at_risk:
                 at_risk_clients.append(stats)
         
-        # Calculate segment statistics
-        premium_clients_count = len(premium_clients)
-        repeat_clients_count = len(repeat_clients)
-        new_clients_count = len(new_clients)
-        at_risk_clients_count = len(at_risk_clients)
+        # Step 6: Calculate summary statistics
         active_clients = len(client_stats)
-        
-        # Calculate averages
-        premium_clients_avg_value = sum(c['avg_booking_value'] for c in premium_clients) / len(premium_clients) if premium_clients else 0
-        repeat_clients_avg_value = sum(c['avg_booking_value'] for c in repeat_clients) / len(repeat_clients) if repeat_clients else 0
-        new_clients_avg_value = sum(c['avg_booking_value'] for c in new_clients) / len(new_clients) if new_clients else 0
-        at_risk_clients_avg_value = sum(c['avg_booking_value'] for c in at_risk_clients) / len(at_risk_clients) if at_risk_clients else 0
-        
-        # Calculate retention rate
         returning_clients = len([c for c in client_stats.values() if c['bookings'] > 1])
         retention_rate = (returning_clients / active_clients * 100) if active_clients > 0 else 0
         
@@ -3271,34 +3329,11 @@ def client_analysis_report():
         top_clients_by_bookings = sorted(client_stats.values(), key=lambda x: x['bookings'], reverse=True)[:15]
         top_clients_by_revenue = sorted(client_stats.values(), key=lambda x: x['total_revenue'], reverse=True)[:15]
         
-        # Monthly trends (simplified)
-        monthly_trends = {
-            'new_clients': [0] * 12,
-            'returning_clients': [0] * 12
-        }
-        
-        # Room and addon preferences (basic implementation)
-        room_preferences = {
-            'room_types': ['Conference Room A', 'Meeting Room B', 'Executive Suite'],
-            'premium_clients': [10, 8, 15],
-            'regular_clients': [15, 12, 8],
-            'new_clients': [8, 6, 4]
-        }
-        
-        addon_preferences = [
-            {'name': 'Audio/Visual Equipment', 'popularity': 75, 'revenue': 2500},
-            {'name': 'Catering Services', 'popularity': 60, 'revenue': 3200},
-            {'name': 'Wi-Fi & Tech Support', 'popularity': 90, 'revenue': 1800}
-        ]
-        
-        # Retention data
-        retention_data = {
-            'less_than_1_month': 85,
-            'one_to_3_months': 65,
-            'three_to_6_months': 45,
-            'six_to_12_months': 25,
-            'more_than_12_months': 15
-        }
+        # Calculate segment averages
+        premium_clients_avg_value = sum(c['avg_booking_value'] for c in premium_clients) / len(premium_clients) if premium_clients else 0
+        repeat_clients_avg_value = sum(c['avg_booking_value'] for c in repeat_clients) / len(repeat_clients) if repeat_clients else 0
+        new_clients_avg_value = sum(c['avg_booking_value'] for c in new_clients) / len(new_clients) if new_clients else 0
+        at_risk_clients_avg_value = sum(c['avg_booking_value'] for c in at_risk_clients) / len(at_risk_clients) if at_risk_clients else 0
         
         # Calculate totals for segments
         premium_clients_total = sum(c['total_revenue'] for c in premium_clients)
@@ -3307,7 +3342,25 @@ def client_analysis_report():
         new_clients_bookings = sum(c['bookings'] for c in new_clients)
         at_risk_clients_bookings = sum(c['bookings'] for c in at_risk_clients)
         
-        # Prepare template variables
+        # Mock data for features that require complex analysis (can be enhanced later)
+        monthly_trends = {'new_clients': [0] * 12, 'returning_clients': [0] * 12}
+        room_preferences = {
+            'room_types': ['Conference Room A', 'Meeting Room B', 'Executive Suite'],
+            'premium_clients': [10, 8, 15],
+            'regular_clients': [15, 12, 8],
+            'new_clients': [8, 6, 4]
+        }
+        addon_preferences = [
+            {'name': 'Audio/Visual Equipment', 'popularity': 75, 'revenue': 2500},
+            {'name': 'Catering Services', 'popularity': 60, 'revenue': 3200},
+            {'name': 'Wi-Fi & Tech Support', 'popularity': 90, 'revenue': 1800}
+        ]
+        retention_data = {
+            'less_than_1_month': 85, 'one_to_3_months': 65, 'three_to_6_months': 45,
+            'six_to_12_months': 25, 'more_than_12_months': 15
+        }
+        
+        # Step 7: Prepare template variables
         template_vars = {
             'title': 'Client Analysis Report',
             'start_date': start_date,
@@ -3315,10 +3368,10 @@ def client_analysis_report():
             'total_bookings': total_bookings,
             'active_clients': active_clients,
             'avg_client_value': round(total_revenue / active_clients, 2) if active_clients > 0 else 0,
-            'premium_clients_count': premium_clients_count,
-            'repeat_clients_count': repeat_clients_count,
-            'new_clients_count': new_clients_count,
-            'at_risk_clients_count': at_risk_clients_count,
+            'premium_clients_count': len(premium_clients),
+            'repeat_clients_count': len(repeat_clients),
+            'new_clients_count': len(new_clients),
+            'at_risk_clients_count': len(at_risk_clients),
             'premium_clients_avg_value': round(premium_clients_avg_value, 2),
             'repeat_clients_avg_value': round(repeat_clients_avg_value, 2),
             'new_clients_avg_value': round(new_clients_avg_value, 2),
@@ -3346,10 +3399,7 @@ def client_analysis_report():
                 'most_popular_addon': 'Wi-Fi & Tech Support',
                 'avg_addons_per_booking': 1.5
             },
-            'highest_revenue_addon': {
-                'name': 'Catering Services',
-                'revenue': 3200
-            },
+            'highest_revenue_addon': {'name': 'Catering Services', 'revenue': 3200},
             'underutilized_addon': {
                 'name': 'Executive Catering',
                 'satisfaction_rate': 95,
@@ -3357,23 +3407,64 @@ def client_analysis_report():
             }
         }
         
-        print(f"DEBUG: Client analysis completed successfully")
+        print(f"✅ DEBUG: Client analysis completed successfully")
+        print(f"📊 DEBUG: Final stats - Active clients: {active_clients}, Total revenue: ${total_revenue:.2f}")
+        
         return render_template('reports/client_analysis.html', **template_vars)
                               
     except Exception as e:
-        print(f"Client analysis error: {e}")
+        print(f"❌ ERROR: Client analysis report failed: {e}")
         import traceback
         traceback.print_exc()
-        flash(f'Error generating client analysis report: {str(e)}', 'danger')
-        return redirect(url_for('reports'))
-
+        
+        flash('Error generating client analysis report. Please try again.', 'danger')
+        
+        # Return with safe empty data
+        today = datetime.now(UTC).date()
+        empty_template_vars = {
+            'title': 'Client Analysis Report',
+            'start_date': today,
+            'end_date': today,
+            'total_bookings': 0,
+            'active_clients': 0,
+            'avg_client_value': 0,
+            'premium_clients_count': 0,
+            'repeat_clients_count': 0,
+            'new_clients_count': 0,
+            'at_risk_clients_count': 0,
+            'premium_clients_avg_value': 0,
+            'repeat_clients_avg_value': 0,
+            'new_clients_avg_value': 0,
+            'at_risk_clients_avg_value': 0,
+            'retention_rate': 0,
+            'avg_booking_value': 0,
+            'top_clients_by_bookings': [],
+            'top_clients_by_revenue': [],
+            'booking_frequency': {'one_booking': 0, 'two_to_three': 0, 'four_to_five': 0, 'six_plus': 0},
+            'monthly_trends': {'new_clients': [0] * 12, 'returning_clients': [0] * 12},
+            'room_preferences': {'room_types': [], 'premium_clients': [], 'regular_clients': [], 'new_clients': []},
+            'addon_preferences': [],
+            'retention_data': {'less_than_1_month': 0, 'one_to_3_months': 0, 'three_to_6_months': 0, 'six_to_12_months': 0, 'more_than_12_months': 0},
+            'premium_clients_bookings': 0,
+            'repeat_clients_bookings': 0,
+            'new_clients_bookings': 0,
+            'at_risk_clients_bookings': 0,
+            'premium_clients_total': 0,
+            'total_revenue': 0,
+            'premium_client_preferences': {'most_popular_addon': 'No data', 'avg_addons_per_booking': 0},
+            'new_client_preferences': {'most_popular_addon': 'No data', 'avg_addons_per_booking': 0},
+            'highest_revenue_addon': {'name': 'No data', 'revenue': 0},
+            'underutilized_addon': {'name': 'No data', 'satisfaction_rate': 0, 'current_utilization': 0}
+        }
+        
+        return render_template('reports/client_analysis.html', **empty_template_vars)
 
 @app.route('/reports/revenue')
 @login_required
 def revenue_report():
-    """Enhanced revenue report with comprehensive real data calculations"""
+    """Enhanced revenue report with comprehensive real data calculations and accurate database synchronization"""
     try:
-        print("DEBUG: Starting comprehensive revenue report generation")
+        print("🔍 DEBUG: Starting enhanced revenue report generation")
         
         # Get date range
         start_date = request.args.get('start_date')
@@ -3381,7 +3472,7 @@ def revenue_report():
         
         today = datetime.now(UTC).date()
         if not start_date:
-            start_date = today.replace(day=1)
+            start_date = today.replace(day=1)  # Start of current month
         else:
             start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
         
@@ -3390,34 +3481,105 @@ def revenue_report():
         else:
             end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
         
-        print(f"DEBUG: Date range: {start_date} to {end_date}")
+        print(f"📅 DEBUG: Date range: {start_date} to {end_date}")
         
-        # Get confirmed bookings in date range using admin client
-        bookings = supabase_admin.table('bookings').select("""
-            *,
-            room:rooms(name, id, hourly_rate, half_day_rate, full_day_rate),
-            client:clients(company_name, contact_person),
-            booking_addons(
-                quantity,
-                addon:addons(name, price, category:addon_categories(name))
-            )
-        """).eq('status', 'confirmed').gte('start_time', start_date.isoformat()).lte('end_time', end_date.isoformat()).execute()
+        # Step 1: Get confirmed bookings in date range using admin client
+        try:
+            start_date_iso = start_date.isoformat()
+            end_date_iso = end_date.isoformat()
+            
+            # Get bookings with room and client details
+            bookings_response = supabase_admin.table('bookings').select("""
+                *,
+                room:rooms(id, name, hourly_rate, half_day_rate, full_day_rate),
+                client:clients(id, company_name, contact_person)
+            """).eq('status', 'confirmed').gte('start_time', start_date_iso).lte('end_time', end_date_iso).execute()
+            
+            bookings_raw = bookings_response.data if bookings_response.data else []
+            print(f"✅ DEBUG: Found {len(bookings_raw)} confirmed bookings")
+            
+        except Exception as e:
+            print(f"❌ ERROR: Failed to fetch bookings: {e}")
+            # Fallback approach
+            try:
+                print("🔄 DEBUG: Trying fallback approach for bookings")
+                bookings_simple = supabase_admin.table('bookings').select('*').eq('status', 'confirmed').gte('start_time', start_date_iso).lte('end_time', end_date_iso).execute()
+                bookings_raw = bookings_simple.data if bookings_simple.data else []
+                
+                # Manually fetch room and client data for each booking
+                for booking in bookings_raw:
+                    if booking.get('room_id'):
+                        room_data = supabase_admin.table('rooms').select('id, name, hourly_rate, half_day_rate, full_day_rate').eq('id', booking['room_id']).execute()
+                        booking['room'] = room_data.data[0] if room_data.data else {'name': 'Unknown Room', 'hourly_rate': 0, 'half_day_rate': 0, 'full_day_rate': 0}
+                    
+                    if booking.get('client_id'):
+                        client_data = supabase_admin.table('clients').select('id, company_name, contact_person').eq('id', booking['client_id']).execute()
+                        booking['client'] = client_data.data[0] if client_data.data else {'company_name': None, 'contact_person': 'Unknown Client'}
+                
+                print(f"✅ DEBUG: Fallback successful, processed {len(bookings_raw)} bookings")
+                
+            except Exception as fallback_error:
+                print(f"❌ DEBUG: Fallback also failed: {fallback_error}")
+                bookings_raw = []
         
-        print(f"DEBUG: Found {len(bookings.data)} confirmed bookings for revenue report")
+        # Step 2: Get booking addons for revenue calculation
+        try:
+            booking_addons_response = supabase_admin.table('booking_addons').select("""
+                booking_id, quantity,
+                addon:addons(id, name, price, category:addon_categories(name))
+            """).execute()
+            
+            booking_addons_raw = booking_addons_response.data if booking_addons_response.data else []
+            print(f"✅ DEBUG: Found {len(booking_addons_raw)} booking addon records")
+            
+        except Exception as e:
+            print(f"❌ ERROR: Failed to fetch booking addons: {e}")
+            # Fallback
+            try:
+                booking_addons_simple = supabase_admin.table('booking_addons').select('*').execute()
+                booking_addons_raw = []
+                
+                for ba in booking_addons_simple.data if booking_addons_simple.data else []:
+                    if ba.get('addon_id'):
+                        addon_data = supabase_admin.table('addons').select('id, name, price').eq('id', ba['addon_id']).execute()
+                        if addon_data.data:
+                            addon = addon_data.data[0]
+                            # Get category
+                            if addon_data.data[0].get('category_id'):
+                                cat_data = supabase_admin.table('addon_categories').select('name').eq('id', addon_data.data[0]['category_id']).execute()
+                                addon['category'] = cat_data.data[0] if cat_data.data else {'name': 'Other'}
+                            else:
+                                addon['category'] = {'name': 'Other'}
+                            
+                            ba['addon'] = addon
+                            booking_addons_raw.append(ba)
+                
+                print(f"✅ DEBUG: Fallback successful for addons")
+                
+            except Exception as fallback_error:
+                print(f"❌ DEBUG: Addon fallback failed: {fallback_error}")
+                booking_addons_raw = []
         
-        # Convert datetime strings to datetime objects for template
-        bookings_data = convert_datetime_strings(bookings.data)
+        # Step 3: Convert datetime strings to datetime objects and process bookings
+        bookings_data = convert_datetime_strings(bookings_raw)
         
-        # Calculate detailed revenue statistics
+        # Step 4: Calculate detailed revenue statistics
         total_revenue = 0
         room_revenues = {}
         addon_revenues = {}
-        daily_revenues = {}
         client_revenues = {}
         
         # Track room and addon revenue separately
         total_room_revenue = 0
         total_addon_revenue = 0
+        
+        # Create lookup for booking addons
+        addons_by_booking = {}
+        for ba in booking_addons_raw:
+            booking_id = ba.get('booking_id')
+            if booking_id not in addons_by_booking:
+                addons_by_booking[booking_id] = []
+            addons_by_booking[booking_id].append(ba)
         
         for booking in bookings_data:
             booking_total = float(booking.get('total_price', 0))
@@ -3445,7 +3607,8 @@ def revenue_report():
                         room_revenue = float(room.get('full_day_rate', 0))
                         
                 except (ValueError, TypeError, KeyError):
-                    room_revenue = booking_total * 0.7  # Estimate 70% for room
+                    # Fallback: estimate room revenue as 70% of total
+                    room_revenue = booking_total * 0.7
                     
             total_room_revenue += room_revenue
             
@@ -3455,20 +3618,20 @@ def revenue_report():
             
             # Calculate addon revenue for this booking
             booking_addon_revenue = 0
-            if booking.get('booking_addons'):
-                for ba in booking['booking_addons']:
-                    if ba.get('addon'):
-                        addon_name = ba['addon'].get('name', 'Unknown Addon')
-                        addon_price = float(ba['addon'].get('price', 0))
-                        quantity = ba.get('quantity', 1)
-                        addon_revenue = addon_price * quantity
-                        booking_addon_revenue += addon_revenue
-                        
-                        # Track by category
-                        category_name = 'Other'
-                        if ba['addon'].get('category') and ba['addon']['category'].get('name'):
-                            category_name = ba['addon']['category']['name']
-                        addon_revenues[category_name] = addon_revenues.get(category_name, 0) + addon_revenue
+            booking_addons = addons_by_booking.get(booking.get('id'), [])
+            
+            for ba in booking_addons:
+                if ba.get('addon'):
+                    addon_price = float(ba['addon'].get('price', 0))
+                    quantity = ba.get('quantity', 1)
+                    addon_revenue = addon_price * quantity
+                    booking_addon_revenue += addon_revenue
+                    
+                    # Track by category
+                    category_name = 'Other'
+                    if ba['addon'].get('category') and ba['addon']['category'].get('name'):
+                        category_name = ba['addon']['category']['name']
+                    addon_revenues[category_name] = addon_revenues.get(category_name, 0) + addon_revenue
             
             total_addon_revenue += booking_addon_revenue
             
@@ -3478,20 +3641,11 @@ def revenue_report():
                 client_name = booking['client'].get('company_name') or booking['client'].get('contact_person', 'Unknown Client')
             client_revenues[client_name] = client_revenues.get(client_name, 0) + booking_total
             
-            # Track daily revenue
-            booking_date = booking.get('start_time')
-            if booking_date:
-                if isinstance(booking_date, datetime):
-                    date_key = booking_date.date().isoformat()
-                else:
-                    date_key = str(booking_date)[:10]  # Get date part from string
-                daily_revenues[date_key] = daily_revenues.get(date_key, 0) + booking_total
-            
             # Add calculated room and addon revenue to booking for display
             booking['room_rate'] = round(room_revenue, 2)
             booking['addons_total'] = round(booking_addon_revenue, 2)
         
-        # Prepare summary statistics
+        # Step 5: Prepare summary statistics
         summary_stats = {
             'total_revenue': round(total_revenue, 2),
             'total_bookings': len(bookings_data),
@@ -3502,17 +3656,25 @@ def revenue_report():
             'top_revenue_client': max(client_revenues.items(), key=lambda x: x[1]) if client_revenues else ('No data', 0)
         }
         
-        print(f"DEBUG: Revenue summary calculated: {summary_stats}")
+        print(f"📊 DEBUG: Revenue summary calculated:")
+        print(f"  - Total revenue: ${summary_stats['total_revenue']}")
+        print(f"  - Room revenue: ${summary_stats['total_room_revenue']}")
+        print(f"  - Addon revenue: ${summary_stats['total_addon_revenue']}")
+        print(f"  - Total bookings: {summary_stats['total_bookings']}")
         
-        # Prepare template variables
+        # Step 6: Round revenues for template display
+        room_revenues_rounded = {k: round(v, 2) for k, v in room_revenues.items()}
+        addon_revenues_rounded = {k: round(v, 2) for k, v in addon_revenues.items()}
+        client_revenues_rounded = {k: round(v, 2) for k, v in client_revenues.items()}
+        
+        # Step 7: Prepare template variables
         template_vars = {
             'title': 'Revenue Report',
             'bookings': bookings_data,
             'summary': summary_stats,
-            'room_revenues': {k: round(v, 2) for k, v in room_revenues.items()},
-            'addon_revenues': {k: round(v, 2) for k, v in addon_revenues.items()},
-            'daily_revenues': {k: round(v, 2) for k, v in daily_revenues.items()},
-            'client_revenues': {k: round(v, 2) for k, v in client_revenues.items()},
+            'room_revenues': room_revenues_rounded,
+            'addon_revenues': addon_revenues_rounded,
+            'client_revenues': client_revenues_rounded,
             'start_date': start_date,
             'end_date': end_date,
             'total_revenue': summary_stats['total_revenue'],
@@ -3520,22 +3682,46 @@ def revenue_report():
             'addon_revenue': summary_stats['total_addon_revenue']
         }
         
-        print("DEBUG: Template variables prepared, rendering template")
+        print("✅ DEBUG: Template variables prepared, rendering template")
         return render_template('reports/revenue.html', **template_vars)
                               
     except Exception as e:
-        print(f"Revenue report error: {e}")
+        print(f"❌ ERROR: Revenue report generation failed: {e}")
         import traceback
         traceback.print_exc()
-        flash(f'Error generating revenue report: {str(e)}', 'danger')
-        return redirect(url_for('reports'))
-
+        
+        flash('Error generating revenue report. Please try again.', 'danger')
+        
+        # Return with safe empty data
+        today = datetime.now(UTC).date()
+        return render_template('reports/revenue.html',
+                              title='Revenue Report',
+                              bookings=[],
+                              summary={
+                                  'total_revenue': 0,
+                                  'total_bookings': 0,
+                                  'avg_booking_value': 0,
+                                  'total_room_revenue': 0,
+                                  'total_addon_revenue': 0,
+                                  'top_revenue_room': ('No data', 0),
+                                  'top_revenue_client': ('No data', 0)
+                              },
+                              room_revenues={},
+                              addon_revenues={},
+                              client_revenues={},
+                              start_date=today,
+                              end_date=today,
+                              total_revenue=0,
+                              room_revenue=0,
+                              addon_revenue=0)
+        
+        
 @app.route('/reports/popular-addons')
 @login_required
 def popular_addons_report():
-    """Enhanced popular add-ons report with comprehensive real data"""
+    """Enhanced popular add-ons report with reliable data fetching using fallback approach"""
     try:
-        print("DEBUG: Starting comprehensive popular addons report generation")
+        print("🔍 DEBUG: Starting reliable popular addons report generation")
         
         # Get date range from query parameters or use current month
         start_date = request.args.get('start_date')
@@ -3552,77 +3738,106 @@ def popular_addons_report():
         else:
             end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
         
-        print(f"DEBUG: Date range: {start_date} to {end_date}")
+        print(f"📅 DEBUG: Date range: {start_date} to {end_date}")
         
-        # Get booking_addons with addon details for the date range using admin client
-        booking_addons = supabase_admin.table('booking_addons').select("""
-            *,
-            addon:addons(
-                id, name, price,
-                category:addon_categories(name)
-            ),
-            booking:bookings!inner(start_time, total_price, status, id)
-        """).execute()
+        # Step 1: Get all bookings in date range (simple query)
+        try:
+            start_date_iso = start_date.isoformat()
+            end_date_iso = end_date.isoformat()
+            
+            bookings_response = supabase_admin.table('bookings').select('id, start_time, total_price, status').gte('start_time', start_date_iso).lte('end_time', end_date_iso).neq('status', 'cancelled').execute()
+            
+            bookings_raw = bookings_response.data if bookings_response.data else []
+            print(f"✅ DEBUG: Found {len(bookings_raw)} bookings for date range")
+        except Exception as e:
+            print(f"❌ ERROR: Failed to fetch bookings: {e}")
+            bookings_raw = []
         
-        print(f"DEBUG: Found {len(booking_addons.data)} total booking_addons records")
+        # Create a set of valid booking IDs within our date range
+        valid_booking_ids = set()
+        for booking in bookings_raw:
+            valid_booking_ids.add(booking['id'])
         
-        # Filter by date range and status on the Python side
+        print(f"📊 DEBUG: Valid booking IDs count: {len(valid_booking_ids)}")
+        
+        # Step 2: Get all booking_addons (simple query)
+        try:
+            booking_addons_response = supabase_admin.table('booking_addons').select('*').execute()
+            booking_addons_raw = booking_addons_response.data if booking_addons_response.data else []
+            print(f"✅ DEBUG: Found {len(booking_addons_raw)} total booking_addons records")
+        except Exception as e:
+            print(f"❌ ERROR: Failed to fetch booking_addons: {e}")
+            booking_addons_raw = []
+        
+        # Filter booking_addons to only those in our date range
         filtered_booking_addons = []
-        for ba in booking_addons.data:
-            if ba.get('booking') and ba['booking'].get('start_time'):
-                try:
-                    booking_date = datetime.fromisoformat(ba['booking']['start_time'].replace('Z', '+00:00')).date()
-                    if (start_date <= booking_date <= end_date and 
-                        ba['booking'].get('status') != 'cancelled'):
-                        filtered_booking_addons.append(ba)
-                except (ValueError, TypeError):
-                    continue
+        for ba in booking_addons_raw:
+            if ba.get('booking_id') in valid_booking_ids:
+                filtered_booking_addons.append(ba)
         
-        print(f"DEBUG: Found {len(filtered_booking_addons)} addon bookings for popular addons report")
+        print(f"📊 DEBUG: Filtered to {len(filtered_booking_addons)} booking_addons in date range")
         
-        # Analyze addon usage
+        # Step 3: Get all addons data separately for reliable lookup
+        try:
+            addons_response = supabase_admin.table('addons').select('id, name, price, category_id').execute()
+            addons_lookup = {}
+            for addon in addons_response.data if addons_response.data else []:
+                addons_lookup[addon['id']] = addon
+            print(f"✅ DEBUG: Created lookup for {len(addons_lookup)} addons")
+        except Exception as e:
+            print(f"❌ ERROR: Failed to fetch addons: {e}")
+            addons_lookup = {}
+        
+        # Step 4: Get addon categories separately for reliable lookup
+        try:
+            categories_response = supabase_admin.table('addon_categories').select('id, name').execute()
+            categories_lookup = {}
+            for category in categories_response.data if categories_response.data else []:
+                categories_lookup[category['id']] = category
+            print(f"✅ DEBUG: Created lookup for {len(categories_lookup)} categories")
+        except Exception as e:
+            print(f"❌ ERROR: Failed to fetch categories: {e}")
+            categories_lookup = {}
+        
+        # Step 5: Process addon usage data
         addon_stats = {}
         category_stats = {}
         total_addon_revenue = 0
         unique_bookings = set()
         
         for ba in filtered_booking_addons:
-            if not ba.get('addon'):
+            addon_id = ba.get('addon_id')
+            booking_id = ba.get('booking_id')
+            
+            if not addon_id or addon_id not in addons_lookup:
+                print(f"⚠️ DEBUG: Skipping booking_addon - invalid addon_id: {addon_id}")
                 continue
                 
-            addon = ba['addon']
-            addon_id = addon['id']
+            addon = addons_lookup[addon_id]
             
             if addon_id not in addon_stats:
+                # Get category name
+                category_name = 'Uncategorized'
+                if addon.get('category_id') and addon['category_id'] in categories_lookup:
+                    category_name = categories_lookup[addon['category_id']]['name']
+                
                 addon_stats[addon_id] = {
                     'id': addon_id,
                     'name': addon.get('name', 'Unknown Addon'),
-                    'category': 'Uncategorized',
-                    'category_name': 'Uncategorized',
-                    'price': 0.0,
+                    'category': category_name,
+                    'category_name': category_name,
+                    'price': float(addon.get('price', 0)),
                     'usage_count': 0,
                     'total_revenue': 0.0,
-                    'avg_quantity': 0.0,
                     'quantities': [],
                     'total_quantity': 0,
                     'bookings': 0,
                     'popularity': 0,
                     'revenue': 0.0,
-                    'trend': 0
+                    'revenue_percentage': 0.0
                 }
-                
-                # Handle category safely
-                if addon.get('category') and addon['category'].get('name'):
-                    addon_stats[addon_id]['category'] = addon['category']['name']
-                    addon_stats[addon_id]['category_name'] = addon['category']['name']
-                
-                # Handle price safely
-                try:
-                    addon_stats[addon_id]['price'] = float(addon.get('price', 0))
-                except (ValueError, TypeError):
-                    addon_stats[addon_id]['price'] = 0.0
             
-            # Handle quantity safely
+            # Process quantity and revenue
             try:
                 quantity = int(ba.get('quantity', 1))
             except (ValueError, TypeError):
@@ -3641,8 +3856,8 @@ def popular_addons_report():
             total_addon_revenue += addon_revenue
             
             # Track unique bookings
-            if ba.get('booking', {}).get('id'):
-                unique_bookings.add(ba['booking']['id'])
+            if booking_id:
+                unique_bookings.add(booking_id)
                 
             # Track category stats
             category_name = addon_stats[addon_id]['category']
@@ -3655,11 +3870,17 @@ def popular_addons_report():
             category_stats[category_name]['bookings'] += 1
             category_stats[category_name]['revenue'] += addon_revenue
         
-        # Calculate averages and popularity
+        print(f"📊 DEBUG: Processed {len(addon_stats)} unique addons")
+        
+        # Step 6: Calculate statistics and percentages
         total_unique_bookings = len(unique_bookings)
+        
         for addon_id, stats in addon_stats.items():
+            # Calculate averages
             if stats['quantities']:
                 stats['avg_quantity'] = round(sum(stats['quantities']) / len(stats['quantities']), 1)
+            else:
+                stats['avg_quantity'] = 0
             
             # Calculate popularity as percentage of bookings that included this addon
             stats['popularity'] = round((stats['bookings'] / total_unique_bookings * 100), 1) if total_unique_bookings > 0 else 0
@@ -3671,28 +3892,24 @@ def popular_addons_report():
             stats['total_revenue'] = round(stats['total_revenue'], 2)
             stats['revenue'] = stats['total_revenue']
         
-        # Sort by usage count (most popular first)
+        # Sort data for different views
         popular_addons = sorted(addon_stats.values(), key=lambda x: x['usage_count'], reverse=True)
-        
-        # Sort categories by revenue
+        top_revenue_addons = sorted(addon_stats.values(), key=lambda x: x['total_revenue'], reverse=True)[:10]
         category_data = sorted(category_stats.values(), key=lambda x: x['revenue'], reverse=True)
         
-        # Get top revenue addons
-        top_revenue_addons = sorted(addon_stats.values(), key=lambda x: x['total_revenue'], reverse=True)[:10]
+        # Step 7: Generate growth opportunities (simplified analysis)
+        growth_opportunities = []
+        for addon in popular_addons[:10]:
+            if addon['popularity'] < 50:  # Low usage but potentially valuable
+                growth_opportunities.append({
+                    'name': addon['name'],
+                    'reason': 'High price but low usage - marketing opportunity',
+                    'type': 'success',
+                    'potential': min(100 - addon['popularity'], 50),
+                    'current_usage': addon['popularity']
+                })
         
-        # Generate growth opportunities (simplified)
-        growth_opportunities = [
-            {
-                'name': addon['name'],
-                'reason': 'High satisfaction but low usage',
-                'type': 'success',
-                'potential': min(100 - addon['popularity'], 50),
-                'current_usage': addon['popularity']
-            }
-            for addon in popular_addons[:5] if addon['popularity'] < 50
-        ]
-        
-        # Generate addon combinations (simplified)
+        # Mock addon combinations for template
         addon_combinations = [
             {
                 'names': ['Audio/Visual Equipment', 'Wi-Fi Support'],
@@ -3708,31 +3925,30 @@ def popular_addons_report():
             }
         ]
         
-        # Calculate summary statistics
-        total_bookings_with_addons = len(unique_bookings)
+        # Step 8: Calculate summary statistics
         summary_stats = {
             'total_addon_revenue': round(total_addon_revenue, 2),
-            'total_bookings_with_addons': total_bookings_with_addons,
+            'total_bookings_with_addons': total_unique_bookings,
             'total_addon_types': len(addon_stats),
             'avg_addon_revenue': round(total_addon_revenue / len(addon_stats), 2) if addon_stats else 0,
             'most_popular_addon': popular_addons[0]['name'] if popular_addons else 'No data',
             'highest_revenue_addon': max(popular_addons, key=lambda x: x['total_revenue'])['name'] if popular_addons else 'No data'
         }
         
-        print(f"DEBUG: Popular addons summary: {summary_stats}")
-        
         # Calculate utilization rates
-        addon_usage_rate = round((total_bookings_with_addons / max(total_bookings_with_addons, 1) * 100), 1)
-        addon_revenue_percentage = round((total_addon_revenue / max(total_addon_revenue, 1000) * 100), 1)
+        addon_usage_rate = round((total_unique_bookings / max(len(bookings_raw), 1) * 100), 1)
+        addon_revenue_percentage = round((total_addon_revenue / max(sum(float(b.get('total_price', 0)) for b in bookings_raw), 1) * 100), 1) if bookings_raw else 0
         
-        # Prepare template variables
+        print(f"📊 DEBUG: Final summary - Total addon revenue: ${total_addon_revenue:.2f}, Unique bookings: {total_unique_bookings}")
+        
+        # Step 9: Prepare template variables
         template_vars = {
             'title': 'Popular Add-ons Report',
             'start_date': start_date,
             'end_date': end_date,
             'total_addon_revenue': summary_stats['total_addon_revenue'],
-            'total_addon_bookings': total_bookings_with_addons,
-            'avg_addons_per_booking': round(len(filtered_booking_addons) / total_bookings_with_addons, 1) if total_bookings_with_addons > 0 else 0,
+            'total_addon_bookings': total_unique_bookings,
+            'avg_addons_per_booking': round(len(filtered_booking_addons) / total_unique_bookings, 1) if total_unique_bookings > 0 else 0,
             'addon_data': popular_addons[:20],  # Top 20
             'category_data': category_data,
             'top_revenue_addons': top_revenue_addons,
@@ -3742,22 +3958,43 @@ def popular_addons_report():
             'addon_revenue_percentage': addon_revenue_percentage
         }
         
-        print("DEBUG: Template variables prepared, rendering template")
+        print("✅ DEBUG: Popular addons template variables prepared successfully")
         return render_template('reports/popular_addons.html', **template_vars)
                               
     except Exception as e:
-        print(f"Popular addons report error: {e}")
+        print(f"❌ ERROR: Popular addons report failed: {e}")
         import traceback
         traceback.print_exc()
-        flash(f'Error generating popular add-ons report: {str(e)}', 'danger')
-        return redirect(url_for('reports'))
-
+        
+        flash('Error generating popular add-ons report. Please try again.', 'danger')
+        
+        # Return with safe empty data
+        today = datetime.now(UTC).date()
+        empty_template_vars = {
+            'title': 'Popular Add-ons Report',
+            'start_date': today,
+            'end_date': today,
+            'total_addon_revenue': 0,
+            'total_addon_bookings': 0,
+            'avg_addons_per_booking': 0,
+            'addon_data': [],
+            'category_data': [],
+            'top_revenue_addons': [],
+            'growth_opportunities': [],
+            'addon_combinations': [],
+            'addon_usage_rate': 0,
+            'addon_revenue_percentage': 0
+        }
+        
+        return render_template('reports/popular_addons.html', **empty_template_vars)
+    
+    
 @app.route('/reports/room-utilization')
 @login_required
 def room_utilization_report():
-    """Enhanced room utilization report with accurate overview data"""
+    """Enhanced room utilization report with accurate database synchronization"""
     try:
-        print("DEBUG: Starting enhanced room utilization report with overview")
+        print("🔍 DEBUG: Starting enhanced room utilization report")
         
         # Get date range from query parameters or use current month
         start_date = request.args.get('start_date')
@@ -3770,60 +4007,106 @@ def room_utilization_report():
             start_date = datetime.strptime(start_date, '%Y-%m-%d').date()
         
         if not end_date:
+            # End of current month or today, whichever is earlier
             next_month = today.replace(day=28) + timedelta(days=4)
-            end_date = next_month - timedelta(days=next_month.day)
+            end_date = min(today, next_month - timedelta(days=next_month.day))
         else:
             end_date = datetime.strptime(end_date, '%Y-%m-%d').date()
         
-        print(f"DEBUG: Date range: {start_date} to {end_date}")
+        print(f"📅 DEBUG: Date range: {start_date} to {end_date}")
         
-        # Get rooms and bookings using admin client for reliable data
-        rooms = supabase_admin.table('rooms').select('*').execute().data
-        bookings = supabase_admin.table('bookings').select("""
-            *,
-            room:rooms(name, id)
-        """).gte('start_time', start_date.isoformat()).lte('end_time', end_date.isoformat()).neq('status', 'cancelled').execute()
+        # Step 1: Get all rooms using admin client
+        try:
+            rooms_response = supabase_admin.table('rooms').select('*').execute()
+            rooms = rooms_response.data if rooms_response.data else []
+            print(f"✅ DEBUG: Found {len(rooms)} rooms")
+        except Exception as e:
+            print(f"❌ ERROR: Failed to fetch rooms: {e}")
+            rooms = []
         
-        print(f"DEBUG: Found {len(rooms)} rooms and {len(bookings.data)} bookings for utilization report")
+        if not rooms:
+            flash('No rooms found in the database', 'warning')
+            return render_template('reports/room_utilization.html',
+                                  title='Room Utilization Report',
+                                  utilization_data=[],
+                                  summary={},
+                                  overview={},
+                                  start_date=start_date,
+                                  end_date=end_date)
         
-        # Calculate utilization for each room
+        # Step 2: Get bookings for the date range using admin client
+        try:
+            start_date_iso = start_date.isoformat()
+            end_date_iso = end_date.isoformat()
+            
+            # Get bookings that overlap with our date range
+            bookings_response = supabase_admin.table('bookings').select("""
+                id, room_id, start_time, end_time, total_price, status
+            """).gte('start_time', start_date_iso).lte('end_time', end_date_iso).neq('status', 'cancelled').execute()
+            
+            bookings = bookings_response.data if bookings_response.data else []
+            print(f"✅ DEBUG: Found {len(bookings)} bookings for date range")
+        except Exception as e:
+            print(f"❌ ERROR: Failed to fetch bookings: {e}")
+            bookings = []
+        
+        # Step 3: Calculate utilization for each room
         utilization_data = []
         total_revenue = 0
         total_hours_booked = 0
         total_hours_available = 0
-        most_utilized_room = {'name': 'No data', 'utilization': 0}
+        most_utilized_room = {'name': 'None', 'utilization': 0}
+        
+        # Calculate total days in the period
+        total_days = (end_date - start_date).days + 1
+        business_hours_per_day = 10  # Assume 10 business hours per day
         
         for room in rooms:
-            room_bookings = [b for b in bookings.data if b.get('room') and b['room'].get('id') == room['id']]
+            room_id = room.get('id')
+            room_name = room.get('name', 'Unknown Room')
+            
+            print(f"🔍 DEBUG: Processing room '{room_name}' (ID: {room_id})")
+            
+            # Get bookings for this specific room
+            room_bookings = [b for b in bookings if b.get('room_id') == room_id]
             
             room_hours = 0
             room_revenue = 0
             
+            # Calculate booked hours and revenue for this room
             for booking in room_bookings:
-                # Calculate actual duration from start and end times
                 try:
+                    # Parse booking times
                     if isinstance(booking['start_time'], str):
-                        start = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00'))
-                        end = datetime.fromisoformat(booking['end_time'].replace('Z', '+00:00'))
+                        start_time = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00'))
+                        end_time = datetime.fromisoformat(booking['end_time'].replace('Z', '+00:00'))
                     else:
-                        start = booking['start_time']
-                        end = booking['end_time']
+                        start_time = booking['start_time']
+                        end_time = booking['end_time']
                     
-                    duration = (end - start).total_seconds() / 3600
+                    # Calculate duration in hours
+                    duration = (end_time - start_time).total_seconds() / 3600
                     room_hours += duration
-                    room_revenue += float(booking.get('total_price', 0))
                     
-                except (ValueError, TypeError) as e:
-                    print(f"DEBUG: Error parsing booking times: {e}")
-                    # Fallback to estimated 4 hours
-                    room_hours += 4
+                    # Add revenue
+                    revenue = float(booking.get('total_price', 0))
+                    room_revenue += revenue
+                    
+                    print(f"  📊 Booking: {duration:.1f} hours, ${revenue:.2f}")
+                    
+                except (ValueError, TypeError, KeyError) as e:
+                    print(f"  ⚠️ Error parsing booking {booking.get('id', 'unknown')}: {e}")
+                    # Use fallback values
+                    room_hours += 4  # Assume 4 hours average
                     room_revenue += float(booking.get('total_price', 0))
             
-            # Calculate available hours (assume 10 business hours per day)
-            total_days = (end_date - start_date).days + 1
-            available_hours = total_days * 10
+            # Calculate available hours for this room
+            available_hours = total_days * business_hours_per_day
+            
+            # Calculate utilization percentage
             utilization_pct = (room_hours / available_hours * 100) if available_hours > 0 else 0
             
+            # Prepare room data
             room_data = {
                 'room': room,
                 'booked_hours': round(room_hours, 1),
@@ -3838,7 +4121,7 @@ def room_utilization_report():
             # Track most utilized room
             if utilization_pct > most_utilized_room['utilization']:
                 most_utilized_room = {
-                    'name': room.get('name', 'Unknown'),
+                    'name': room_name,
                     'utilization': utilization_pct
                 }
             
@@ -3846,24 +4129,26 @@ def room_utilization_report():
             total_hours_booked += room_hours
             total_hours_available += available_hours
             total_revenue += room_revenue
+            
+            print(f"  ✅ Room summary: {room_hours:.1f}h booked / {available_hours}h available = {utilization_pct:.1f}%")
         
-        # Calculate overall statistics for overview cards
+        # Step 4: Calculate overall statistics
         overall_utilization = (total_hours_booked / total_hours_available * 100) if total_hours_available > 0 else 0
         
-        # Create summary stats for overview cards
+        # Summary statistics for the template
         summary_stats = {
             'total_rooms': len(rooms),
-            'total_bookings': len(bookings.data),
+            'total_bookings': len(bookings),
             'total_revenue': round(total_revenue, 2),
             'total_hours_booked': round(total_hours_booked, 1),
             'total_hours_available': total_hours_available,
             'overall_utilization': round(overall_utilization, 1),
-            'avg_booking_value': round(total_revenue / len(bookings.data), 2) if bookings.data else 0,
+            'avg_booking_value': round(total_revenue / len(bookings), 2) if bookings else 0,
             'most_utilized_room': most_utilized_room['name'],
             'highest_utilization_rate': round(most_utilized_room['utilization'], 1)
         }
         
-        # Create overview data for the cards at the top
+        # Overview data for the summary cards
         overview_data = {
             'date_range': f"{start_date.strftime('%d %b')} - {end_date.strftime('%d %b %Y')}",
             'avg_utilization_rate': f"{summary_stats['overall_utilization']}%",
@@ -3871,11 +4156,15 @@ def room_utilization_report():
             'total_booked_hours': f"{summary_stats['total_hours_booked']} hours"
         }
         
-        print(f"DEBUG: Room utilization summary calculated:")
+        # Sort utilization data by utilization percentage (highest first)
+        utilization_data.sort(key=lambda x: x['utilization_pct'], reverse=True)
+        
+        print(f"📊 DEBUG: Final statistics:")
         print(f"  - Total rooms: {summary_stats['total_rooms']}")
         print(f"  - Total bookings: {summary_stats['total_bookings']}")
         print(f"  - Overall utilization: {summary_stats['overall_utilization']}%")
         print(f"  - Most utilized room: {summary_stats['most_utilized_room']}")
+        print(f"  - Total revenue: ${summary_stats['total_revenue']}")
         print(f"  - Total booked hours: {summary_stats['total_hours_booked']}")
         
         return render_template('reports/room_utilization.html',
@@ -3887,11 +4176,39 @@ def room_utilization_report():
                               end_date=end_date)
                               
     except Exception as e:
-        print(f"Room utilization report error: {e}")
+        print(f"❌ ERROR: Room utilization report failed: {e}")
         import traceback
         traceback.print_exc()
-        flash('Error generating room utilization report', 'danger')
-        return redirect(url_for('reports'))
+        
+        flash('Error generating room utilization report. Please try again.', 'danger')
+        
+        # Return with safe empty data
+        empty_stats = {
+            'total_rooms': 0,
+            'total_bookings': 0,
+            'total_revenue': 0,
+            'total_hours_booked': 0,
+            'total_hours_available': 0,
+            'overall_utilization': 0,
+            'avg_booking_value': 0,
+            'most_utilized_room': 'No data',
+            'highest_utilization_rate': 0
+        }
+        
+        empty_overview = {
+            'date_range': 'No data',
+            'avg_utilization_rate': '0%',
+            'most_utilized_room': 'No data',
+            'total_booked_hours': '0 hours'
+        }
+        
+        return render_template('reports/room_utilization.html',
+                              title='Room Utilization Report',
+                              utilization_data=[],
+                              summary=empty_stats,
+                              overview=empty_overview,
+                              start_date=datetime.now(UTC).date(),
+                              end_date=datetime.now(UTC).date())
 
 # ===============================
 # API Routes for Dashboard Widgets

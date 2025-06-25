@@ -152,6 +152,13 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     background-color: #e74a3b;
     color: white;
   }
+
+  .no-data-message {
+    text-align: center;
+    padding: 2rem;
+    color: #6c757d;
+    font-style: italic;
+  }
 </style>
 {% endblock %} {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -370,6 +377,9 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         </h5>
       </div>
       <div class="card-body">
+        {% if (premium_clients_count|default(0) +
+        repeat_clients_count|default(0) + new_clients_count|default(0) +
+        at_risk_clients_count|default(0)) > 0 %}
         <div class="chart-container">
           <canvas id="clientSegmentsChart"></canvas>
         </div>
@@ -391,6 +401,12 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             <span>At-Risk Clients</span>
           </div>
         </div>
+        {% else %}
+        <div class="no-data-message">
+          <i class="fas fa-chart-pie fa-3x mb-3 text-muted"></i>
+          <p>No client segment data available for the selected period.</p>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -404,6 +420,10 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         </h5>
       </div>
       <div class="card-body">
+        {% if booking_frequency and (booking_frequency.one_booking|default(0) +
+        booking_frequency.two_to_three|default(0) +
+        booking_frequency.four_to_five|default(0) +
+        booking_frequency.six_plus|default(0)) > 0 %}
         <div class="chart-container">
           <canvas id="bookingFrequencyChart"></canvas>
         </div>
@@ -425,6 +445,12 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             <span>6+ Bookings</span>
           </div>
         </div>
+        {% else %}
+        <div class="no-data-message">
+          <i class="fas fa-chart-bar fa-3x mb-3 text-muted"></i>
+          <p>No booking frequency data available for the selected period.</p>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -527,36 +553,33 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
                 <td>
                   <div class="d-flex align-items-center">
                     <div class="me-2">
-                      {% if (client.booking_count|default(0)) >= 6 %}
+                      {% if (client.bookings|default(0)) >= 6 %}
                       <span class="badge badge-repeat">Repeat</span>
-                      {% endif %} {% if ((client.total_spent|default(0)) /
-                      (client.booking_count|default(1))) > 300 %}
+                      {% endif %} {% if ((client.total_revenue|default(0)) /
+                      (client.bookings|default(1))) > 300 %}
                       <span class="badge badge-premium">Premium</span>
                       {% endif %}
                     </div>
                     <div>
                       <strong
-                        >{{ client.company_name or client.contact_person
-                        }}</strong
+                        >{{ client.name|default('Unknown Client') }}</strong
                       >
                     </div>
                   </div>
                 </td>
-                <td class="text-center">
-                  {{ client.booking_count|default(0) }}
+                <td class="text-center">{{ client.bookings|default(0) }}</td>
+                <td class="text-end">
+                  ${{ (client.total_revenue|default(0))|round(2) }}
                 </td>
                 <td class="text-end">
-                  ${{ (client.total_spent|default(0))|round(2) }}
-                </td>
-                <td class="text-end">
-                  ${{ ((client.total_spent|default(0)) /
-                  (client.booking_count|default(1)))|round(2) }}
+                  ${{ (client.avg_booking_value|default(0))|round(2) }}
                 </td>
               </tr>
               {% else %}
               <tr>
-                <td colspan="4" class="text-center py-4">
-                  No client data available
+                <td colspan="4" class="text-center py-4 text-muted">
+                  <i class="fas fa-users fa-2x mb-2"></i><br />
+                  No client booking data available for the selected period
                 </td>
               </tr>
               {% endfor %}
@@ -592,36 +615,33 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
                 <td>
                   <div class="d-flex align-items-center">
                     <div class="me-2">
-                      {% if (client.booking_count|default(0)) >= 6 %}
+                      {% if (client.bookings|default(0)) >= 6 %}
                       <span class="badge badge-repeat">Repeat</span>
-                      {% endif %} {% if ((client.total_spent|default(0)) /
-                      (client.booking_count|default(1))) > 300 %}
+                      {% endif %} {% if ((client.total_revenue|default(0)) /
+                      (client.bookings|default(1))) > 300 %}
                       <span class="badge badge-premium">Premium</span>
                       {% endif %}
                     </div>
                     <div>
                       <strong
-                        >{{ client.company_name or client.contact_person
-                        }}</strong
+                        >{{ client.name|default('Unknown Client') }}</strong
                       >
                     </div>
                   </div>
                 </td>
-                <td class="text-center">
-                  {{ client.booking_count|default(0) }}
+                <td class="text-center">{{ client.bookings|default(0) }}</td>
+                <td class="text-end">
+                  ${{ (client.total_revenue|default(0))|round(2) }}
                 </td>
                 <td class="text-end">
-                  ${{ (client.total_spent|default(0))|round(2) }}
-                </td>
-                <td class="text-end">
-                  ${{ ((client.total_spent|default(0)) /
-                  (client.booking_count|default(1)))|round(2) }}
+                  ${{ (client.avg_booking_value|default(0))|round(2) }}
                 </td>
               </tr>
               {% else %}
               <tr>
-                <td colspan="4" class="text-center py-4">
-                  No client data available
+                <td colspan="4" class="text-center py-4 text-muted">
+                  <i class="fas fa-dollar-sign fa-2x mb-2"></i><br />
+                  No client revenue data available for the selected period
                 </td>
               </tr>
               {% endfor %}
@@ -641,9 +661,20 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     </h5>
   </div>
   <div class="card-body">
+    {% if monthly_trends and (monthly_trends.new_clients|default([])|length > 0
+    or monthly_trends.returning_clients|default([])|length > 0) %}
     <div class="chart-container">
       <canvas id="clientTrendsChart"></canvas>
     </div>
+    {% else %}
+    <div class="no-data-message">
+      <i class="fas fa-chart-line fa-3x mb-3 text-muted"></i>
+      <p>
+        Monthly trend data will be available once there is sufficient booking
+        history.
+      </p>
+    </div>
+    {% endif %}
   </div>
 </div>
 
@@ -962,9 +993,20 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         </h5>
       </div>
       <div class="card-body">
+        {% if room_preferences and room_preferences.room_types and
+        room_preferences.room_types|length > 0 %}
         <div class="chart-container">
           <canvas id="roomPreferencesChart"></canvas>
         </div>
+        {% else %}
+        <div class="no-data-message">
+          <i class="fas fa-door-open fa-3x mb-3 text-muted"></i>
+          <p>
+            Room preference data will be available once there are sufficient
+            bookings across different room types.
+          </p>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -978,6 +1020,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         </h5>
       </div>
       <div class="card-body">
+        {% if addon_preferences and addon_preferences|length > 0 %}
         <div class="chart-container">
           <canvas id="addonPreferencesChart"></canvas>
         </div>
@@ -991,7 +1034,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
               </tr>
             </thead>
             <tbody>
-              {% for addon in addon_preferences|default([]) %}
+              {% for addon in addon_preferences %}
               <tr>
                 <td>{{ addon.name|default('N/A') }}</td>
                 <td>
@@ -1013,6 +1056,15 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             </tbody>
           </table>
         </div>
+        {% else %}
+        <div class="no-data-message">
+          <i class="fas fa-plus-circle fa-3x mb-3 text-muted"></i>
+          <p>
+            Add-on preference data will be available once clients start using
+            add-on services.
+          </p>
+        </div>
+        {% endif %}
       </div>
     </div>
   </div>
@@ -1028,9 +1080,20 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   <div class="card-body">
     <div class="row">
       <div class="col-lg-7">
+        {% if retention_data and (retention_data.less_than_1_month|default(0) >
+        0 or retention_data.one_to_3_months|default(0) > 0) %}
         <div class="chart-container">
           <canvas id="retentionChart"></canvas>
         </div>
+        {% else %}
+        <div class="no-data-message">
+          <i class="fas fa-chart-area fa-3x mb-3 text-muted"></i>
+          <p>
+            Client retention analysis will be available once there is sufficient
+            booking history to analyze patterns.
+          </p>
+        </div>
+        {% endif %}
       </div>
       <div class="col-lg-5">
         <h6 class="mb-3">Retention Insights</h6>
@@ -1099,9 +1162,9 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         <h6 class="mb-3">Key Insights</h6>
         <ul>
           <li>
-            <strong>Client Distribution:</strong> {{
-            ((premium_clients_count|default(0) / (active_clients|default(1)) *
-            100)|round(1) if (active_clients|default(0)) > 0 else 0) }}% of
+            <strong>Client Distribution:</strong>
+            {{ ((premium_clients_count|default(0) / (active_clients|default(1))
+            * 100)|round(1) if (active_clients|default(0)) > 0 else 0) }}% of
             clients are premium, generating {{
             ((premium_clients_total|default(0) / (total_revenue|default(1)) *
             100)|round(1) if (total_revenue|default(0)) > 0 else 0) }}% of total
@@ -1214,283 +1277,332 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
       purpleLight: '#6f42c140'
     };
 
-    // Client Segments Chart
-    const clientSegmentsCtx = document.getElementById('clientSegmentsChart').getContext('2d');
-    new Chart(clientSegmentsCtx, {
-      type: 'pie',
-      data: {
-        labels: ['Premium Clients', 'Repeat Clients', 'New Clients', 'At-Risk Clients'],
-        datasets: [{
-          data: [
-            {{ premium_clients_count|default(0) }},
-            {{ (repeat_clients_count|default(0)) - (premium_clients_count|default(0)) }}, // Adjust to avoid double counting
-            {{ new_clients_count|default(0) }},
-            {{ at_risk_clients_count|default(0) }}
-          ],
-          backgroundColor: [colorScheme.purple, colorScheme.primary, colorScheme.success, colorScheme.danger],
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'bottom',
+    // Helper function to safely get numeric values
+    function safeNumber(value, fallback = 0) {
+      return (value && !isNaN(value)) ? parseFloat(value) : fallback;
+    }
+
+    // Client Segments Chart - Only render if there's data
+    const clientSegmentsCtx = document.getElementById('clientSegmentsChart');
+    if (clientSegmentsCtx) {
+      const premiumCount = safeNumber({{ premium_clients_count|default(0) }});
+      const repeatCount = safeNumber({{ repeat_clients_count|default(0) }});
+      const newCount = safeNumber({{ new_clients_count|default(0) }});
+      const riskCount = safeNumber({{ at_risk_clients_count|default(0) }});
+
+      const totalClients = premiumCount + repeatCount + newCount + riskCount;
+
+      if (totalClients > 0) {
+        new Chart(clientSegmentsCtx, {
+          type: 'pie',
+          data: {
+            labels: ['Premium Clients', 'Repeat Clients', 'New Clients', 'At-Risk Clients'],
+            datasets: [{
+              data: [premiumCount, Math.max(0, repeatCount - premiumCount), newCount, riskCount],
+              backgroundColor: [colorScheme.purple, colorScheme.primary, colorScheme.success, colorScheme.danger],
+              borderWidth: 1
+            }]
           },
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                const label = context.label || '';
-                const value = context.raw;
-                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
-                return `${label}: ${value} (${percentage}%)`;
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                position: 'bottom',
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const label = context.label || '';
+                    const value = context.raw;
+                    const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                    const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                    return `${label}: ${value} (${percentage}%)`;
+                  }
+                }
               }
             }
           }
-        }
+        });
       }
-    });
+    }
 
-    // Booking Frequency Chart
-    const bookingFrequencyCtx = document.getElementById('bookingFrequencyChart').getContext('2d');
-    new Chart(bookingFrequencyCtx, {
-      type: 'bar',
-      data: {
-        labels: ['1 Booking', '2-3 Bookings', '4-5 Bookings', '6+ Bookings'],
-        datasets: [{
-          label: 'Number of Clients',
-          data: [
-            {{ booking_frequency.one_booking|default(0) if booking_frequency else 0 }},
-            {{ booking_frequency.two_to_three|default(0) if booking_frequency else 0 }},
-            {{ booking_frequency.four_to_five|default(0) if booking_frequency else 0 }},
-            {{ booking_frequency.six_plus|default(0) if booking_frequency else 0 }}
-          ],
-          backgroundColor: [
-            colorScheme.dangerLight,
-            colorScheme.warningLight,
-            colorScheme.primaryLight,
-            colorScheme.successLight
-          ],
-          borderColor: [
-            colorScheme.danger,
-            colorScheme.warning,
-            colorScheme.primary,
-            colorScheme.success
-          ],
-          borderWidth: 1
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Number of Clients'
-            }
-          }
-        },
-        plugins: {
-          legend: {
-            display: false
-          }
-        }
-      }
-    });
+    // Booking Frequency Chart - Only render if there's data
+    const bookingFrequencyCtx = document.getElementById('bookingFrequencyChart');
+    if (bookingFrequencyCtx) {
+      const oneBooking = safeNumber({{ booking_frequency.one_booking if booking_frequency else 0 }});
+      const twoToThree = safeNumber({{ booking_frequency.two_to_three if booking_frequency else 0 }});
+      const fourToFive = safeNumber({{ booking_frequency.four_to_five if booking_frequency else 0 }});
+      const sixPlus = safeNumber({{ booking_frequency.six_plus if booking_frequency else 0 }});
 
-    // Monthly Client Trends Chart
-    const clientTrendsCtx = document.getElementById('clientTrendsChart').getContext('2d');
-    new Chart(clientTrendsCtx, {
-      type: 'line',
-      data: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-        datasets: [
-          {
-            label: 'New Clients',
-            data: {{ monthly_trends.new_clients|default([0,0,0,0,0,0,0,0,0,0,0,0])|tojson if monthly_trends else [0,0,0,0,0,0,0,0,0,0,0,0]|tojson }},
-            borderColor: colorScheme.success,
-            backgroundColor: colorScheme.successLight,
-            pointBackgroundColor: colorScheme.success,
-            tension: 0.4,
-            fill: true
+      const totalFrequency = oneBooking + twoToThree + fourToFive + sixPlus;
+
+      if (totalFrequency > 0) {
+        new Chart(bookingFrequencyCtx, {
+          type: 'bar',
+          data: {
+            labels: ['1 Booking', '2-3 Bookings', '4-5 Bookings', '6+ Bookings'],
+            datasets: [{
+              label: 'Number of Clients',
+              data: [oneBooking, twoToThree, fourToFive, sixPlus],
+              backgroundColor: [
+                colorScheme.dangerLight,
+                colorScheme.warningLight,
+                colorScheme.primaryLight,
+                colorScheme.successLight
+              ],
+              borderColor: [
+                colorScheme.danger,
+                colorScheme.warning,
+                colorScheme.primary,
+                colorScheme.success
+              ],
+              borderWidth: 1
+            }]
           },
-          {
-            label: 'Returning Clients',
-            data: {{ monthly_trends.returning_clients|default([0,0,0,0,0,0,0,0,0,0,0,0])|tojson if monthly_trends else [0,0,0,0,0,0,0,0,0,0,0,0]|tojson }},
-            borderColor: colorScheme.primary,
-            backgroundColor: colorScheme.primaryLight,
-            pointBackgroundColor: colorScheme.primary,
-            tension: 0.4,
-            fill: true
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Number of Clients'
-            }
-          }
-        },
-        plugins: {
-          tooltip: {
-            mode: 'index',
-            intersect: false
-          }
-        }
-      }
-    });
-
-    // Room Preferences Chart
-    const roomPreferencesCtx = document.getElementById('roomPreferencesChart').getContext('2d');
-    new Chart(roomPreferencesCtx, {
-      type: 'bar',
-      data: {
-        labels: {{ room_preferences.room_types|default([])|tojson if room_preferences else []|tojson }},
-        datasets: [
-          {
-            label: 'Premium Clients',
-            data: {{ room_preferences.premium_clients|default([])|tojson if room_preferences else []|tojson }},
-            backgroundColor: colorScheme.purpleLight,
-            borderColor: colorScheme.purple,
-            borderWidth: 1
-          },
-          {
-            label: 'Regular Clients',
-            data: {{ room_preferences.regular_clients|default([])|tojson if room_preferences else []|tojson }},
-            backgroundColor: colorScheme.primaryLight,
-            borderColor: colorScheme.primary,
-            borderWidth: 1
-          },
-          {
-            label: 'New Clients',
-            data: {{ room_preferences.new_clients|default([])|tojson if room_preferences else []|tojson }},
-            backgroundColor: colorScheme.successLight,
-            borderColor: colorScheme.success,
-            borderWidth: 1
-          }
-        ]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true,
-            title: {
-              display: true,
-              text: 'Booking Frequency'
-            }
-          }
-        }
-      }
-    });
-
-    // Add-on Preferences Chart
-    const addonPreferencesCtx = document.getElementById('addonPreferencesChart').getContext('2d');
-    new Chart(addonPreferencesCtx, {
-      type: 'scatter',
-      data: {
-        datasets: [{
-          label: 'Add-on Categories',
-          data: [
-            {% for addon in addon_preferences|default([]) %}
-            {
-              x: {{ addon.popularity|default(0) }},
-              y: {{ addon.revenue|default(0) }},
-              category: "{{ addon.name|default('N/A') }}"
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: 'Number of Clients'
+                }
+              }
             },
-            {% endfor %}
-          ],
-          backgroundColor: [
-            colorScheme.primary,
-            colorScheme.success,
-            colorScheme.info,
-            colorScheme.warning,
-            colorScheme.danger
-          ],
-          pointRadius: 10,
-          pointHoverRadius: 15
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: {
-            title: {
-              display: true,
-              text: 'Popularity (%)'
-            },
-            min: 0,
-            max: 100
-          },
-          y: {
-            title: {
-              display: true,
-              text: 'Revenue ($)'
-            },
-            beginAtZero: true
-          }
-        },
-        plugins: {
-          tooltip: {
-            callbacks: {
-              label: function(context) {
-                const point = context.raw;
-                return `${point.category}: ${point.x}% popularity, ${point.y} revenue`;
+            plugins: {
+              legend: {
+                display: false
               }
             }
           }
-        }
+        });
       }
-    });
+    }
 
-    // Retention Chart
-    const retentionCtx = document.getElementById('retentionChart').getContext('2d');
-    new Chart(retentionCtx, {
-      type: 'line',
-      data: {
-        labels: ['< 1 month', '1-3 months', '3-6 months', '6-12 months', '12+ months'],
-        datasets: [{
-          label: 'Retention Rate (%)',
-          data: [
-            {{ retention_data.less_than_1_month|default(0) if retention_data else 0 }},
-            {{ retention_data.one_to_3_months|default(0) if retention_data else 0 }},
-            {{ retention_data.three_to_6_months|default(0) if retention_data else 0 }},
-            {{ retention_data.six_to_12_months|default(0) if retention_data else 0 }},
-            {{ retention_data.more_than_12_months|default(0) if retention_data else 0 }}
-          ],
-          borderColor: colorScheme.primary,
-          backgroundColor: colorScheme.primaryLight,
-          tension: 0.4,
-          fill: true
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true,
-            max: 100,
-            title: {
-              display: true,
-              text: 'Retention Rate (%)'
+    // Monthly Client Trends Chart - Only render if there's data
+    const clientTrendsCtx = document.getElementById('clientTrendsChart');
+    if (clientTrendsCtx) {
+      const newClientsData = {{ monthly_trends.new_clients|default([0,0,0,0,0,0,0,0,0,0,0,0])|tojson if monthly_trends else [0,0,0,0,0,0,0,0,0,0,0,0]|tojson }};
+      const returningClientsData = {{ monthly_trends.returning_clients|default([0,0,0,0,0,0,0,0,0,0,0,0])|tojson if monthly_trends else [0,0,0,0,0,0,0,0,0,0,0,0]|tojson }};
+
+      const hasData = newClientsData.some(val => val > 0) || returningClientsData.some(val => val > 0);
+
+      if (hasData) {
+        new Chart(clientTrendsCtx, {
+          type: 'line',
+          data: {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [
+              {
+                label: 'New Clients',
+                data: newClientsData,
+                borderColor: colorScheme.success,
+                backgroundColor: colorScheme.successLight,
+                pointBackgroundColor: colorScheme.success,
+                tension: 0.4,
+                fill: true
+              },
+              {
+                label: 'Returning Clients',
+                data: returningClientsData,
+                borderColor: colorScheme.primary,
+                backgroundColor: colorScheme.primaryLight,
+                pointBackgroundColor: colorScheme.primary,
+                tension: 0.4,
+                fill: true
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: 'Number of Clients'
+                }
+              }
+            },
+            plugins: {
+              tooltip: {
+                mode: 'index',
+                intersect: false
+              }
             }
           }
-        }
+        });
       }
-    });
+    }
+
+    // Room Preferences Chart - Only render if there's data
+    const roomPreferencesCtx = document.getElementById('roomPreferencesChart');
+    if (roomPreferencesCtx) {
+      const roomTypes = {{ room_preferences.room_types|default([])|tojson if room_preferences else []|tojson }};
+      const premiumClients = {{ room_preferences.premium_clients|default([])|tojson if room_preferences else []|tojson }};
+      const regularClients = {{ room_preferences.regular_clients|default([])|tojson if room_preferences else []|tojson }};
+      const newClients = {{ room_preferences.new_clients|default([])|tojson if room_preferences else []|tojson }};
+
+      if (roomTypes.length > 0 && (premiumClients.length > 0 || regularClients.length > 0 || newClients.length > 0)) {
+        new Chart(roomPreferencesCtx, {
+          type: 'bar',
+          data: {
+            labels: roomTypes,
+            datasets: [
+              {
+                label: 'Premium Clients',
+                data: premiumClients,
+                backgroundColor: colorScheme.purpleLight,
+                borderColor: colorScheme.purple,
+                borderWidth: 1
+              },
+              {
+                label: 'Regular Clients',
+                data: regularClients,
+                backgroundColor: colorScheme.primaryLight,
+                borderColor: colorScheme.primary,
+                borderWidth: 1
+              },
+              {
+                label: 'New Clients',
+                data: newClients,
+                backgroundColor: colorScheme.successLight,
+                borderColor: colorScheme.success,
+                borderWidth: 1
+              }
+            ]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                title: {
+                  display: true,
+                  text: 'Booking Frequency'
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // Add-on Preferences Chart - Only render if there's data
+    const addonPreferencesCtx = document.getElementById('addonPreferencesChart');
+    if (addonPreferencesCtx) {
+      const addonData = [
+        {% for addon in addon_preferences|default([]) %}
+        {
+          x: safeNumber({{ addon.popularity|default(0) }}),
+          y: safeNumber({{ addon.revenue|default(0) }}),
+          category: "{{ addon.name|default('N/A') }}"
+        },
+        {% endfor %}
+      ];
+
+      if (addonData.length > 0 && addonData.some(d => d.x > 0 || d.y > 0)) {
+        new Chart(addonPreferencesCtx, {
+          type: 'scatter',
+          data: {
+            datasets: [{
+              label: 'Add-on Categories',
+              data: addonData,
+              backgroundColor: [
+                colorScheme.primary,
+                colorScheme.success,
+                colorScheme.info,
+                colorScheme.warning,
+                colorScheme.danger
+              ],
+              pointRadius: 10,
+              pointHoverRadius: 15
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              x: {
+                title: {
+                  display: true,
+                  text: 'Popularity (%)'
+                },
+                min: 0,
+                max: 100
+              },
+              y: {
+                title: {
+                  display: true,
+                  text: 'Revenue ($)'
+                },
+                beginAtZero: true
+              }
+            },
+            plugins: {
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    const point = context.raw;
+                    return `${point.category}: ${point.x}% popularity, $${point.y} revenue`;
+                  }
+                }
+              }
+            }
+          }
+        });
+      }
+    }
+
+    // Retention Chart - Only render if there's data
+    const retentionCtx = document.getElementById('retentionChart');
+    if (retentionCtx) {
+      const retentionData = [
+        safeNumber({{ retention_data.less_than_1_month if retention_data else 0 }}),
+        safeNumber({{ retention_data.one_to_3_months if retention_data else 0 }}),
+        safeNumber({{ retention_data.three_to_6_months if retention_data else 0 }}),
+        safeNumber({{ retention_data.six_to_12_months if retention_data else 0 }}),
+        safeNumber({{ retention_data.more_than_12_months if retention_data else 0 }})
+      ];
+
+      const hasRetentionData = retentionData.some(val => val > 0);
+
+      if (hasRetentionData) {
+        new Chart(retentionCtx, {
+          type: 'line',
+          data: {
+            labels: ['< 1 month', '1-3 months', '3-6 months', '6-12 months', '12+ months'],
+            datasets: [{
+              label: 'Retention Rate (%)',
+              data: retentionData,
+              borderColor: colorScheme.primary,
+              backgroundColor: colorScheme.primaryLight,
+              tension: 0.4,
+              fill: true
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: {
+                beginAtZero: true,
+                max: 100,
+                title: {
+                  display: true,
+                  text: 'Retention Rate (%)'
+                }
+              }
+            }
+          }
+        });
+      }
+    }
   });
 </script>
 {% endblock %}

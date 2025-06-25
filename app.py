@@ -967,9 +967,11 @@ def dashboard():
                                   debug_mode=True,
                                   connection_error=str(e))
         
-        # Get upcoming bookings with detailed error handling
+        # Get upcoming bookings with detailed error handling and fallback
         try:
             print("🔍 DEBUG: Fetching upcoming bookings...")
+            
+            # First try with nested relationships
             upcoming_bookings = supabase_admin.table('bookings').select("""
                 *,
                 room:rooms(name),
@@ -977,18 +979,69 @@ def dashboard():
             """).gte('start_time', now).neq('status', 'cancelled').order('start_time').limit(5).execute()
             
             if upcoming_bookings.data:
-                upcoming_bookings_data = convert_datetime_strings(upcoming_bookings.data)
-                print(f"✅ DEBUG: Found {len(upcoming_bookings_data)} upcoming bookings")
+                upcoming_bookings_raw = upcoming_bookings.data
+                print(f"✅ DEBUG: Found {len(upcoming_bookings_raw)} upcoming bookings")
+                print(f"🔍 DEBUG: Sample upcoming booking structure: {upcoming_bookings_raw[0] if upcoming_bookings_raw else 'None'}")
+                
+                # Process each booking to ensure room and client data
+                upcoming_bookings_processed = []
+                for booking in upcoming_bookings_raw:
+                    processed_booking = booking.copy()
+                    
+                    # Ensure room data exists
+                    if not booking.get('room') or not isinstance(booking.get('room'), dict):
+                        print(f"⚠️ DEBUG: Missing room data for booking {booking.get('id')}, fetching separately")
+                        room_data = supabase_admin.table('rooms').select('id, name').eq('id', booking.get('room_id')).execute()
+                        if room_data.data:
+                            processed_booking['room'] = room_data.data[0]
+                        else:
+                            processed_booking['room'] = {'name': 'Unknown Room'}
+                    
+                    # Ensure client data exists
+                    if not booking.get('client') or not isinstance(booking.get('client'), dict):
+                        print(f"⚠️ DEBUG: Missing client data for booking {booking.get('id')}, fetching separately")
+                        client_data = supabase_admin.table('clients').select('id, company_name, contact_person').eq('id', booking.get('client_id')).execute()
+                        if client_data.data:
+                            processed_booking['client'] = client_data.data[0]
+                        else:
+                            processed_booking['client'] = {'company_name': None, 'contact_person': 'Unknown Client'}
+                    
+                    upcoming_bookings_processed.append(processed_booking)
+                
+                upcoming_bookings_data = convert_datetime_strings(upcoming_bookings_processed)
             else:
                 print("⚠️ DEBUG: No upcoming bookings found")
                 
         except Exception as e:
             print(f"❌ DEBUG: Error fetching upcoming bookings: {e}")
             flash('Error loading upcoming bookings', 'warning')
+            
+            # Fallback: try to get bookings without relationships
+            try:
+                print("🔄 DEBUG: Trying fallback approach for upcoming bookings")
+                upcoming_simple = supabase_admin.table('bookings').select('*').gte('start_time', now).neq('status', 'cancelled').order('start_time').limit(5).execute()
+                
+                if upcoming_simple.data:
+                    upcoming_bookings_data = []
+                    for booking in upcoming_simple.data:
+                        # Manually fetch room and client data
+                        room_data = supabase_admin.table('rooms').select('name').eq('id', booking.get('room_id')).execute()
+                        client_data = supabase_admin.table('clients').select('company_name, contact_person').eq('id', booking.get('client_id')).execute()
+                        
+                        booking['room'] = room_data.data[0] if room_data.data else {'name': 'Unknown Room'}
+                        booking['client'] = client_data.data[0] if client_data.data else {'company_name': None, 'contact_person': 'Unknown Client'}
+                        
+                        upcoming_bookings_data.append(booking)
+                    
+                    upcoming_bookings_data = convert_datetime_strings(upcoming_bookings_data)
+                    print(f"✅ DEBUG: Fallback successful, got {len(upcoming_bookings_data)} upcoming bookings")
+            except Exception as fallback_error:
+                print(f"❌ DEBUG: Fallback also failed: {fallback_error}")
         
-        # Get today's bookings with detailed error handling
+        # Get today's bookings with similar approach
         try:
             print("🔍 DEBUG: Fetching today's bookings...")
+            
             today_bookings = supabase_admin.table('bookings').select("""
                 *,
                 room:rooms(name),
@@ -996,14 +1049,63 @@ def dashboard():
             """).gte('start_time', today).lt('start_time', tomorrow).neq('status', 'cancelled').execute()
             
             if today_bookings.data:
-                today_bookings_data = convert_datetime_strings(today_bookings.data)
-                print(f"✅ DEBUG: Found {len(today_bookings_data)} today's bookings")
+                today_bookings_raw = today_bookings.data
+                print(f"✅ DEBUG: Found {len(today_bookings_raw)} today's bookings")
+                
+                # Process each booking to ensure room and client data
+                today_bookings_processed = []
+                for booking in today_bookings_raw:
+                    processed_booking = booking.copy()
+                    
+                    # Ensure room data exists
+                    if not booking.get('room') or not isinstance(booking.get('room'), dict):
+                        print(f"⚠️ DEBUG: Missing room data for today's booking {booking.get('id')}, fetching separately")
+                        room_data = supabase_admin.table('rooms').select('id, name').eq('id', booking.get('room_id')).execute()
+                        if room_data.data:
+                            processed_booking['room'] = room_data.data[0]
+                        else:
+                            processed_booking['room'] = {'name': 'Unknown Room'}
+                    
+                    # Ensure client data exists
+                    if not booking.get('client') or not isinstance(booking.get('client'), dict):
+                        print(f"⚠️ DEBUG: Missing client data for today's booking {booking.get('id')}, fetching separately")
+                        client_data = supabase_admin.table('clients').select('id, company_name, contact_person').eq('id', booking.get('client_id')).execute()
+                        if client_data.data:
+                            processed_booking['client'] = client_data.data[0]
+                        else:
+                            processed_booking['client'] = {'company_name': None, 'contact_person': 'Unknown Client'}
+                    
+                    today_bookings_processed.append(processed_booking)
+                
+                today_bookings_data = convert_datetime_strings(today_bookings_processed)
             else:
                 print("⚠️ DEBUG: No bookings found for today")
                 
         except Exception as e:
             print(f"❌ DEBUG: Error fetching today's bookings: {e}")
             flash('Error loading today\'s bookings', 'warning')
+            
+            # Similar fallback for today's bookings
+            try:
+                print("🔄 DEBUG: Trying fallback approach for today's bookings")
+                today_simple = supabase_admin.table('bookings').select('*').gte('start_time', today).lt('start_time', tomorrow).neq('status', 'cancelled').execute()
+                
+                if today_simple.data:
+                    today_bookings_data = []
+                    for booking in today_simple.data:
+                        # Manually fetch room and client data
+                        room_data = supabase_admin.table('rooms').select('name').eq('id', booking.get('room_id')).execute()
+                        client_data = supabase_admin.table('clients').select('company_name, contact_person').eq('id', booking.get('client_id')).execute()
+                        
+                        booking['room'] = room_data.data[0] if room_data.data else {'name': 'Unknown Room'}
+                        booking['client'] = client_data.data[0] if client_data.data else {'company_name': None, 'contact_person': 'Unknown Client'}
+                        
+                        today_bookings_data.append(booking)
+                    
+                    today_bookings_data = convert_datetime_strings(today_bookings_data)
+                    print(f"✅ DEBUG: Fallback successful, got {len(today_bookings_data)} today's bookings")
+            except Exception as fallback_error:
+                print(f"❌ DEBUG: Today's bookings fallback also failed: {fallback_error}")
         
         # Get total counts with individual error handling
         try:
@@ -1038,6 +1140,12 @@ def dashboard():
         print(f"   - Total clients: {total_clients}")
         print(f"   - Active bookings: {total_active_bookings}")
         
+        # Debug the data structure before passing to template
+        if upcoming_bookings_data:
+            print(f"🔍 DEBUG: Final upcoming booking structure: {upcoming_bookings_data[0]}")
+        if today_bookings_data:
+            print(f"🔍 DEBUG: Final today booking structure: {today_bookings_data[0]}")
+        
         return render_template('dashboard.html',
                               title='Dashboard',
                               upcoming_bookings=upcoming_bookings_data,
@@ -1063,7 +1171,6 @@ def dashboard():
                               total_active_bookings=0,
                               critical_error=True,
                               error_message=str(e))
-
 @app.route('/calendar')
 @login_required
 def calendar():
@@ -3864,6 +3971,60 @@ def debug_sample_data():
                 'rooms': rooms_sample.data,
                 'clients': clients_sample.data,
                 'bookings': bookings_sample.data
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now(UTC).isoformat()
+        }), 500
+        
+@app.route('/debug/supabase-data')
+@login_required
+def debug_supabase_data():
+    """Debug route to examine Supabase data structure"""
+    try:
+        now = datetime.now(UTC).isoformat()
+        
+        # Test simple booking query
+        simple_bookings = supabase_admin.table('bookings').select('*').limit(2).execute()
+        
+        # Test nested relationship query
+        nested_bookings = supabase_admin.table('bookings').select("""
+            *,
+            room:rooms(name),
+            client:clients(company_name, contact_person)
+        """).limit(2).execute()
+        
+        # Test individual room and client queries
+        rooms = supabase_admin.table('rooms').select('*').limit(2).execute()
+        clients = supabase_admin.table('clients').select('*').limit(2).execute()
+        
+        return jsonify({
+            'success': True,
+            'timestamp': datetime.now(UTC).isoformat(),
+            'environment': os.environ.get('FLASK_ENV', 'development'),
+            'simple_bookings': {
+                'count': len(simple_bookings.data) if simple_bookings.data else 0,
+                'data': simple_bookings.data
+            },
+            'nested_bookings': {
+                'count': len(nested_bookings.data) if nested_bookings.data else 0,
+                'data': nested_bookings.data,
+                'structure_check': {
+                    'has_room_relationship': bool(nested_bookings.data and nested_bookings.data[0].get('room')) if nested_bookings.data else False,
+                    'has_client_relationship': bool(nested_bookings.data and nested_bookings.data[0].get('client')) if nested_bookings.data else False,
+                }
+            },
+            'rooms': {
+                'count': len(rooms.data) if rooms.data else 0,
+                'sample': rooms.data[0] if rooms.data else None
+            },
+            'clients': {
+                'count': len(clients.data) if clients.data else 0,
+                'sample': clients.data[0] if clients.data else None
             }
         })
         

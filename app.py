@@ -1854,83 +1854,99 @@ def sync_clients_data():
 @app.route('/addons')
 @login_required
 def addons():
-    """List all add-ons by category using admin client with accurate statistics"""
-    
-    class MockBookings:
-        """Mock bookings object to provide count() method for template compatibility"""
-        def __init__(self, count):
-            self._count = count
-        
-        def count(self):
-            return self._count
-    
+    """Enhanced add-ons page with robust Supabase data handling"""
     try:
-        print("🔍 DEBUG: Starting addons route with improved statistics calculation")
+        print("🔍 DEBUG: Starting enhanced addons route")
         
-        # Get categories with their addons
-        categories_data = supabase_admin.table('addon_categories').select("""
-            *,
-            addons(*)
-        """).execute()
+        # Get categories with their addons using nested query
+        try:
+            categories_data = supabase_admin.table('addon_categories').select("""
+                *,
+                addons(*)
+            """).order('name').execute()
+            
+            print(f"✅ DEBUG: Found {len(categories_data.data)} categories with nested addons")
+            categories = categories_data.data
+            
+        except Exception as nested_error:
+            print(f"⚠️ DEBUG: Nested query failed, using fallback: {nested_error}")
+            # Fallback: get categories and addons separately
+            categories_data = supabase_admin.table('addon_categories').select('*').order('name').execute()
+            addons_data = supabase_admin.table('addons').select('*').order('name').execute()
+            
+            categories = categories_data.data
+            all_addons = addons_data.data
+            
+            # Group addons by category
+            for category in categories:
+                category['addons'] = [addon for addon in all_addons if addon.get('category_id') == category['id']]
+            
+            print(f"✅ DEBUG: Fallback successful - {len(categories)} categories, {len(all_addons)} addons")
         
-        print(f"📊 DEBUG: Found {len(categories_data.data)} categories")
+        # Get booking usage data
+        try:
+            booking_addons = supabase_admin.table('booking_addons').select('addon_id').execute()
+            addon_usage = {}
+            for ba in booking_addons.data:
+                addon_id = ba['addon_id']
+                addon_usage[addon_id] = addon_usage.get(addon_id, 0) + 1
+            
+            print(f"✅ DEBUG: Calculated usage for {len(addon_usage)} addons")
+            
+        except Exception as usage_error:
+            print(f"⚠️ DEBUG: Usage calculation failed: {usage_error}")
+            addon_usage = {}
         
-        # Get booking_addons to check usage
-        booking_addons = supabase_admin.table('booking_addons').select('addon_id').execute()
-        
-        print(f"📊 DEBUG: Found {len(booking_addons.data)} booking_addon records")
-        
-        # Count usage for each addon
-        addon_usage = {}
-        for ba in booking_addons.data:
-            addon_id = ba['addon_id']
-            addon_usage[addon_id] = addon_usage.get(addon_id, 0) + 1
-        
-        print(f"📊 DEBUG: Addon usage calculated: {addon_usage}")
-        
-        # Initialize statistics
+        # Process categories and calculate statistics
         total_addons = 0
         active_addons = 0
         addons_with_usage = 0
         
-        # Add booking usage information to each addon and calculate statistics
-        for category in categories_data.data:
-            category_addon_count = 0
-            if 'addons' in category and category['addons']:
-                for addon in category['addons']:
-                    # Count total addons
-                    total_addons += 1
-                    category_addon_count += 1
-                    
-                    # Count active addons
-                    if addon.get('is_active', False):
-                        active_addons += 1
-                    
-                    # Count addons with usage
-                    booking_count = addon_usage.get(addon['id'], 0)
-                    if booking_count > 0:
-                        addons_with_usage += 1
-                    
-                    # Add a mock bookings object with count() method for template compatibility
-                    addon['bookings'] = MockBookings(booking_count)
-                    addon['has_bookings'] = booking_count > 0
-                    addon['booking_count'] = booking_count
+        for category in categories:
+            # Ensure category has addons list
+            if 'addons' not in category or category['addons'] is None:
+                category['addons'] = []
             
-            print(f"📊 DEBUG: Category '{category['name']}' has {category_addon_count} addons")
+            # Ensure category has description
+            if 'description' not in category or category['description'] is None:
+                category['description'] = ''
+            
+            # Process each addon in the category
+            for addon in category['addons']:
+                total_addons += 1
+                
+                # Ensure addon has all required fields with defaults
+                addon['name'] = addon.get('name', 'Unnamed Addon')
+                addon['description'] = addon.get('description', '')
+                addon['price'] = addon.get('price', 0.0)
+                addon['is_active'] = addon.get('is_active', True)
+                
+                # Count active addons
+                if addon['is_active']:
+                    active_addons += 1
+                
+                # Add usage information
+                booking_count = addon_usage.get(addon['id'], 0)
+                addon['booking_count'] = booking_count
+                addon['has_bookings'] = booking_count > 0
+                
+                if booking_count > 0:
+                    addons_with_usage += 1
+                
+                print(f"📊 DEBUG: Addon '{addon['name']}' - Active: {addon['is_active']}, Bookings: {booking_count}")
         
-        # Calculate usage rate (percentage of addons that have been used in bookings)
+        # Calculate statistics
         usage_rate = (addons_with_usage / total_addons * 100) if total_addons > 0 else 0
         
-        # Prepare statistics for template
         statistics = {
             'total_addons': total_addons,
-            'total_categories': len(categories_data.data),
+            'total_categories': len(categories),
             'active_addons': active_addons,
             'usage_rate': round(usage_rate, 1),
             'addons_with_usage': addons_with_usage
         }
         
-        print(f"📊 DEBUG: Final statistics calculated:")
+        print(f"📊 DEBUG: Final statistics:")
         print(f"  - Total addons: {statistics['total_addons']}")
         print(f"  - Total categories: {statistics['total_categories']}")
         print(f"  - Active addons: {statistics['active_addons']}")
@@ -1939,98 +1955,29 @@ def addons():
         
         return render_template('addons/index.html', 
                              title='Add-ons', 
-                             categories=categories_data.data,
+                             categories=categories,
                              stats=statistics)
         
     except Exception as e:
-        print(f"❌ Addons error (main try block): {e}")
+        print(f"❌ ERROR: Addons route failed: {e}")
         import traceback
         traceback.print_exc()
         
-        # Fallback: get categories and addons separately
-        try:
-            print("🔄 DEBUG: Using fallback method")
-            
-            categories = supabase_select('addon_categories')
-            addons_list = supabase_select('addons')
-            booking_addons = supabase_select('booking_addons')
-            
-            print(f"📊 DEBUG: Fallback - Categories: {len(categories)}, Addons: {len(addons_list)}, Booking_addons: {len(booking_addons)}")
-            
-            # Count usage for each addon
-            addon_usage = {}
-            for ba in booking_addons:
-                addon_id = ba['addon_id']
-                addon_usage[addon_id] = addon_usage.get(addon_id, 0) + 1
-            
-            # Initialize statistics
-            total_addons = len(addons_list)
-            active_addons = 0
-            addons_with_usage = 0
-            
-            # Group addons by category and add booking info
-            for category in categories:
-                category['addons'] = []
-                for addon in addons_list:
-                    if addon.get('category_id') == category['id']:
-                        # Count active addons
-                        if addon.get('is_active', False):
-                            active_addons += 1
-                        
-                        # Count addons with usage
-                        booking_count = addon_usage.get(addon['id'], 0)
-                        if booking_count > 0:
-                            addons_with_usage += 1
-                        
-                        # Add mock bookings object for template compatibility
-                        addon['bookings'] = MockBookings(booking_count)
-                        addon['has_bookings'] = booking_count > 0
-                        addon['booking_count'] = booking_count
-                        category['addons'].append(addon)
-            
-            # Calculate usage rate
-            usage_rate = (addons_with_usage / total_addons * 100) if total_addons > 0 else 0
-            
-            # Prepare statistics for template
-            statistics = {
-                'total_addons': total_addons,
-                'total_categories': len(categories),
-                'active_addons': active_addons,
-                'usage_rate': round(usage_rate, 1),
-                'addons_with_usage': addons_with_usage
-            }
-            
-            print(f"📊 DEBUG: Fallback statistics calculated:")
-            print(f"  - Total addons: {statistics['total_addons']}")
-            print(f"  - Total categories: {statistics['total_categories']}")
-            print(f"  - Active addons: {statistics['active_addons']}")
-            print(f"  - Usage rate: {statistics['usage_rate']}%")
-            print(f"  - Addons with usage: {statistics['addons_with_usage']}")
-            
-            return render_template('addons/index.html', 
-                                 title='Add-ons', 
-                                 categories=categories,
-                                 stats=statistics)
-            
-        except Exception as fallback_error:
-            print(f"❌ Addons fallback error: {fallback_error}")
-            import traceback
-            traceback.print_exc()
-            flash('Error loading add-ons', 'danger')
-            
-            # Return with empty statistics
-            empty_stats = {
-                'total_addons': 0,
-                'total_categories': 0,
-                'active_addons': 0,
-                'usage_rate': 0,
-                'addons_with_usage': 0
-            }
-            
-            return render_template('addons/index.html', 
-                                 title='Add-ons', 
-                                 categories=[],
-                                 stats=empty_stats)
+        flash('Error loading add-ons page. Please try again.', 'danger')
+        
+        # Return with safe empty data
+        empty_stats = {
+            'total_addons': 0,
+            'total_categories': 0,
+            'active_addons': 0,
+            'usage_rate': 0,
+            'addons_with_usage': 0
+        }
+        
+        return render_template('addons/index.html', 
+                             title='Add-ons', 
+                             categories=[],
+                             stats=empty_stats)
 
 @app.route('/addons/new', methods=['GET', 'POST'])
 @login_required

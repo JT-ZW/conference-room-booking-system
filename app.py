@@ -33,20 +33,21 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__)
 
-# Enhanced Flask configuration for production
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'fallback-key-change-in-production-' + str(datetime.now().timestamp()))
 
 # Session configuration - FIXED FOR PRODUCTION
-app.config['SESSION_COOKIE_SECURE'] = False  # IMPORTANT: Changed to False
+# Check if we're running on HTTPS (common in production deployments)
+
+app.config['SESSION_COOKIE_SECURE'] = False  # Set to False for now, will be handled later
 app.config['SESSION_COOKIE_HTTPONLY'] = True
 app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)  # Changed to 1 hour
+app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(hours=1)
 app.config['SESSION_REFRESH_EACH_REQUEST'] = True
 
 # CSRF configuration - FIXED FOR PRODUCTION
 app.config['WTF_CSRF_ENABLED'] = True
 app.config['WTF_CSRF_TIME_LIMIT'] = 3600
-app.config['WTF_CSRF_SSL_STRICT'] = False  # IMPORTANT: Changed to False
+app.config['WTF_CSRF_SSL_STRICT'] = False
 
 # Supabase Configuration
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
@@ -92,24 +93,57 @@ def inject_now():
 
 @app.before_request
 def validate_session():
-    """Simplified session validation for production"""
+    """Simplified session validation for production debugging"""
     # Skip validation for static files and auth routes
     if (request.endpoint and 
         (request.endpoint.startswith('static') or 
-         request.endpoint in ['login', 'logout', 'debug'] or
+         request.endpoint in ['login', 'logout', 'debug', 'debug_info'] or
          request.path.startswith('/static/'))):
         return
     
-    # Add debug logging
-    print(f"DEBUG: Route: {request.endpoint}, Authenticated: {current_user.is_authenticated}")
+    # Add comprehensive debug logging
+    print(f"DEBUG: === Session Validation ===")
+    print(f"DEBUG: Route: {request.endpoint}")
+    print(f"DEBUG: Path: {request.path}")
+    print(f"DEBUG: Method: {request.method}")
+    print(f"DEBUG: Current user authenticated: {current_user.is_authenticated}")
+    print(f"DEBUG: Session keys: {list(session.keys())}")
+    print(f"DEBUG: Has supabase_session: {'supabase_session' in session}")
+    print(f"DEBUG: Session permanent: {session.permanent}")
     
-    # If user is authenticated but no supabase session, log them out
+    if current_user.is_authenticated:
+        print(f"DEBUG: Current user ID: {getattr(current_user, 'id', 'None')}")
+        print(f"DEBUG: Current user email: {getattr(current_user, 'email', 'None')}")
+    
+    # TEMPORARILY DISABLE session clearing for debugging
+    # Comment this out to see if sessions persist
+    """
+    # If user is authenticated but no supabase_session, log them out
     if current_user.is_authenticated and 'supabase_session' not in session:
         print("DEBUG: No supabase_session found, logging out")
         logout_user()
         session.clear()
         flash('Session expired. Please log in again.', 'warning')
         return redirect(url_for('login'))
+    """
+    
+    print(f"DEBUG: === End Session Validation ===")
+    
+# Add a new debug route to check session status
+@app.route('/debug/session')
+def debug_session():
+    """Debug route to check session status"""
+    return jsonify({
+        'authenticated': current_user.is_authenticated,
+        'user_id': getattr(current_user, 'id', None),
+        'user_email': getattr(current_user, 'email', None),
+        'session_keys': list(session.keys()),
+        'has_supabase_session': 'supabase_session' in session,
+        'session_permanent': session.permanent,
+        'secret_key_set': bool(app.config.get('SECRET_KEY')),
+        'environment': os.environ.get('FLASK_ENV', 'development'),
+        'supabase_session_data': session.get('supabase_session', 'Not found')
+    })
 
 @app.template_filter('parse_datetime')
 def parse_datetime_filter(date_string):
@@ -212,18 +246,30 @@ def authenticate_user(email, password):
             # Clear any existing session data first
             session.clear()
             
-            # IMPORTANT: Set session as permanent
+            # IMPORTANT: Set session as permanent first
             session.permanent = True
             
-            session['supabase_session'] = {
+            # Store session data
+            session_data = {
                 'access_token': response.session.access_token,
                 'refresh_token': response.session.refresh_token,
                 'user_id': response.user.id
             }
-            session['created_at'] = datetime.now(UTC).isoformat()
-            session['user_id'] = response.user.id  # Add this for Flask-Login
             
+            # Set session data
+            session['supabase_session'] = session_data
+            session['created_at'] = datetime.now(UTC).isoformat()
+            session['user_id'] = response.user.id
+            session['user_email'] = response.user.email
+            
+            # Add debug info
             print(f"DEBUG: Session created successfully")
+            print(f"DEBUG: Session data keys: {list(session.keys())}")
+            print(f"DEBUG: Session permanent: {session.permanent}")
+            
+            # Force session save
+            session.modified = True
+            
             return User(response.user.__dict__)
         else:
             print("DEBUG: Authentication failed - no user or session")
@@ -231,6 +277,8 @@ def authenticate_user(email, password):
             
     except Exception as e:
         print(f"DEBUG: Authentication error: {e}")
+        import traceback
+        traceback.print_exc()
         return None
     
 def create_user_supabase(email, password, first_name, last_name, role='staff'):
@@ -738,17 +786,41 @@ def calculate_booking_total(room_id, start_time, end_time, addon_ids=None, disco
 def login():
     """User login page with Supabase authentication"""
     if current_user.is_authenticated:
+        print("DEBUG: User already authenticated, redirecting to dashboard")
         return redirect(url_for('dashboard'))
     
     form = LoginForm()
     if form.validate_on_submit():
+        print(f"DEBUG: Login form submitted for email: {form.username.data}")
+        
         user = authenticate_user(form.username.data, form.password.data)
         if user:
-            login_user(user, remember=form.remember_me.data)
+            print(f"DEBUG: Authentication successful for user: {user.email}")
+            
+            # Log the user in with Flask-Login
+            login_result = login_user(user, remember=form.remember_me.data)
+            print(f"DEBUG: Flask-Login result: {login_result}")
+            print(f"DEBUG: Current user authenticated: {current_user.is_authenticated}")
+            print(f"DEBUG: Current user ID: {getattr(current_user, 'id', 'None')}")
+            
+            # Get next page
             next_page = request.args.get('next')
-            flash(f'Welcome back, {user.first_name}!', 'success')
+            print(f"DEBUG: Next page: {next_page}")
+            
+            # Show success message
+            flash(f'Welcome back, {user.first_name or user.email}!', 'success')
+            
+            # Force session save before redirect
+            session.modified = True
+            
+            print(f"DEBUG: About to redirect to: {next_page or url_for('dashboard')}")
             return redirect(next_page or url_for('dashboard'))
-        flash('Invalid email or password', 'danger')
+        else:
+            print("DEBUG: Authentication failed")
+            flash('Invalid email or password', 'danger')
+    else:
+        if form.errors:
+            print(f"DEBUG: Form validation errors: {form.errors}")
     
     return render_template('login.html', form=form, title='Sign In')
 

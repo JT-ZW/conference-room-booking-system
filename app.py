@@ -788,40 +788,138 @@ def is_room_available_supabase(room_id, start_time, end_time, exclude_booking_id
         return False
 
 def get_booking_calendar_events_supabase():
-    """Get all bookings formatted for FullCalendar using Supabase admin client"""
+    """Get all bookings formatted for FullCalendar using Supabase admin client with fallback logic"""
     try:
-        # Get bookings with room and client data using admin client
+        print("🔍 DEBUG: Fetching calendar events from Supabase...")
+        
+        # First try with nested relationships
         bookings_data = supabase_admin.table('bookings').select("""
-            id, title, start_time, end_time, status,
+            id, title, start_time, end_time, status, room_id, client_id,
             room:rooms(name),
             client:clients(company_name, contact_person)
         """).execute()
         
+        print(f"✅ DEBUG: Found {len(bookings_data.data)} bookings for calendar")
+        
         events = []
         for booking in bookings_data.data:
-            color = {
-                'tentative': '#FFA500',  # Orange
-                'confirmed': '#28a745',  # Green
-                'cancelled': '#dc3545'   # Red
-            }.get(booking['status'], '#17a2b8')  # Default: Teal
-            
-            events.append({
-                'id': booking['id'],
-                'title': booking['title'],
-                'start': booking['start_time'],
-                'end': booking['end_time'],
-                'color': color,
-                'extendedProps': {
-                    'room': booking['room']['name'] if booking['room'] else 'Unknown Room',
-                    'client': booking['client']['company_name'] or booking['client']['contact_person'] if booking['client'] else 'Unknown Client',
-                    'status': booking['status']
-                }
-            })
+            try:
+                # Ensure room data exists
+                room_name = 'Unknown Room'
+                if booking.get('room') and isinstance(booking.get('room'), dict) and booking['room'].get('name'):
+                    room_name = booking['room']['name']
+                elif booking.get('room_id'):
+                    print(f"⚠️ DEBUG: Missing room data for booking {booking.get('id')}, fetching separately")
+                    room_data = supabase_admin.table('rooms').select('name').eq('id', booking.get('room_id')).execute()
+                    if room_data.data:
+                        room_name = room_data.data[0]['name']
+                
+                # Ensure client data exists
+                client_name = 'Unknown Client'
+                if booking.get('client') and isinstance(booking.get('client'), dict):
+                    client_name = booking['client'].get('company_name') or booking['client'].get('contact_person', 'Unknown Client')
+                elif booking.get('client_id'):
+                    print(f"⚠️ DEBUG: Missing client data for booking {booking.get('id')}, fetching separately")
+                    client_data = supabase_admin.table('clients').select('company_name, contact_person').eq('id', booking.get('client_id')).execute()
+                    if client_data.data:
+                        client_name = client_data.data[0].get('company_name') or client_data.data[0].get('contact_person', 'Unknown Client')
+                
+                # Determine event color based on status
+                color = {
+                    'tentative': '#FFA500',  # Orange
+                    'confirmed': '#28a745',  # Green
+                    'cancelled': '#dc3545'   # Red
+                }.get(booking.get('status', 'tentative'), '#17a2b8')  # Default: Teal
+                
+                # Create calendar event
+                events.append({
+                    'id': booking['id'],
+                    'title': booking.get('title', 'Untitled Event'),
+                    'start': booking['start_time'],
+                    'end': booking['end_time'],
+                    'color': color,
+                    'extendedProps': {
+                        'room': room_name,
+                        'client': client_name,
+                        'status': booking.get('status', 'tentative'),
+                        'roomId': booking.get('room_id'),
+                        'clientId': booking.get('client_id'),
+                        'attendees': booking.get('attendees', 0),
+                        'total': booking.get('total_price', 0),
+                        'notes': booking.get('notes', ''),
+                        'addons': []  # Will be populated if needed
+                    }
+                })
+                
+            except Exception as event_error:
+                print(f"❌ DEBUG: Error processing individual booking {booking.get('id', 'unknown')}: {event_error}")
+                # Continue processing other bookings
+                continue
         
+        print(f"✅ DEBUG: Successfully processed {len(events)} calendar events")
         return events
+        
     except Exception as e:
-        print(f"Calendar events error: {e}")
-        return []
+        print(f"❌ Calendar events error: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Fallback: try to get bookings without relationships
+        try:
+            print("🔄 DEBUG: Trying fallback approach for calendar events")
+            simple_bookings = supabase_admin.table('bookings').select('*').execute()
+            
+            events = []
+            for booking in simple_bookings.data:
+                try:
+                    # Manually fetch room and client data
+                    room_name = 'Unknown Room'
+                    if booking.get('room_id'):
+                        room_data = supabase_admin.table('rooms').select('name').eq('id', booking['room_id']).execute()
+                        if room_data.data:
+                            room_name = room_data.data[0]['name']
+                    
+                    client_name = 'Unknown Client'
+                    if booking.get('client_id'):
+                        client_data = supabase_admin.table('clients').select('company_name, contact_person').eq('id', booking['client_id']).execute()
+                        if client_data.data:
+                            client_name = client_data.data[0].get('company_name') or client_data.data[0].get('contact_person', 'Unknown Client')
+                    
+                    color = {
+                        'tentative': '#FFA500',
+                        'confirmed': '#28a745',
+                        'cancelled': '#dc3545'
+                    }.get(booking.get('status', 'tentative'), '#17a2b8')
+                    
+                    events.append({
+                        'id': booking['id'],
+                        'title': booking.get('title', 'Untitled Event'),
+                        'start': booking['start_time'],
+                        'end': booking['end_time'],
+                        'color': color,
+                        'extendedProps': {
+                            'room': room_name,
+                            'client': client_name,
+                            'status': booking.get('status', 'tentative'),
+                            'roomId': booking.get('room_id'),
+                            'clientId': booking.get('client_id'),
+                            'attendees': booking.get('attendees', 0),
+                            'total': booking.get('total_price', 0),
+                            'notes': booking.get('notes', ''),
+                            'addons': []
+                        }
+                    })
+                    
+                except Exception as fallback_event_error:
+                    print(f"❌ DEBUG: Error in fallback processing for booking {booking.get('id', 'unknown')}: {fallback_event_error}")
+                    continue
+            
+            print(f"✅ DEBUG: Fallback successful, processed {len(events)} calendar events")
+            return events
+            
+        except Exception as fallback_error:
+            print(f"❌ DEBUG: Fallback also failed: {fallback_error}")
+            return []
 
 def calculate_booking_total(room_id, start_time, end_time, addon_ids=None, discount=0):
     """Calculate total price for a booking"""
@@ -1174,24 +1272,58 @@ def dashboard():
 @app.route('/calendar')
 @login_required
 def calendar():
-    """Calendar view for bookings"""
+    """Calendar view for bookings with enhanced error handling"""
     try:
+        print("🔍 DEBUG: Loading calendar page...")
         rooms_data = supabase_select('rooms')
+        
+        if rooms_data:
+            print(f"✅ DEBUG: Loaded {len(rooms_data)} rooms for calendar")
+        else:
+            print("⚠️ DEBUG: No rooms found for calendar")
+            flash('No rooms found. Please add rooms first.', 'warning')
+        
         return render_template('calendar.html', title='Booking Calendar', rooms=rooms_data)
+        
     except Exception as e:
-        print(f"Calendar error: {e}")
+        print(f"❌ Calendar error: {e}")
+        import traceback
+        traceback.print_exc()
+        flash('Error loading calendar page', 'danger')
         return render_template('calendar.html', title='Booking Calendar', rooms=[])
 
 @app.route('/api/events')
 @login_required
 def get_events():
-    """API endpoint to get calendar events from Supabase"""
+    """API endpoint to get calendar events from Supabase with enhanced error handling"""
     try:
+        print("🔍 DEBUG: API events endpoint called")
         events = get_booking_calendar_events_supabase()
-        return jsonify(events)
+        
+        print(f"✅ DEBUG: Returning {len(events)} events to calendar")
+        
+        # Validate events data before returning
+        valid_events = []
+        for event in events:
+            # Ensure required fields exist
+            if (event.get('id') and 
+                event.get('title') and 
+                event.get('start') and 
+                event.get('end')):
+                valid_events.append(event)
+            else:
+                print(f"⚠️ DEBUG: Skipping invalid event: {event}")
+        
+        print(f"✅ DEBUG: Returning {len(valid_events)} valid events")
+        return jsonify(valid_events)
+        
     except Exception as e:
-        print(f"Calendar events error: {e}")
+        print(f"❌ Calendar events API error: {e}")
+        import traceback
+        traceback.print_exc()
+        # Return empty array instead of error to prevent calendar from breaking
         return jsonify([])
+
 
 # ===============================
 # Routes - Rooms
@@ -2165,11 +2297,13 @@ def delete_addon(id):
 @app.route('/bookings')
 @login_required
 def bookings():
-    """List all bookings using Supabase admin client"""
+    """List all bookings using Supabase admin client with enhanced error handling"""
     status_filter = request.args.get('status', 'all')
     date_filter = request.args.get('date', 'upcoming')
     
     try:
+        print(f"🔍 DEBUG: Loading bookings page with filters - status: {status_filter}, date: {date_filter}")
+        
         # Query using admin client for consistent access
         query = supabase_admin.table('bookings').select("""
             *,
@@ -2194,15 +2328,101 @@ def bookings():
             query = query.gte('start_time', today).lt('start_time', tomorrow)
         
         response = query.order('start_time').execute()
-        bookings_data = response.data
+        bookings_raw = response.data
+        
+        print(f"✅ DEBUG: Found {len(bookings_raw)} bookings from database")
+        
+        # Process each booking to ensure room and client data exists
+        bookings_processed = []
+        for booking in bookings_raw:
+            processed_booking = booking.copy()
+            
+            # Ensure room data exists
+            if not booking.get('room') or not isinstance(booking.get('room'), dict):
+                print(f"⚠️ DEBUG: Missing room data for booking {booking.get('id')}, fetching separately")
+                if booking.get('room_id'):
+                    room_data = supabase_admin.table('rooms').select('id, name, capacity').eq('id', booking.get('room_id')).execute()
+                    if room_data.data:
+                        processed_booking['room'] = room_data.data[0]
+                    else:
+                        processed_booking['room'] = {'id': booking.get('room_id'), 'name': 'Unknown Room', 'capacity': 0}
+                else:
+                    processed_booking['room'] = {'id': None, 'name': 'Unknown Room', 'capacity': 0}
+            
+            # Ensure client data exists
+            if not booking.get('client') or not isinstance(booking.get('client'), dict):
+                print(f"⚠️ DEBUG: Missing client data for booking {booking.get('id')}, fetching separately")
+                if booking.get('client_id'):
+                    client_data = supabase_admin.table('clients').select('id, company_name, contact_person').eq('id', booking.get('client_id')).execute()
+                    if client_data.data:
+                        processed_booking['client'] = client_data.data[0]
+                    else:
+                        processed_booking['client'] = {'id': booking.get('client_id'), 'company_name': None, 'contact_person': 'Unknown Client'}
+                else:
+                    processed_booking['client'] = {'id': None, 'company_name': None, 'contact_person': 'Unknown Client'}
+            
+            bookings_processed.append(processed_booking)
         
         # Convert datetime strings to datetime objects for template
-        bookings_data = convert_datetime_strings(bookings_data)
+        bookings_data = convert_datetime_strings(bookings_processed)
+        
+        print(f"✅ DEBUG: Successfully processed {len(bookings_data)} bookings for display")
         
     except Exception as e:
-        print(f"Error fetching bookings: {e}")
-        bookings_data = []
-        flash('Error loading bookings', 'warning')
+        print(f"❌ ERROR: Failed to fetch bookings: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Fallback: try to get bookings without relationships
+        try:
+            print("🔄 DEBUG: Trying fallback approach for bookings")
+            simple_bookings = supabase_admin.table('bookings').select('*')
+            
+            # Apply the same filters
+            if status_filter != 'all':
+                simple_bookings = simple_bookings.eq('status', status_filter)
+            
+            now = datetime.now(UTC).isoformat()
+            today = datetime.now(UTC).date().isoformat()
+            tomorrow = (datetime.now(UTC).date() + timedelta(days=1)).isoformat()
+            
+            if date_filter == 'upcoming':
+                simple_bookings = simple_bookings.gte('end_time', now)
+            elif date_filter == 'past':
+                simple_bookings = simple_bookings.lt('end_time', now)
+            elif date_filter == 'today':
+                simple_bookings = simple_bookings.gte('start_time', today).lt('start_time', tomorrow)
+            
+            response = simple_bookings.order('start_time').execute()
+            
+            if response.data:
+                bookings_data = []
+                for booking in response.data:
+                    # Manually fetch room and client data
+                    if booking.get('room_id'):
+                        room_data = supabase_admin.table('rooms').select('id, name, capacity').eq('id', booking['room_id']).execute()
+                        booking['room'] = room_data.data[0] if room_data.data else {'id': booking['room_id'], 'name': 'Unknown Room', 'capacity': 0}
+                    else:
+                        booking['room'] = {'id': None, 'name': 'Unknown Room', 'capacity': 0}
+                    
+                    if booking.get('client_id'):
+                        client_data = supabase_admin.table('clients').select('id, company_name, contact_person').eq('id', booking['client_id']).execute()
+                        booking['client'] = client_data.data[0] if client_data.data else {'id': booking['client_id'], 'company_name': None, 'contact_person': 'Unknown Client'}
+                    else:
+                        booking['client'] = {'id': None, 'company_name': None, 'contact_person': 'Unknown Client'}
+                    
+                    bookings_data.append(booking)
+                
+                bookings_data = convert_datetime_strings(bookings_data)
+                print(f"✅ DEBUG: Fallback successful, processed {len(bookings_data)} bookings")
+            else:
+                bookings_data = []
+                print("⚠️ DEBUG: No bookings found")
+                
+        except Exception as fallback_error:
+            print(f"❌ DEBUG: Fallback also failed: {fallback_error}")
+            bookings_data = []
+            flash('Error loading bookings', 'danger')
     
     return render_template('bookings/index.html', 
                           title='Bookings', 

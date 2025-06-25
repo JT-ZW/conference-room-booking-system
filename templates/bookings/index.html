@@ -15,6 +15,19 @@
     .booking-status-tentative { border-left: 4px solid #f6c23e; }
     .booking-status-confirmed { border-left: 4px solid #1cc88a; }
     .booking-status-cancelled { border-left: 4px solid #e74a3b; }
+    
+    .fallback-text {
+        color: #6c757d;
+        font-style: italic;
+    }
+    
+    .data-error {
+        background-color: #fff3cd;
+        border: 1px solid #ffeaa7;
+        border-radius: 4px;
+        padding: 0.5rem;
+        margin: 0.5rem 0;
+    }
 </style>
 {% endblock %}
 
@@ -73,71 +86,209 @@
                     </tr>
                 </thead>
                 <tbody>
-                    {% for booking in bookings %}
-                    <tr class="booking-row booking-status-{{ booking.status }}">
-                        <td>
-                            <a href="{{ url_for('view_booking', id=booking.id) }}" class="fw-bold text-dark text-decoration-none">
-                                {{ booking.title }}
-                            </a>
-                        </td>
-                        <td>{{ booking.client.company_name or booking.client.contact_person }}</td>
-                        <td>{{ booking.room.name }}</td>
-                        <td>
-                            <div>{{ booking.start_time.strftime('%d %b %Y') }}</div>
-                            <small class="text-muted">{{ booking.start_time.strftime('%H:%M') }} - {{ booking.end_time.strftime('%H:%M') }}</small>
-                        </td>
-                        <td>
-                            <span class="badge bg-{% if booking.status == 'tentative' %}warning{% elif booking.status == 'confirmed' %}success{% else %}danger{% endif %}">
-                                {{ booking.status|capitalize }}
-                            </span>
-                        </td>
-                        <td class="text-end">
-                            <div class="btn-group">
-                                <a href="{{ url_for('view_booking', id=booking.id) }}" class="btn btn-sm btn-outline-primary">
-                                    <i class="fas fa-eye"></i>
+                    {% if bookings %}
+                        {% for booking in bookings %}
+                        <tr class="booking-row booking-status-{{ booking.status or 'tentative' }}">
+                            <td>
+                                <a href="{{ url_for('view_booking', id=booking.id) }}" class="fw-bold text-dark text-decoration-none">
+                                    {{ booking.title or 'Untitled Booking' }}
                                 </a>
-                                <a href="{{ url_for('edit_booking', id=booking.id) }}" class="btn btn-sm btn-outline-warning">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ booking.id }}">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                            
-                            <!-- Delete Confirmation Modal -->
-                            <div class="modal fade" id="deleteModal{{ booking.id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">Cancel Booking</h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <p>Are you sure you want to cancel the booking for <strong>{{ booking.title }}</strong>?</p>
-                                            <p class="text-danger">This action will mark the booking as cancelled.</p>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                                            <form action="{{ url_for('delete_booking', id=booking.id) }}" method="POST">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
-  <button type="submit" class="btn btn-danger">Cancel Booking</button>
-</form>
+                            </td>
+                            <td>
+                                {% if booking.client and (booking.client.company_name or booking.client.contact_person) %}
+                                    {{ booking.client.company_name or booking.client.contact_person }}
+                                {% elif booking.client_id %}
+                                    <span class="fallback-text">Client ID: {{ booking.client_id }}</span>
+                                {% else %}
+                                    <span class="fallback-text">Unknown Client</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if booking.room and booking.room.name %}
+                                    {{ booking.room.name }}
+                                {% elif booking.room_id %}
+                                    <span class="fallback-text">Room ID: {{ booking.room_id }}</span>
+                                {% else %}
+                                    <span class="fallback-text">Unknown Room</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if booking.start_time %}
+                                    {% if booking.start_time is string %}
+                                        <div>{{ booking.start_time[:10] }}</div>
+                                        <small class="text-muted">{{ booking.start_time[11:16] }} - {{ booking.end_time[11:16] if booking.end_time else 'Unknown' }}</small>
+                                    {% else %}
+                                        <div>{{ booking.start_time.strftime('%d %b %Y') }}</div>
+                                        <small class="text-muted">{{ booking.start_time.strftime('%H:%M') }} - {{ booking.end_time.strftime('%H:%M') if booking.end_time else 'Unknown' }}</small>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="fallback-text">Date TBD</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-{% if booking.status == 'tentative' %}warning{% elif booking.status == 'confirmed' %}success{% else %}danger{% endif %}">
+                                    {{ (booking.status or 'tentative')|capitalize }}
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group">
+                                    <a href="{{ url_for('view_booking', id=booking.id) }}" class="btn btn-sm btn-outline-primary" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{{ url_for('edit_booking', id=booking.id) }}" class="btn btn-sm btn-outline-warning" title="Edit Booking">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#deleteModal{{ booking.id }}" title="Cancel Booking">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                                
+                                <!-- Delete Confirmation Modal -->
+                                <div class="modal fade" id="deleteModal{{ booking.id }}" tabindex="-1" aria-hidden="true">
+                                    <div class="modal-dialog">
+                                        <div class="modal-content">
+                                            <div class="modal-header">
+                                                <h5 class="modal-title">Cancel Booking</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <p>Are you sure you want to cancel the booking for <strong>{{ booking.title or 'this booking' }}</strong>?</p>
+                                                <p class="text-danger">This action will mark the booking as cancelled.</p>
+                                                
+                                                <!-- Show booking details safely -->
+                                                <div class="small text-muted">
+                                                    <strong>Client:</strong> 
+                                                    {% if booking.client and (booking.client.company_name or booking.client.contact_person) %}
+                                                        {{ booking.client.company_name or booking.client.contact_person }}
+                                                    {% else %}
+                                                        Unknown Client
+                                                    {% endif %}
+                                                    <br>
+                                                    <strong>Room:</strong> 
+                                                    {% if booking.room and booking.room.name %}
+                                                        {{ booking.room.name }}
+                                                    {% else %}
+                                                        Unknown Room
+                                                    {% endif %}
+                                                    <br>
+                                                    <strong>Date:</strong> 
+                                                    {% if booking.start_time %}
+                                                        {% if booking.start_time is string %}
+                                                            {{ booking.start_time[:10] }}
+                                                        {% else %}
+                                                            {{ booking.start_time.strftime('%d %b %Y') }}
+                                                        {% endif %}
+                                                    {% else %}
+                                                        Date TBD
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                <form action="{{ url_for('delete_booking', id=booking.id) }}" method="POST" style="display: inline;">
+                                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                                    <button type="submit" class="btn btn-danger">Cancel Booking</button>
+                                                </form>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        </td>
-                    </tr>
+                            </td>
+                        </tr>
+                        {% endfor %}
                     {% else %}
                     <tr>
                         <td colspan="6" class="text-center py-4">
-                            <p class="text-muted mb-0">No bookings found matching your criteria</p>
+                            <div class="text-muted">
+                                <i class="fas fa-calendar-times fa-3x mb-3"></i>
+                                <p class="mb-0">No bookings found matching your criteria</p>
+                                <p class="small">Try adjusting your filters or create a new booking</p>
+                            </div>
                         </td>
                     </tr>
-                    {% endfor %}
+                    {% endif %}
                 </tbody>
             </table>
         </div>
     </div>
+    
+    <!-- Summary Footer -->
+    {% if bookings %}
+    <div class="card-footer bg-light">
+        <div class="row text-center">
+            <div class="col-md-3">
+                <div class="fw-bold">Total Bookings</div>
+                <div class="text-primary">{{ bookings|length }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="fw-bold">Tentative</div>
+                <div class="text-warning">{{ bookings|selectattr('status', 'equalto', 'tentative')|list|length }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="fw-bold">Confirmed</div>
+                <div class="text-success">{{ bookings|selectattr('status', 'equalto', 'confirmed')|list|length }}</div>
+            </div>
+            <div class="col-md-3">
+                <div class="fw-bold">Cancelled</div>
+                <div class="text-danger">{{ bookings|selectattr('status', 'equalto', 'cancelled')|list|length }}</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
 </div>
+
+<!-- Action Buttons -->
+<div class="mt-4">
+    <div class="row">
+        <div class="col-md-6">
+            <a href="{{ url_for('new_booking') }}" class="btn btn-success me-2">
+                <i class="fas fa-plus me-1"></i>New Booking
+            </a>
+            <a href="{{ url_for('calendar') }}" class="btn btn-outline-primary">
+                <i class="fas fa-calendar-alt me-1"></i>Calendar View
+            </a>
+        </div>
+        <div class="col-md-6 text-end">
+            <a href="{{ url_for('reports') }}" class="btn btn-outline-info">
+                <i class="fas fa-chart-bar me-1"></i>Booking Reports
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add tooltips for fallback text
+    const fallbackElements = document.querySelectorAll('.fallback-text');
+    fallbackElements.forEach(element => {
+        element.title = 'Data temporarily unavailable - will update automatically';
+    });
+    
+    // Enhanced booking action handling
+    const actionButtons = document.querySelectorAll('.btn-group .btn');
+    actionButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            // Add loading state for edit and view buttons
+            if (this.href && (this.href.includes('/edit') || this.href.includes('/view'))) {
+                this.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                this.disabled = true;
+            }
+        });
+    });
+    
+    // Auto-refresh bookings every 5 minutes (optional)
+    // Uncomment to enable auto-refresh
+    /*
+    setInterval(function() {
+        if (!document.hidden) {
+            window.location.reload();
+        }
+    }, 300000); // 5 minutes
+    */
+    
+    console.log('Bookings page loaded with', {{ bookings|length if bookings else 0 }}, 'bookings');
+});
+</script>
 {% endblock %}

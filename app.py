@@ -27,6 +27,33 @@ from supabase import create_client, Client
 from dotenv import load_dotenv
 import requests
 
+# STEP 1: Add this function right after your imports, before "# Load environment variables"
+
+def validate_environment():
+    """Validate all required environment variables"""
+    required_vars = {
+        'SUPABASE_URL': os.environ.get('SUPABASE_URL'),
+        'SUPABASE_ANON_KEY': os.environ.get('SUPABASE_ANON_KEY'),
+    }
+    
+    missing_vars = [var for var, value in required_vars.items() if not value]
+    
+    if missing_vars:
+        error_msg = f"Missing required environment variables: {', '.join(missing_vars)}"
+        print(f"❌ {error_msg}")
+        raise ValueError(error_msg)
+    
+    print("✅ All required environment variables are set")
+    
+    # Check optional but important variables
+    service_key = os.environ.get('SUPABASE_SERVICE_KEY')
+    if not service_key:
+        print("⚠️ WARNING: SUPABASE_SERVICE_KEY not set. Some operations may fail due to RLS.")
+    else:
+        print("✅ Service key available for admin operations")
+    
+    return True
+
 # Load environment variables
 load_dotenv()
 
@@ -49,18 +76,47 @@ app.config['WTF_CSRF_ENABLED'] = True
 app.config['WTF_CSRF_TIME_LIMIT'] = 3600
 app.config['WTF_CSRF_SSL_STRICT'] = False
 
+# Load environment variables
+load_dotenv()
+
+# Validate environment variables first
+validate_environment()
+
 # Supabase Configuration
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY')
 SUPABASE_SERVICE_KEY = os.environ.get('SUPABASE_SERVICE_KEY')
 
-if not SUPABASE_URL or not SUPABASE_ANON_KEY:
-    raise ValueError("Please set SUPABASE_URL and SUPABASE_ANON_KEY environment variables")
-
-# Initialize Supabase client
-supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
-supabase_admin: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY) if SUPABASE_SERVICE_KEY else supabase
-
+# Enhanced Supabase client initialization with better error handling
+try:
+    print(f"🔍 Initializing Supabase clients...")
+    print(f"   URL: {SUPABASE_URL}")
+    print(f"   Anon key: {'✅ Set' if SUPABASE_ANON_KEY else '❌ Missing'}")
+    print(f"   Service key: {'✅ Set' if SUPABASE_SERVICE_KEY else '❌ Missing'}")
+    
+    # Initialize regular client
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
+    print("✅ Regular Supabase client initialized")
+    
+    # Initialize admin client with service key
+    if SUPABASE_SERVICE_KEY:
+        supabase_admin: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
+        print("✅ Admin Supabase client initialized with service key")
+    else:
+        supabase_admin = supabase
+        print("⚠️ Using regular client as admin client (no service key)")
+    
+    # Test connections
+    test_response = supabase_admin.table('rooms').select('count').execute()
+    print(f"✅ Database connection test successful")
+    
+except Exception as e:
+    print(f"❌ Supabase initialization failed: {e}")
+    print("🔧 Please check your environment variables and Supabase project status")
+    # Don't raise here to allow the app to start for debugging
+    supabase = None
+    supabase_admin = None
+    
 # Initialize extensions with better error handling
 try:
     csrf = CSRFProtect(app)
@@ -92,42 +148,26 @@ def inject_now():
     return {'now': datetime.now(UTC)}
 
 @app.before_request
-def validate_session():
-    """Simplified session validation for production debugging"""
-    # Skip validation for static files and auth routes
+def production_session_validation():
+    """Simplified session validation for production"""
+    # Skip validation for static files, debug routes, and auth routes
     if (request.endpoint and 
         (request.endpoint.startswith('static') or 
-         request.endpoint in ['login', 'logout', 'debug', 'debug_info'] or
-         request.path.startswith('/static/'))):
+         request.endpoint.startswith('debug') or
+         request.endpoint in ['login', 'logout', 'health_check', 'debug_database_connection', 'debug_sample_data', 'debug_test_queries'] or
+         request.path.startswith('/static/') or
+         request.path.startswith('/debug/'))):
         return
     
-    # Add comprehensive debug logging
-    print(f"DEBUG: === Session Validation ===")
-    print(f"DEBUG: Route: {request.endpoint}")
-    print(f"DEBUG: Path: {request.path}")
-    print(f"DEBUG: Method: {request.method}")
-    print(f"DEBUG: Current user authenticated: {current_user.is_authenticated}")
-    print(f"DEBUG: Session keys: {list(session.keys())}")
-    print(f"DEBUG: Has supabase_session: {'supabase_session' in session}")
-    print(f"DEBUG: Session permanent: {session.permanent}")
+    # Log basic info in production
+    if os.environ.get('FLASK_ENV') == 'production':
+        print(f"🔍 PROD: Request to {request.endpoint} by {'authenticated' if current_user.is_authenticated else 'anonymous'} user")
     
-    if current_user.is_authenticated:
-        print(f"DEBUG: Current user ID: {getattr(current_user, 'id', 'None')}")
-        print(f"DEBUG: Current user email: {getattr(current_user, 'email', 'None')}")
-    
-    # TEMPORARILY DISABLE session clearing for debugging
-    # Comment this out to see if sessions persist
-    """
-    # If user is authenticated but no supabase_session, log them out
-    if current_user.is_authenticated and 'supabase_session' not in session:
-        print("DEBUG: No supabase_session found, logging out")
-        logout_user()
-        session.clear()
-        flash('Session expired. Please log in again.', 'warning')
-        return redirect(url_for('login'))
-    """
-    
-    print(f"DEBUG: === End Session Validation ===")
+    # Simplified validation - only check if user needs to be authenticated
+    if not current_user.is_authenticated and request.endpoint not in ['login', 'health_check']:
+        if request.endpoint and not request.endpoint.startswith('static'):
+            print(f"🔒 Redirecting unauthenticated user from {request.endpoint} to login")
+            return redirect(url_for('login'))
     
 # Add a new debug route to check session status
 @app.route('/debug/session')
@@ -312,9 +352,14 @@ def create_user_supabase(email, password, first_name, last_name, role='staff'):
         return False
 
 def supabase_select(table_name, columns="*", filters=None, order_by=None, limit=None):
-    """Select data from Supabase table using admin client to bypass RLS"""
+    """Enhanced select function with better error handling and RLS bypass"""
     try:
-        # Always use admin client for consistent data access
+        if not supabase_admin:
+            raise Exception("Supabase admin client not initialized")
+        
+        print(f"🔍 DEBUG: Querying table '{table_name}' with admin client")
+        
+        # Use admin client to bypass RLS
         query = supabase_admin.table(table_name).select(columns)
         
         if filters:
@@ -341,9 +386,46 @@ def supabase_select(table_name, columns="*", filters=None, order_by=None, limit=
             query = query.limit(limit)
         
         response = query.execute()
-        return response.data
+        
+        if hasattr(response, 'data') and response.data is not None:
+            print(f"✅ DEBUG: Successfully retrieved {len(response.data)} rows from '{table_name}'")
+            return response.data
+        else:
+            print(f"⚠️ DEBUG: Empty response from table '{table_name}'")
+            return []
+            
     except Exception as e:
-        print(f"Select error: {e}")
+        print(f"❌ ERROR: Failed to query table '{table_name}': {e}")
+        print(f"   Error type: {type(e)}")
+        
+        # If admin client fails, try with regular client as fallback
+        if supabase and supabase_admin != supabase:
+            try:
+                print(f"🔄 DEBUG: Trying fallback with regular client for '{table_name}'")
+                query = supabase.table(table_name).select(columns)
+                
+                if filters:
+                    for filter_item in filters:
+                        if len(filter_item) == 3:
+                            column, operator, value = filter_item
+                            if operator == 'eq':
+                                query = query.eq(column, value)
+                
+                if order_by:
+                    query = query.order(order_by)
+                    
+                if limit:
+                    query = query.limit(limit)
+                
+                response = query.execute()
+                
+                if hasattr(response, 'data') and response.data is not None:
+                    print(f"✅ DEBUG: Fallback successful for '{table_name}': {len(response.data)} rows")
+                    return response.data
+                    
+            except Exception as fallback_error:
+                print(f"❌ DEBUG: Fallback also failed for '{table_name}': {fallback_error}")
+        
         return []
 
 def supabase_insert(table_name, data):
@@ -842,38 +924,119 @@ def logout():
 # Routes - Dashboard
 # ===============================
 
+# Replace your existing dashboard route with this improved version
+
 @app.route('/')
 @login_required
 def dashboard():
-    """Main dashboard page using Supabase admin client"""
+    """Main dashboard page with enhanced error handling and debugging"""
     try:
-        # Get statistics
+        print(f"🔍 DEBUG: Dashboard loading at {datetime.now(UTC)}")
+        print(f"🔍 DEBUG: User authenticated: {current_user.is_authenticated}")
+        print(f"🔍 DEBUG: Supabase URL set: {bool(SUPABASE_URL)}")
+        print(f"🔍 DEBUG: Service key available: {bool(SUPABASE_SERVICE_KEY)}")
+        
+        # Initialize with safe defaults
+        upcoming_bookings_data = []
+        today_bookings_data = []
+        total_rooms = 0
+        total_clients = 0
+        total_active_bookings = 0
+        
+        # Get time boundaries
         now = datetime.now(UTC).isoformat()
         today = datetime.now(UTC).date().isoformat()
         tomorrow = (datetime.now(UTC).date() + timedelta(days=1)).isoformat()
         
-        # Upcoming bookings (next 5) using admin client
-        upcoming_bookings = supabase_admin.table('bookings').select("""
-            *,
-            room:rooms(name),
-            client:clients(company_name, contact_person)
-        """).gte('start_time', now).neq('status', 'cancelled').order('start_time').limit(5).execute()
+        print(f"🔍 DEBUG: Time boundaries - now: {now}, today: {today}, tomorrow: {tomorrow}")
         
-        # Today's bookings using admin client
-        today_bookings = supabase_admin.table('bookings').select("""
-            *,
-            room:rooms(name),
-            client:clients(company_name, contact_person)
-        """).gte('start_time', today).lt('start_time', tomorrow).neq('status', 'cancelled').execute()
+        # Test basic connection first
+        try:
+            test_query = supabase_admin.table('rooms').select('id').limit(1).execute()
+            print(f"✅ DEBUG: Basic database connection successful")
+        except Exception as e:
+            print(f"❌ DEBUG: Basic database connection failed: {e}")
+            flash('Database connection issue. Please check logs.', 'warning')
+            return render_template('dashboard.html',
+                                  title='Dashboard',
+                                  upcoming_bookings=[],
+                                  today_bookings=[],
+                                  total_rooms=0,
+                                  total_clients=0,
+                                  total_active_bookings=0,
+                                  debug_mode=True,
+                                  connection_error=str(e))
         
-        # Convert datetime strings to datetime objects for templates
-        upcoming_bookings_data = convert_datetime_strings(upcoming_bookings.data)
-        today_bookings_data = convert_datetime_strings(today_bookings.data)
+        # Get upcoming bookings with detailed error handling
+        try:
+            print("🔍 DEBUG: Fetching upcoming bookings...")
+            upcoming_bookings = supabase_admin.table('bookings').select("""
+                *,
+                room:rooms(name),
+                client:clients(company_name, contact_person)
+            """).gte('start_time', now).neq('status', 'cancelled').order('start_time').limit(5).execute()
+            
+            if upcoming_bookings.data:
+                upcoming_bookings_data = convert_datetime_strings(upcoming_bookings.data)
+                print(f"✅ DEBUG: Found {len(upcoming_bookings_data)} upcoming bookings")
+            else:
+                print("⚠️ DEBUG: No upcoming bookings found")
+                
+        except Exception as e:
+            print(f"❌ DEBUG: Error fetching upcoming bookings: {e}")
+            flash('Error loading upcoming bookings', 'warning')
         
-        # Total counts using admin client for reliable counts
-        total_rooms = len(supabase_admin.table('rooms').select('id').execute().data)
-        total_clients = len(supabase_admin.table('clients').select('id').execute().data)
-        total_active_bookings = len(supabase_admin.table('bookings').select('id').gte('end_time', now).neq('status', 'cancelled').execute().data)
+        # Get today's bookings with detailed error handling
+        try:
+            print("🔍 DEBUG: Fetching today's bookings...")
+            today_bookings = supabase_admin.table('bookings').select("""
+                *,
+                room:rooms(name),
+                client:clients(company_name, contact_person)
+            """).gte('start_time', today).lt('start_time', tomorrow).neq('status', 'cancelled').execute()
+            
+            if today_bookings.data:
+                today_bookings_data = convert_datetime_strings(today_bookings.data)
+                print(f"✅ DEBUG: Found {len(today_bookings_data)} today's bookings")
+            else:
+                print("⚠️ DEBUG: No bookings found for today")
+                
+        except Exception as e:
+            print(f"❌ DEBUG: Error fetching today's bookings: {e}")
+            flash('Error loading today\'s bookings', 'warning')
+        
+        # Get total counts with individual error handling
+        try:
+            print("🔍 DEBUG: Fetching total rooms...")
+            rooms_response = supabase_admin.table('rooms').select('id').execute()
+            total_rooms = len(rooms_response.data) if rooms_response.data else 0
+            print(f"✅ DEBUG: Found {total_rooms} total rooms")
+        except Exception as e:
+            print(f"❌ DEBUG: Error fetching room count: {e}")
+        
+        try:
+            print("🔍 DEBUG: Fetching total clients...")
+            clients_response = supabase_admin.table('clients').select('id').execute()
+            total_clients = len(clients_response.data) if clients_response.data else 0
+            print(f"✅ DEBUG: Found {total_clients} total clients")
+        except Exception as e:
+            print(f"❌ DEBUG: Error fetching client count: {e}")
+        
+        try:
+            print("🔍 DEBUG: Fetching active bookings...")
+            active_bookings_response = supabase_admin.table('bookings').select('id').gte('end_time', now).neq('status', 'cancelled').execute()
+            total_active_bookings = len(active_bookings_response.data) if active_bookings_response.data else 0
+            print(f"✅ DEBUG: Found {total_active_bookings} active bookings")
+        except Exception as e:
+            print(f"❌ DEBUG: Error fetching active bookings count: {e}")
+        
+        # Log final statistics
+        print(f"📊 DEBUG: Dashboard statistics:")
+        print(f"   - Upcoming bookings: {len(upcoming_bookings_data)}")
+        print(f"   - Today's bookings: {len(today_bookings_data)}")
+        print(f"   - Total rooms: {total_rooms}")
+        print(f"   - Total clients: {total_clients}")
+        print(f"   - Active bookings: {total_active_bookings}")
         
         return render_template('dashboard.html',
                               title='Dashboard',
@@ -881,17 +1044,25 @@ def dashboard():
                               today_bookings=today_bookings_data,
                               total_rooms=total_rooms,
                               total_clients=total_clients,
-                              total_active_bookings=total_active_bookings)
+                              total_active_bookings=total_active_bookings,
+                              debug_mode=os.environ.get('FLASK_ENV') == 'production')
         
     except Exception as e:
-        print(f"Dashboard error: {e}")
+        print(f"❌ CRITICAL ERROR in dashboard: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # In production, show a user-friendly error page
+        flash('Dashboard temporarily unavailable. Please try again.', 'danger')
         return render_template('dashboard.html',
                               title='Dashboard',
                               upcoming_bookings=[],
                               today_bookings=[],
                               total_rooms=0,
                               total_clients=0,
-                              total_active_bookings=0)
+                              total_active_bookings=0,
+                              critical_error=True,
+                              error_message=str(e))
 
 @app.route('/calendar')
 @login_required
@@ -3619,6 +3790,167 @@ def debug_info():
         'secret_key_set': bool(app.config.get('SECRET_KEY')),
         'session_permanent': session.permanent if hasattr(session, 'permanent') else False,
         'environment': os.environ.get('FLASK_ENV', 'development')
+    })
+    
+    # Add these debug routes to your app.py file (before the main entry point)
+
+@app.route('/debug/database-connection')
+def debug_database_connection():
+    """Comprehensive database connection test for production"""
+    try:
+        debug_info = {
+            'timestamp': datetime.now(UTC).isoformat(),
+            'environment': os.environ.get('FLASK_ENV', 'development'),
+            'supabase_url_set': bool(SUPABASE_URL),
+            'supabase_anon_key_set': bool(SUPABASE_ANON_KEY),
+            'supabase_service_key_set': bool(SUPABASE_SERVICE_KEY),
+            'secret_key_set': bool(app.config.get('SECRET_KEY')),
+            'errors': []
+        }
+        
+        # Test basic connection
+        try:
+            # Test with admin client (service key)
+            response = supabase_admin.table('rooms').select('count').execute()
+            debug_info['admin_client_works'] = True
+            debug_info['rooms_accessible'] = True
+        except Exception as e:
+            debug_info['admin_client_works'] = False
+            debug_info['errors'].append(f'Admin client error: {str(e)}')
+        
+        # Test regular client
+        try:
+            response = supabase.table('rooms').select('count').execute()
+            debug_info['regular_client_works'] = True
+        except Exception as e:
+            debug_info['regular_client_works'] = False
+            debug_info['errors'].append(f'Regular client error: {str(e)}')
+        
+        # Test data retrieval
+        try:
+            rooms = supabase_admin.table('rooms').select('*').execute()
+            clients = supabase_admin.table('clients').select('*').execute()
+            bookings = supabase_admin.table('bookings').select('*').execute()
+            
+            debug_info['data_counts'] = {
+                'rooms': len(rooms.data) if rooms.data else 0,
+                'clients': len(clients.data) if clients.data else 0,
+                'bookings': len(bookings.data) if bookings.data else 0
+            }
+        except Exception as e:
+            debug_info['errors'].append(f'Data retrieval error: {str(e)}')
+        
+        return jsonify(debug_info)
+        
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'timestamp': datetime.now(UTC).isoformat()
+        }), 500
+
+@app.route('/debug/sample-data')
+def debug_sample_data():
+    """Get sample data to verify database connection"""
+    try:
+        # Get sample data using admin client
+        rooms_sample = supabase_admin.table('rooms').select('*').limit(3).execute()
+        clients_sample = supabase_admin.table('clients').select('*').limit(3).execute()
+        bookings_sample = supabase_admin.table('bookings').select('*').limit(3).execute()
+        
+        return jsonify({
+            'success': True,
+            'timestamp': datetime.now(UTC).isoformat(),
+            'sample_data': {
+                'rooms': rooms_sample.data,
+                'clients': clients_sample.data,
+                'bookings': bookings_sample.data
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now(UTC).isoformat()
+        }), 500
+
+@app.route('/debug/test-queries')
+def debug_test_queries():
+    """Test specific queries that might be failing"""
+    try:
+        results = {}
+        
+        # Test dashboard queries
+        try:
+            now = datetime.now(UTC).isoformat()
+            upcoming_bookings = supabase_admin.table('bookings').select("""
+                *,
+                room:rooms(name),
+                client:clients(company_name, contact_person)
+            """).gte('start_time', now).neq('status', 'cancelled').order('start_time').limit(5).execute()
+            
+            results['upcoming_bookings'] = {
+                'success': True,
+                'count': len(upcoming_bookings.data),
+                'sample': upcoming_bookings.data[:2] if upcoming_bookings.data else []
+            }
+        except Exception as e:
+            results['upcoming_bookings'] = {
+                'success': False,
+                'error': str(e)
+            }
+        
+        # Test room utilization query
+        try:
+            rooms = supabase_admin.table('rooms').select('*').execute()
+            results['rooms_query'] = {
+                'success': True,
+                'count': len(rooms.data),
+                'sample': rooms.data[:2] if rooms.data else []
+            }
+        except Exception as e:
+            results['rooms_query'] = {
+                'success': False,
+                'error': str(e)
+            }
+        
+        # Test addons query
+        try:
+            categories_data = supabase_admin.table('addon_categories').select("""
+                *,
+                addons(*)
+            """).execute()
+            results['addons_query'] = {
+                'success': True,
+                'count': len(categories_data.data),
+                'sample': categories_data.data[:1] if categories_data.data else []
+            }
+        except Exception as e:
+            results['addons_query'] = {
+                'success': False,
+                'error': str(e)
+            }
+        
+        return jsonify({
+            'success': True,
+            'timestamp': datetime.now(UTC).isoformat(),
+            'query_results': results
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'timestamp': datetime.now(UTC).isoformat()
+        }), 500
+
+@app.route('/health')
+def health_check():
+    """Simple health check for monitoring"""
+    return jsonify({
+        'status': 'healthy',
+        'timestamp': datetime.now(UTC).isoformat(),
+        'database_connected': bool(SUPABASE_URL and SUPABASE_ANON_KEY)
     })
 # ===============================
 # Error Handlers

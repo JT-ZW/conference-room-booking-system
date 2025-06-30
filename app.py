@@ -5615,14 +5615,14 @@ def require_admin_or_manager(f):
 @login_required
 @require_admin_or_manager
 def activity_logs():
-    """View all user activity logs (Admin/Manager only)"""
+    """View all user activity logs (Admin/Manager only) - FIXED FOR NONE VALUES"""
     try:
         # Get filter parameters
-        user_filter = request.args.get('user')
-        activity_type_filter = request.args.get('activity_type')
+        user_filter = request.args.get('user', '').strip()
+        activity_type_filter = request.args.get('activity_type', '').strip()
         status_filter = request.args.get('status', 'all')
-        date_from = request.args.get('date_from')
-        date_to = request.args.get('date_to')
+        date_from = request.args.get('date_from', '').strip()
+        date_to = request.args.get('date_to', '').strip()
         page = request.args.get('page', 1, type=int)
         per_page = 50
         
@@ -5648,7 +5648,7 @@ def activity_logs():
         # Build query
         query = supabase_admin.table('user_activity_log').select('*')
         
-        # Apply filters
+        # Apply filters with None checks
         if user_filter:
             query = query.ilike('user_name', f'%{user_filter}%')
         
@@ -5659,12 +5659,22 @@ def activity_logs():
             query = query.eq('status', status_filter)
         
         if date_from:
-            query = query.gte('created_at', date_from)
+            try:
+                # Validate date format
+                datetime.strptime(date_from, '%Y-%m-%d')
+                query = query.gte('created_at', date_from)
+            except ValueError:
+                flash('Invalid start date format. Please use YYYY-MM-DD.', 'warning')
+                date_from = ''
         
         if date_to:
-            # Add one day to include the entire end date
-            end_date = datetime.strptime(date_to, '%Y-%m-%d') + timedelta(days=1)
-            query = query.lt('created_at', end_date.isoformat())
+            try:
+                # Validate date format and add one day to include the entire end date
+                end_date = datetime.strptime(date_to, '%Y-%m-%d') + timedelta(days=1)
+                query = query.lt('created_at', end_date.isoformat())
+            except ValueError:
+                flash('Invalid end date format. Please use YYYY-MM-DD.', 'warning')
+                date_to = ''
         
         # Get total count for pagination
         count_response = query.execute()
@@ -5676,27 +5686,70 @@ def activity_logs():
         
         logs = logs_response.data if logs_response.data else []
         
-        # Convert datetime strings and parse metadata
+        # Process logs and handle None values
+        processed_logs = []
         for log in logs:
+            # Create a safe copy of the log with None values handled
+            safe_log = {}
+            
+            # Handle each field safely
+            safe_log['id'] = log.get('id', 0)
+            safe_log['user_id'] = log.get('user_id', '') or ''
+            safe_log['user_name'] = log.get('user_name', '') or 'Unknown User'
+            safe_log['user_email'] = log.get('user_email', '') or 'unknown@example.com'
+            safe_log['activity_type'] = log.get('activity_type', '') or 'unknown'
+            safe_log['activity_description'] = log.get('activity_description', '') or 'No description'
+            safe_log['resource_type'] = log.get('resource_type', '') or ''
+            safe_log['resource_id'] = log.get('resource_id', '') or ''
+            safe_log['ip_address'] = log.get('ip_address', '') or 'Unknown'
+            safe_log['user_agent'] = log.get('user_agent', '') or 'Unknown'
+            safe_log['session_id'] = log.get('session_id', '') or ''
+            safe_log['status'] = log.get('status', '') or 'unknown'
+            
+            # Handle datetime conversion safely
             if log.get('created_at'):
                 try:
-                    log['created_at'] = datetime.fromisoformat(log['created_at'].replace('Z', '+00:00'))
-                except:
-                    pass
+                    safe_log['created_at'] = datetime.fromisoformat(log['created_at'].replace('Z', '+00:00'))
+                except (ValueError, AttributeError):
+                    safe_log['created_at'] = datetime.now(UTC)
+            else:
+                safe_log['created_at'] = datetime.now(UTC)
             
-            if log.get('metadata') and isinstance(log['metadata'], str):
-                try:
-                    log['metadata'] = json.loads(log['metadata'])
-                except:
-                    pass
+            # Handle metadata safely
+            if log.get('metadata'):
+                if isinstance(log['metadata'], str):
+                    try:
+                        safe_log['metadata'] = json.loads(log['metadata'])
+                    except (json.JSONDecodeError, TypeError):
+                        safe_log['metadata'] = {}
+                elif isinstance(log['metadata'], dict):
+                    safe_log['metadata'] = log['metadata']
+                else:
+                    safe_log['metadata'] = {}
+            else:
+                safe_log['metadata'] = {}
+            
+            processed_logs.append(safe_log)
         
-        # Get unique activity types for filter dropdown
-        activity_types_response = supabase_admin.table('user_activity_log').select('activity_type').execute()
-        unique_activity_types = list(set([log['activity_type'] for log in activity_types_response.data if activity_types_response.data]))
-        unique_activity_types.sort()
+        # Get unique activity types for filter dropdown (handle None values)
+        try:
+            activity_types_response = supabase_admin.table('user_activity_log').select('activity_type').execute()
+            unique_activity_types = []
+            if activity_types_response.data:
+                for log in activity_types_response.data:
+                    activity_type = log.get('activity_type')
+                    if activity_type and activity_type.strip():  # Only add non-empty activity types
+                        unique_activity_types.append(activity_type)
+                
+                # Remove duplicates and sort
+                unique_activity_types = sorted(list(set(unique_activity_types)))
+            
+        except Exception as e:
+            print(f"Error fetching activity types: {e}")
+            unique_activity_types = []
         
         # Calculate pagination info
-        total_pages = (total_logs + per_page - 1) // per_page
+        total_pages = (total_logs + per_page - 1) // per_page if total_logs > 0 else 1
         
         pagination_info = {
             'page': page,
@@ -5709,22 +5762,29 @@ def activity_logs():
             'next_num': page + 1 if page < total_pages else None
         }
         
+        # Ensure all filter values are strings (not None)
+        filters = {
+            'user': user_filter or '',
+            'activity_type': activity_type_filter or '',
+            'status': status_filter or 'all',
+            'date_from': date_from or '',
+            'date_to': date_to or ''
+        }
+        
+        print(f"✅ DEBUG: Activity logs loaded - {len(processed_logs)} logs, page {page} of {total_pages}")
+        
         return render_template('admin/activity_logs.html',
                               title='User Activity Logs',
-                              logs=logs,
+                              logs=processed_logs,
                               pagination=pagination_info,
-                              filters={
-                                  'user': user_filter,
-                                  'activity_type': activity_type_filter,
-                                  'status': status_filter,
-                                  'date_from': date_from,
-                                  'date_to': date_to
-                              },
+                              filters=filters,
                               unique_activity_types=unique_activity_types)
         
     except Exception as e:
         print(f"❌ ERROR: Failed to load activity logs: {e}")
-        flash('Error loading activity logs', 'danger')
+        import traceback
+        traceback.print_exc()
+        flash('Error loading activity logs. Please try again.', 'danger')
         return redirect(url_for('dashboard'))
     
 @app.route('/admin/activity-stats')
@@ -6319,6 +6379,58 @@ def nl2br_filter(text):
     if not text:
         return ''
     return text.replace('\n', '<br>')
+
+# Add these template filters to your app.py file (after the existing template filters)
+
+@app.template_filter('safe_startswith')
+def safe_startswith_filter(text, prefix):
+    """Safely check if text starts with prefix, handling None values"""
+    if text is None or prefix is None:
+        return False
+    try:
+        return str(text).startswith(str(prefix))
+    except (AttributeError, TypeError):
+        return False
+
+@app.template_filter('safe_string')
+def safe_string_filter(value, default=''):
+    """Convert value to string safely, handling None values"""
+    if value is None:
+        return default
+    try:
+        return str(value)
+    except (TypeError, ValueError):
+        return default
+
+@app.template_filter('safe_contains')
+def safe_contains_filter(text, substring):
+    """Safely check if text contains substring, handling None values"""
+    if text is None or substring is None:
+        return False
+    try:
+        return str(substring).lower() in str(text).lower()
+    except (AttributeError, TypeError):
+        return False
+
+@app.template_filter('truncate_safe')
+def truncate_safe_filter(text, length=100, suffix='...'):
+    """Safely truncate text, handling None values"""
+    if text is None:
+        return ''
+    try:
+        text = str(text)
+        if len(text) <= length:
+            return text
+        return text[:length] + suffix
+    except (TypeError, ValueError):
+        return ''
+
+@app.template_filter('default_if_none')
+def default_if_none_filter(value, default='N/A'):
+    """Return default value if input is None or empty"""
+    if value is None or (isinstance(value, str) and not value.strip()):
+        return default
+    return value
 
 # ===============================
 # ERROR RECOVERY FUNCTIONS

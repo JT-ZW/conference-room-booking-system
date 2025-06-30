@@ -173,7 +173,7 @@
                             <i class="fas fa-user me-1"></i>User
                         </label>
                         <input type="text" class="form-control" id="user" name="user" 
-                               value="{{ filters.user or '' }}" placeholder="Search by user name or email">
+                               value="{{ filters.user|default_if_none('') }}" placeholder="Search by user name or email">
                     </div>
                     <div class="col-md-3">
                         <label for="activity_type" class="form-label fw-semibold">
@@ -184,7 +184,7 @@
                             {% for activity_type in unique_activity_types %}
                             <option value="{{ activity_type }}" 
                                     {% if filters.activity_type == activity_type %}selected{% endif %}>
-                                {{ activity_type.replace('_', ' ').title() }}
+                                {{ (activity_type|default_if_none('unknown')|safe_string).replace('_', ' ').title() }}
                             </option>
                             {% endfor %}
                         </select>
@@ -205,14 +205,14 @@
                             <i class="fas fa-calendar me-1"></i>From Date
                         </label>
                         <input type="date" class="form-control" id="date_from" name="date_from" 
-                               value="{{ filters.date_from or '' }}">
+                               value="{{ filters.date_from|default_if_none('') }}">
                     </div>
                     <div class="col-md-2">
                         <label for="date_to" class="form-label fw-semibold">
                             <i class="fas fa-calendar me-1"></i>To Date
                         </label>
                         <input type="date" class="form-control" id="date_to" name="date_to" 
-                               value="{{ filters.date_to or '' }}">
+                               value="{{ filters.date_to|default_if_none('') }}">
                     </div>
                     <div class="col-12">
                         <div class="d-flex justify-content-between align-items-center">
@@ -278,52 +278,53 @@
                             <tr class="activity-log-row">
                                 <td class="py-3 ps-4">
                                     <div class="d-flex align-items-center">
-                                        <div class="activity-icon icon-{{ log.status }}">
-                                            {% if log.activity_type == 'login_success' %}
+                                        <div class="activity-icon icon-{{ log.status|default_if_none('default') }}">
+                                            {% set activity_type = log.activity_type|default_if_none('unknown') %}
+                                            {% if activity_type == 'login_success' %}
                                                 <i class="fas fa-sign-in-alt"></i>
-                                            {% elif log.activity_type == 'login_failed' %}
+                                            {% elif activity_type == 'login_failed' %}
                                                 <i class="fas fa-sign-in-alt"></i>
-                                            {% elif log.activity_type == 'logout' %}
+                                            {% elif activity_type == 'logout' %}
                                                 <i class="fas fa-sign-out-alt"></i>
-                                            {% elif log.activity_type == 'create_booking' %}
+                                            {% elif activity_type == 'create_booking' %}
                                                 <i class="fas fa-plus"></i>
-                                            {% elif log.activity_type == 'cancel_booking' %}
+                                            {% elif activity_type == 'cancel_booking' %}
                                                 <i class="fas fa-times-circle"></i>
-                                            {% elif log.activity_type == 'page_view' %}
+                                            {% elif activity_type == 'page_view' %}
                                                 <i class="fas fa-eye"></i>
-                                            {% elif log.activity_type == 'error_occurred' %}
+                                            {% elif activity_type == 'error_occurred' %}
                                                 <i class="fas fa-exclamation-triangle"></i>
-                                            {% elif log.activity_type == 'generate_report' %}
+                                            {% elif activity_type == 'generate_report' %}
                                                 <i class="fas fa-file-alt"></i>
                                             {% else %}
                                                 <i class="fas fa-cog"></i>
                                             {% endif %}
                                         </div>
                                         <div>
-                                            <div class="fw-semibold text-dark">{{ log.user_name }}</div>
-                                            <small class="text-muted">{{ log.user_email }}</small>
+                                            <div class="fw-semibold text-dark">{{ log.user_name|default_if_none('Unknown User') }}</div>
+                                            <small class="text-muted">{{ log.user_email|default_if_none('unknown@example.com') }}</small>
                                         </div>
                                     </div>
                                 </td>
                                 <td class="py-3">
                                     <span class="badge bg-secondary">
-                                        {{ log.activity_type.replace('_', ' ').title() }}
+                                        {{ (log.activity_type|default_if_none('unknown')|safe_string).replace('_', ' ').title() }}
                                     </span>
                                 </td>
                                 <td class="py-3">
                                     <div class="activity-description">
-                                        {{ log.activity_description }}
+                                        {{ log.activity_description|default_if_none('No description available') }}
                                     </div>
                                     {% if log.ip_address %}
                                     <small class="text-muted d-block mt-1">
-                                        <i class="fas fa-globe me-1"></i>{{ log.ip_address }}
+                                        <i class="fas fa-globe me-1"></i>{{ log.ip_address|default_if_none('Unknown') }}
                                     </small>
                                     {% endif %}
                                 </td>
                                 <td class="py-3">
                                     {% if log.resource_type and log.resource_id %}
                                     <span class="badge bg-info text-white">
-                                        <i class="fas fa-tag me-1"></i>{{ log.resource_type|title }} #{{ log.resource_id }}
+                                        <i class="fas fa-tag me-1"></i>{{ (log.resource_type|default_if_none('resource')|safe_string).title() }} #{{ log.resource_id }}
                                     </span>
                                     {% else %}
                                     <span class="text-muted">-</span>
@@ -346,20 +347,21 @@
                                     </div>
                                 </td>
                                 <td class="py-3">
-                                    {% if log.status == 'success' %}
+                                    {% set status = log.status|default_if_none('unknown') %}
+                                    {% if status == 'success' %}
                                     <span class="badge bg-success">
                                         <i class="fas fa-check me-1"></i>Success
                                     </span>
-                                    {% elif log.status == 'failed' %}
+                                    {% elif status == 'failed' %}
                                     <span class="badge bg-danger">
                                         <i class="fas fa-times me-1"></i>Failed
                                     </span>
-                                    {% elif log.status == 'warning' %}
+                                    {% elif status == 'warning' %}
                                     <span class="badge bg-warning text-dark">
                                         <i class="fas fa-exclamation-triangle me-1"></i>Warning
                                     </span>
                                     {% else %}
-                                    <span class="badge bg-secondary">{{ log.status|title }}</span>
+                                    <span class="badge bg-secondary">{{ status|safe_string|title }}</span>
                                     {% endif %}
                                 </td>
                                 <td class="py-3 text-center">
@@ -368,7 +370,7 @@
                                         <button type="button" class="btn btn-outline-info btn-sm" 
                                                 data-bs-toggle="modal" 
                                                 data-bs-target="#metadataModal"
-                                                onclick="showMetadata({{ log.metadata | tojson | safe }}, '{{ log.activity_description }}')"
+                                                onclick="showMetadata({{ log.metadata | tojson | safe }}, '{{ log.activity_description|default_if_none('No description')|safe }}')"
                                                 title="View metadata">
                                             <i class="fas fa-info-circle"></i>
                                         </button>

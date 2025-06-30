@@ -1,0 +1,863 @@
+<!-- Create this file as templates/profile/my_activity.html -->
+{% extends "layout.html" %} {% block title %}{{ title }}{% endblock %} {% block
+extra_css %}
+<style>
+  .activity-timeline {
+    position: relative;
+    padding-left: 40px;
+  }
+
+  .activity-timeline::before {
+    content: "";
+    position: absolute;
+    left: 20px;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(to bottom, #007bff, #6c757d);
+    border-radius: 2px;
+  }
+
+  .timeline-item {
+    position: relative;
+    margin-bottom: 25px;
+    background: white;
+    border-radius: 12px;
+    padding: 20px 25px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.1);
+    margin-left: 20px;
+    transition: all 0.3s ease;
+  }
+
+  .timeline-item:hover {
+    transform: translateX(5px);
+    box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+  }
+
+  .timeline-item::before {
+    content: "";
+    position: absolute;
+    left: -33px;
+    top: 25px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    border: 4px solid #007bff;
+    z-index: 1;
+    transition: all 0.3s ease;
+  }
+
+  .timeline-item:hover::before {
+    transform: scale(1.2);
+    box-shadow: 0 0 0 4px rgba(0, 123, 255, 0.2);
+  }
+
+  .timeline-item.success::before {
+    border-color: #28a745;
+  }
+  .timeline-item.failed::before {
+    border-color: #dc3545;
+  }
+  .timeline-item.warning::before {
+    border-color: #ffc107;
+  }
+
+  .activity-icon {
+    width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 15px;
+    font-size: 1.1rem;
+  }
+
+  .icon-login {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+  }
+  .icon-logout {
+    background: linear-gradient(135deg, #6c757d, #495057);
+    color: white;
+  }
+  .icon-booking {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+  }
+  .icon-page {
+    background: linear-gradient(135deg, #ffc107, #e0a800);
+    color: white;
+  }
+  .icon-error {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+  }
+  .icon-report {
+    background: linear-gradient(135deg, #17a2b8, #138496);
+    color: white;
+  }
+  .icon-default {
+    background: linear-gradient(135deg, #6c757d, #495057);
+    color: white;
+  }
+
+  .stats-card {
+    transition: all 0.3s ease;
+    border: none;
+    box-shadow: 0 3px 15px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+  }
+
+  .stats-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+
+  .page-header {
+    background: linear-gradient(135deg, #6f42c1 0%, #5a32a3 100%);
+    color: white;
+    margin: -1.5rem -1.5rem 2rem -1.5rem;
+    padding: 2.5rem 1.5rem;
+    border-radius: 0.5rem 0.5rem 0 0;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .page-header::before {
+    content: "";
+    position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 200px;
+    height: 200px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 50%;
+    transform: rotate(45deg);
+  }
+
+  .activity-meta {
+    background: rgba(0, 123, 255, 0.05);
+    border-left: 4px solid #007bff;
+    padding: 12px 15px;
+    border-radius: 0 8px 8px 0;
+    margin-top: 10px;
+  }
+
+  .time-badge {
+    background: linear-gradient(135deg, #e9ecef, #dee2e6);
+    color: #495057;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 500;
+  }
+
+  .activity-category {
+    display: inline-block;
+    padding: 3px 10px;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .cat-auth {
+    background: rgba(40, 167, 69, 0.1);
+    color: #28a745;
+  }
+  .cat-booking {
+    background: rgba(0, 123, 255, 0.1);
+    color: #007bff;
+  }
+  .cat-page {
+    background: rgba(255, 193, 7, 0.1);
+    color: #856404;
+  }
+  .cat-system {
+    background: rgba(108, 117, 125, 0.1);
+    color: #6c757d;
+  }
+  .cat-error {
+    background: rgba(220, 53, 69, 0.1);
+    color: #dc3545;
+  }
+
+  .metric-number {
+    font-size: 2.5rem;
+    font-weight: 700;
+    line-height: 1;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .welcome-section {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 25px;
+    border: 1px solid rgba(0, 123, 255, 0.1);
+  }
+
+  .activity-search {
+    background: white;
+    border-radius: 25px;
+    padding: 8px 20px;
+    border: 2px solid #e9ecef;
+    transition: all 0.3s ease;
+  }
+
+  .activity-search:focus {
+    border-color: #007bff;
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+    outline: none;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+    border: 2px dashed #dee2e6;
+  }
+
+  @keyframes slideInFromLeft {
+    from {
+      opacity: 0;
+      transform: translateX(-30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateX(0);
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .timeline-item {
+    opacity: 0;
+    animation: slideInFromLeft 0.6s ease forwards;
+  }
+
+  .stats-card {
+    opacity: 0;
+    animation: fadeInUp 0.6s ease forwards;
+  }
+
+  /* Stagger animation delays */
+  .timeline-item:nth-child(1) {
+    animation-delay: 0.1s;
+  }
+  .timeline-item:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .timeline-item:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+  .timeline-item:nth-child(4) {
+    animation-delay: 0.4s;
+  }
+  .timeline-item:nth-child(5) {
+    animation-delay: 0.5s;
+  }
+
+  .stats-card:nth-child(1) {
+    animation-delay: 0.1s;
+  }
+  .stats-card:nth-child(2) {
+    animation-delay: 0.2s;
+  }
+  .stats-card:nth-child(3) {
+    animation-delay: 0.3s;
+  }
+  .stats-card:nth-child(4) {
+    animation-delay: 0.4s;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="row">
+  <div class="col-12">
+    <!-- Page Header -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h1 class="h3 mb-2">
+              <i class="fas fa-user-clock me-2"></i>{{ title }}
+            </h1>
+            <p class="mb-0 opacity-75">
+              Welcome back, {{ current_user.first_name or current_user.username
+              }}! Here's a summary of your recent activities and interactions.
+            </p>
+          </div>
+          <div>
+            {% if current_user.role in ['admin', 'manager'] %}
+            <a href="{{ url_for('activity_logs') }}" class="btn btn-light me-2">
+              <i class="fas fa-cog me-1"></i>Admin View
+            </a>
+            {% endif %}
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light">
+              <i class="fas fa-arrow-left me-1"></i>Dashboard
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Welcome Section with Quick Stats -->
+    <div class="welcome-section">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <h4 class="mb-2">
+            <i class="fas fa-chart-line me-2 text-primary"></i>Your Activity
+            Overview
+          </h4>
+          <p class="text-muted mb-0">
+            Track your usage patterns, monitor your activities, and stay
+            informed about your interactions with the system.
+          </p>
+        </div>
+        <div class="col-md-4 text-end">
+          <div class="d-flex align-items-center justify-content-end">
+            <div class="me-3">
+              <small class="text-muted d-block">Last Activity</small>
+              <strong class="text-dark">
+                {% if logs %} {{ logs[0].created_at.strftime('%m/%d %I:%M %p')
+                if logs[0].created_at else 'Recently' }} {% else %} No recent
+                activity {% endif %}
+              </strong>
+            </div>
+            <div class="activity-icon icon-default">
+              <i class="fas fa-user"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <div class="card stats-card">
+          <div class="card-body text-center">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+              <div class="activity-icon icon-default me-3">
+                <i class="fas fa-list"></i>
+              </div>
+              <div>
+                <div class="metric-number">{{ logs|length }}</div>
+                <small class="text-muted">Recent Activities</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stats-card">
+          <div class="card-body text-center">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+              <div class="activity-icon icon-login me-3">
+                <i class="fas fa-sign-in-alt"></i>
+              </div>
+              <div>
+                <div class="metric-number">
+                  {{ logs|selectattr('activity_type', 'equalto',
+                  'login_success')|list|length }}
+                </div>
+                <small class="text-muted">Successful Logins</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stats-card">
+          <div class="card-body text-center">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+              <div class="activity-icon icon-booking me-3">
+                <i class="fas fa-calendar-plus"></i>
+              </div>
+              <div>
+                <div class="metric-number">
+                  {{ logs|selectattr('activity_type', 'equalto',
+                  'create_booking')|list|length }}
+                </div>
+                <small class="text-muted">Bookings Created</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stats-card">
+          <div class="card-body text-center">
+            <div class="d-flex align-items-center justify-content-center mb-2">
+              <div class="activity-icon icon-error me-3">
+                <i class="fas fa-exclamation-triangle"></i>
+              </div>
+              <div>
+                <div class="metric-number">
+                  {{ logs|selectattr('status', 'equalto', 'failed')|list|length
+                  }}
+                </div>
+                <small class="text-muted">Failed Actions</small>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Search and Filter -->
+    <div class="row mb-4">
+      <div class="col-md-6">
+        <input
+          type="text"
+          id="activitySearch"
+          class="form-control activity-search"
+          placeholder="🔍 Search your activities..."
+        />
+      </div>
+      <div class="col-md-6 text-end">
+        <div class="btn-group">
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            onclick="filterActivities('all')"
+          >
+            All Activities
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-primary"
+            onclick="filterActivities('login')"
+          >
+            Login/Logout
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-success"
+            onclick="filterActivities('booking')"
+          >
+            Bookings
+          </button>
+          <button
+            type="button"
+            class="btn btn-outline-warning"
+            onclick="filterActivities('page')"
+          >
+            Page Views
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Activity Timeline -->
+    <div class="card border-0 shadow-sm">
+      <div class="card-header bg-white border-bottom">
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="mb-0">
+            <i class="fas fa-timeline me-2 text-primary"></i>Your Activity
+            Timeline
+          </h5>
+          <small class="text-muted">
+            <i class="fas fa-info-circle me-1"></i>
+            Showing your last 50 activities
+          </small>
+        </div>
+      </div>
+      <div class="card-body">
+        {% if logs %}
+        <div class="activity-timeline" id="activityTimeline">
+          {% for log in logs %}
+          <div
+            class="timeline-item {{ log.status }}"
+            data-activity-type="{{ log.activity_type }}"
+          >
+            <div class="d-flex align-items-start">
+              <div
+                class="activity-icon {% if log.activity_type.startswith('login') %}icon-login {% elif log.activity_type == 'logout' %}icon-logout {% elif 'booking' in log.activity_type %}icon-booking {% elif log.activity_type == 'page_view' %}icon-page {% elif log.activity_type == 'generate_report' %}icon-report {% elif log.status == 'failed' %}icon-error {% else %}icon-default{% endif %}"
+              >
+                {% if log.activity_type == 'login_success' %}
+                <i class="fas fa-sign-in-alt"></i>
+                {% elif log.activity_type == 'login_failed' %}
+                <i class="fas fa-sign-in-alt"></i>
+                {% elif log.activity_type == 'logout' %}
+                <i class="fas fa-sign-out-alt"></i>
+                {% elif log.activity_type == 'create_booking' %}
+                <i class="fas fa-calendar-plus"></i>
+                {% elif log.activity_type == 'cancel_booking' %}
+                <i class="fas fa-calendar-times"></i>
+                {% elif log.activity_type == 'update_booking' %}
+                <i class="fas fa-edit"></i>
+                {% elif log.activity_type == 'page_view' %}
+                <i class="fas fa-eye"></i>
+                {% elif log.activity_type == 'generate_report' %}
+                <i class="fas fa-file-alt"></i>
+                {% elif log.status == 'failed' %}
+                <i class="fas fa-exclamation-triangle"></i>
+                {% else %}
+                <i class="fas fa-cog"></i>
+                {% endif %}
+              </div>
+
+              <div class="flex-grow-1">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-2"
+                >
+                  <div>
+                    <h6 class="mb-1 fw-semibold">
+                      {{ log.activity_description }}
+                    </h6>
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                      <span
+                        class="activity-category {% if 'login' in log.activity_type or 'logout' in log.activity_type %}cat-auth {% elif 'booking' in log.activity_type %}cat-booking {% elif 'page' in log.activity_type %}cat-page {% elif log.status == 'failed' %}cat-error {% else %}cat-system{% endif %}"
+                      >
+                        {{ log.activity_type.replace('_', ' ').title() }}
+                      </span>
+
+                      {% if log.status == 'success' %}
+                      <span class="badge bg-success small">
+                        <i class="fas fa-check me-1"></i>Success
+                      </span>
+                      {% elif log.status == 'failed' %}
+                      <span class="badge bg-danger small">
+                        <i class="fas fa-times me-1"></i>Failed
+                      </span>
+                      {% elif log.status == 'warning' %}
+                      <span class="badge bg-warning text-dark small">
+                        <i class="fas fa-exclamation-triangle me-1"></i>Warning
+                      </span>
+                      {% endif %} {% if log.resource_type and log.resource_id %}
+                      <span class="badge bg-info small">
+                        <i class="fas fa-tag me-1"></i>{{
+                        log.resource_type|title }} #{{ log.resource_id }}
+                      </span>
+                      {% endif %}
+                    </div>
+                  </div>
+
+                  <div class="text-end">
+                    <span class="time-badge">
+                      {% if log.created_at %} {{ log.created_at.strftime('%b
+                      %d') }} {% endif %}
+                    </span>
+                    <div class="mt-1">
+                      <small class="text-muted">
+                        {% if log.created_at %} {{
+                        log.created_at.strftime('%I:%M %p') }} {% endif %}
+                      </small>
+                    </div>
+                  </div>
+                </div>
+
+                {% if log.ip_address %}
+                <small class="text-muted d-block mb-2">
+                  <i class="fas fa-globe me-1"></i>From {{ log.ip_address }}
+                </small>
+                {% endif %} {% if log.metadata %}
+                <div class="mt-2">
+                  <button
+                    type="button"
+                    class="btn btn-outline-info btn-sm"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#metadata-{{ loop.index }}"
+                    aria-expanded="false"
+                  >
+                    <i class="fas fa-info-circle me-1"></i>View Details
+                  </button>
+                  <div class="collapse mt-2" id="metadata-{{ loop.index }}">
+                    <div class="activity-meta">
+                      <strong class="d-block mb-2">Activity Details:</strong>
+                      <pre class="mb-0 small">
+{{ log.metadata | tojson(indent=2) }}</pre
+                      >
+                    </div>
+                  </div>
+                </div>
+                {% endif %}
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+          <div class="mb-4">
+            <i class="fas fa-user-clock fa-4x text-muted"></i>
+          </div>
+          <h5 class="text-muted mb-3">No Activity History Yet</h5>
+          <p class="text-muted mb-4">
+            Your activities will appear here as you use the system. Start by
+            exploring the dashboard or creating your first booking!
+          </p>
+          <div>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary me-2">
+              <i class="fas fa-tachometer-alt me-1"></i>Go to Dashboard
+            </a>
+            <a
+              href="{{ url_for('new_booking') }}"
+              class="btn btn-outline-primary"
+            >
+              <i class="fas fa-plus me-1"></i>Create Booking
+            </a>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+
+    {% if logs %}
+    <!-- Activity Summary Footer -->
+    <div class="mt-4 text-center">
+      <div class="card border-0 bg-light">
+        <div class="card-body py-3">
+          <div class="row text-center">
+            <div class="col-md-3">
+              <strong class="text-primary d-block">{{ logs|length }}</strong>
+              <small class="text-muted">Total Activities Shown</small>
+            </div>
+            <div class="col-md-3">
+              <strong class="text-success d-block">
+                {{ "%.1f"|format((logs|selectattr('status', 'equalto',
+                'success')|list|length / logs|length * 100) if logs|length > 0
+                else 0) }}%
+              </strong>
+              <small class="text-muted">Success Rate</small>
+            </div>
+            <div class="col-md-3">
+              <strong class="text-info d-block">
+                {% if logs %} {{ (logs[0].created_at.date() -
+                logs[-1].created_at.date()).days if logs[0].created_at and
+                logs[-1].created_at else 0 }} {% else %} 0 {% endif %}
+              </strong>
+              <small class="text-muted">Days of Activity</small>
+            </div>
+            <div class="col-md-3">
+              {% if current_user.role in ['admin', 'manager'] %}
+              <a
+                href="{{ url_for('activity_logs') }}"
+                class="btn btn-outline-primary btn-sm"
+              >
+                <i class="fas fa-cog me-1"></i>View All System Activities
+              </a>
+              {% else %}
+              <strong class="text-warning d-block">Personal</strong>
+              <small class="text-muted">Activity View</small>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  // Search functionality
+  document
+    .getElementById("activitySearch")
+    .addEventListener("input", function (e) {
+      const searchTerm = e.target.value.toLowerCase();
+      const timelineItems = document.querySelectorAll(".timeline-item");
+
+      timelineItems.forEach((item) => {
+        const text = item.textContent.toLowerCase();
+        if (text.includes(searchTerm)) {
+          item.style.display = "block";
+          item.style.animation = "slideInFromLeft 0.3s ease";
+        } else {
+          item.style.display = "none";
+        }
+      });
+
+      // Show "no results" message if needed
+      const visibleItems = document.querySelectorAll(
+        '.timeline-item[style*="display: block"], .timeline-item:not([style*="display: none"])'
+      );
+      if (visibleItems.length === 0 && searchTerm.length > 0) {
+        showNoResults(true);
+      } else {
+        showNoResults(false);
+      }
+    });
+
+  // Filter functionality
+  function filterActivities(type) {
+    const timelineItems = document.querySelectorAll(".timeline-item");
+    const buttons = document.querySelectorAll(".btn-group .btn");
+
+    // Update button states
+    buttons.forEach((btn) => btn.classList.remove("active"));
+    event.target.classList.add("active");
+
+    timelineItems.forEach((item) => {
+      const activityType = item.dataset.activityType;
+      let shouldShow = false;
+
+      switch (type) {
+        case "all":
+          shouldShow = true;
+          break;
+        case "login":
+          shouldShow =
+            activityType.includes("login") || activityType.includes("logout");
+          break;
+        case "booking":
+          shouldShow = activityType.includes("booking");
+          break;
+        case "page":
+          shouldShow = activityType.includes("page");
+          break;
+      }
+
+      if (shouldShow) {
+        item.style.display = "block";
+        item.style.animation = "slideInFromLeft 0.3s ease";
+      } else {
+        item.style.display = "none";
+      }
+    });
+
+    // Clear search when filtering
+    document.getElementById("activitySearch").value = "";
+  }
+
+  function showNoResults(show) {
+    let noResultsDiv = document.getElementById("noResults");
+
+    if (show && !noResultsDiv) {
+      noResultsDiv = document.createElement("div");
+      noResultsDiv.id = "noResults";
+      noResultsDiv.className = "text-center py-4";
+      noResultsDiv.innerHTML = `
+            <i class="fas fa-search fa-2x text-muted mb-3"></i>
+            <h6 class="text-muted">No activities found</h6>
+            <p class="text-muted small">Try adjusting your search terms or filters.</p>
+        `;
+      document.getElementById("activityTimeline").appendChild(noResultsDiv);
+    } else if (!show && noResultsDiv) {
+      noResultsDiv.remove();
+    }
+  }
+
+  // Keyboard shortcuts
+  document.addEventListener("keydown", function (e) {
+    // Ctrl/Cmd + F to focus search
+    if ((e.ctrlKey || e.metaKey) && e.key === "f") {
+      e.preventDefault();
+      document.getElementById("activitySearch").focus();
+    }
+
+    // Escape to clear search
+    if (e.key === "Escape") {
+      const searchInput = document.getElementById("activitySearch");
+      if (searchInput === document.activeElement) {
+        searchInput.value = "";
+        searchInput.dispatchEvent(new Event("input"));
+      }
+    }
+  });
+
+  // Enhanced animations on scroll
+  document.addEventListener("DOMContentLoaded", function () {
+    const observerOptions = {
+      threshold: 0.1,
+      rootMargin: "0px 0px -50px 0px",
+    };
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          entry.target.style.animation = "slideInFromLeft 0.6s ease forwards";
+        }
+      });
+    }, observerOptions);
+
+    // Observe all timeline items
+    document.querySelectorAll(".timeline-item").forEach((item) => {
+      observer.observe(item);
+    });
+
+    // Add smooth scrolling for internal links
+    document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+      anchor.addEventListener("click", function (e) {
+        e.preventDefault();
+        const target = document.querySelector(this.getAttribute("href"));
+        if (target) {
+          target.scrollIntoView({
+            behavior: "smooth",
+            block: "start",
+          });
+        }
+      });
+    });
+
+    // Auto-hide success messages
+    setTimeout(() => {
+      const alerts = document.querySelectorAll(".alert-success");
+      alerts.forEach((alert) => {
+        const bsAlert = new bootstrap.Alert(alert);
+        bsAlert.close();
+      });
+    }, 5000);
+  });
+
+  // Add loading animation to buttons
+  document.querySelectorAll("a.btn, button.btn").forEach((btn) => {
+    btn.addEventListener("click", function () {
+      if (
+        this.href &&
+        !this.href.includes("#") &&
+        !this.hasAttribute("data-bs-toggle")
+      ) {
+        const originalText = this.innerHTML;
+        this.innerHTML =
+          '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
+        this.disabled = true;
+
+        // Re-enable after 3 seconds as fallback
+        setTimeout(() => {
+          this.innerHTML = originalText;
+          this.disabled = false;
+        }, 3000);
+      }
+    });
+  });
+
+  // Add tooltips to activity icons
+  document.addEventListener("DOMContentLoaded", function () {
+    const activityIcons = document.querySelectorAll(".activity-icon");
+    activityIcons.forEach((icon) => {
+      const timelineItem = icon.closest(".timeline-item");
+      if (timelineItem) {
+        const activityType = timelineItem.dataset.activityType;
+        icon.title = activityType
+          .replace("_", " ")
+          .replace(/\b\w/g, (l) => l.toUpperCase());
+
+        // Initialize Bootstrap tooltip
+        new bootstrap.Tooltip(icon, {
+          placement: "top",
+          trigger: "hover",
+        });
+      }
+    });
+  });
+</script>
+{% endblock %}

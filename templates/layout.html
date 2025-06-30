@@ -32,7 +32,10 @@
     <!-- Navigation -->
     <nav
       class="navbar navbar-expand-lg navbar-light"
-      style="background-color: white; box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);"
+      style="
+        background-color: white;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+      "
     >
       <div class="container">
         <a class="navbar-brand" href="{{ url_for('dashboard') }}">
@@ -114,9 +117,103 @@
                 <i class="fas fa-chart-bar"></i> Reports
               </a>
             </li>
+
+            <!-- Admin Navigation - Only show for admin/manager users -->
+            {% if current_user.role in ['admin', 'manager'] %}
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle {% if request.endpoint.startswith('activity_') %}active{% endif %}"
+                href="#"
+                id="adminDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                <i class="fas fa-cog"></i> Admin
+              </a>
+              <ul class="dropdown-menu" aria-labelledby="adminDropdown">
+                <li>
+                  <a
+                    class="dropdown-item {% if request.endpoint == 'activity_logs' %}active{% endif %}"
+                    href="{{ url_for('activity_logs') }}"
+                  >
+                    <i class="fas fa-history me-2"></i>Activity Logs
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item {% if request.endpoint == 'activity_stats' %}active{% endif %}"
+                    href="{{ url_for('activity_stats') }}"
+                  >
+                    <i class="fas fa-chart-line me-2"></i>Activity Statistics
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="#"
+                    onclick="showComingSoon('User Management')"
+                  >
+                    <i class="fas fa-users-cog me-2"></i>User Management
+                    <small class="text-muted ms-1">(Coming Soon)</small>
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="#"
+                    onclick="showComingSoon('System Settings')"
+                  >
+                    <i class="fas fa-database me-2"></i>System Settings
+                    <small class="text-muted ms-1">(Coming Soon)</small>
+                  </a>
+                </li>
+              </ul>
+            </li>
+            {% endif %}
           </ul>
 
           <ul class="navbar-nav ms-auto">
+            <!-- Notifications (Optional future feature) -->
+            <li class="nav-item dropdown d-none">
+              <a
+                class="nav-link position-relative"
+                href="#"
+                id="notificationsDropdown"
+                role="button"
+                data-bs-toggle="dropdown"
+                aria-expanded="false"
+              >
+                <i class="fas fa-bell"></i>
+                <span
+                  class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger"
+                >
+                  3
+                  <span class="visually-hidden">unread notifications</span>
+                </span>
+              </a>
+              <ul
+                class="dropdown-menu dropdown-menu-end"
+                aria-labelledby="notificationsDropdown"
+              >
+                <li><h6 class="dropdown-header">Notifications</h6></li>
+                <li>
+                  <a class="dropdown-item" href="#">New booking request</a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="#">Room availability alert</a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a class="dropdown-item text-center" href="#"
+                    >View all notifications</a
+                  >
+                </li>
+              </ul>
+            </li>
+
+            <!-- User Profile Dropdown -->
             <li class="nav-item dropdown">
               <a
                 class="nav-link dropdown-toggle"
@@ -127,22 +224,60 @@
                 aria-expanded="false"
               >
                 <i class="fas fa-user-circle"></i> {{ current_user.first_name or
-                current_user.username }}
+                current_user.username }} {% if current_user.role in ['admin',
+                'manager'] %}
+                <span class="badge bg-primary ms-1"
+                  >{{ current_user.role|title }}</span
+                >
+                {% endif %}
               </a>
               <ul
                 class="dropdown-menu dropdown-menu-end"
                 aria-labelledby="navbarDropdown"
               >
                 <li>
-                  <a class="dropdown-item" href="#"
-                    ><i class="fas fa-user-cog"></i> Profile</a
-                  >
+                  <h6 class="dropdown-header">
+                    <i class="fas fa-user me-2"></i>{{ current_user.first_name
+                    }} {{ current_user.last_name }}
+                    <br />
+                    <small class="text-muted">{{ current_user.email }}</small>
+                  </h6>
                 </li>
                 <li><hr class="dropdown-divider" /></li>
                 <li>
-                  <a class="dropdown-item" href="{{ url_for('logout') }}"
-                    ><i class="fas fa-sign-out-alt"></i> Logout</a
+                  <a
+                    class="dropdown-item"
+                    href="#"
+                    onclick="showComingSoon('Profile Settings')"
                   >
+                    <i class="fas fa-user-cog me-2"></i>Profile Settings
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item {% if request.endpoint == 'my_activity' %}active{% endif %}"
+                    href="{{ url_for('my_activity') }}"
+                  >
+                    <i class="fas fa-history me-2"></i>My Activity
+                  </a>
+                </li>
+                <li>
+                  <a
+                    class="dropdown-item"
+                    href="#"
+                    onclick="showComingSoon('Preferences')"
+                  >
+                    <i class="fas fa-cog me-2"></i>Preferences
+                  </a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li>
+                  <a
+                    class="dropdown-item text-danger"
+                    href="{{ url_for('logout') }}"
+                  >
+                    <i class="fas fa-sign-out-alt me-2"></i>Logout
+                  </a>
                 </li>
               </ul>
             </li>
@@ -154,13 +289,22 @@
 
     <!-- Main Content -->
     <div class="container my-4">
+      <!-- Flash Messages -->
       {% with messages = get_flashed_messages(with_categories=true) %} {% if
       messages %} {% for category, message in messages %}
       <div
         class="alert alert-{{ category }} alert-dismissible fade show"
         role="alert"
       >
-        {{ message }}
+        {% if category == 'success' %}
+        <i class="fas fa-check-circle me-2"></i>
+        {% elif category == 'danger' %}
+        <i class="fas fa-exclamation-triangle me-2"></i>
+        {% elif category == 'warning' %}
+        <i class="fas fa-exclamation-circle me-2"></i>
+        {% elif category == 'info' %}
+        <i class="fas fa-info-circle me-2"></i>
+        {% endif %} {{ message }}
         <button
           type="button"
           class="btn-close"
@@ -168,18 +312,76 @@
           aria-label="Close"
         ></button>
       </div>
-      {% endfor %} {% endif %} {% endwith %} {% block content %}{% endblock %}
+      {% endfor %} {% endif %} {% endwith %}
+
+      <!-- Page Content -->
+      {% block content %}{% endblock %}
     </div>
 
     <!-- Footer -->
     <footer class="bg-light py-3 mt-5">
-      <div class="container text-center">
-        <p class="text-muted mb-0">
-          &copy; {{ now.year }} Rainbow Towers Hotel & Conference Centre. All
-          rights reserved.
-        </p>
+      <div class="container">
+        <div class="row align-items-center">
+          <div class="col-md-6">
+            <p class="text-muted mb-0">
+              &copy; {{ now.year }} Rainbow Towers Hotel & Conference Centre.
+              All rights reserved.
+            </p>
+          </div>
+          <div class="col-md-6 text-end">
+            <small class="text-muted">
+              {% if current_user.is_authenticated %} Welcome back, {{
+              current_user.first_name or current_user.username }}! {% endif %}
+              <!-- System Status Indicator -->
+              <span class="badge bg-success ms-2">
+                <i class="fas fa-circle me-1"></i>System Online
+              </span>
+            </small>
+          </div>
+        </div>
       </div>
     </footer>
+
+    <!-- Coming Soon Modal -->
+    <div
+      class="modal fade"
+      id="comingSoonModal"
+      tabindex="-1"
+      aria-labelledby="comingSoonModalLabel"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title" id="comingSoonModalLabel">
+              <i class="fas fa-clock me-2"></i>Coming Soon
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body text-center">
+            <i class="fas fa-tools fa-3x text-muted mb-3"></i>
+            <p id="comingSoonFeature" class="mb-3">This feature</p>
+            <p class="text-muted small">
+              We're working hard to bring you this feature. Stay tuned!
+            </p>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- Bootstrap JS Bundle with Popper -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -189,6 +391,81 @@
 
     <!-- Custom JavaScript -->
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+
+    <!-- Enhanced Navigation JavaScript -->
+    <script>
+      // Show coming soon modal for placeholder features
+      function showComingSoon(featureName) {
+        document.getElementById("comingSoonFeature").textContent =
+          featureName + " is coming soon!";
+        new bootstrap.Modal(document.getElementById("comingSoonModal")).show();
+      }
+
+      // Add active state highlighting
+      document.addEventListener("DOMContentLoaded", function () {
+        // Highlight current page in navigation
+        const currentPath = window.location.pathname;
+        const navLinks = document.querySelectorAll(".navbar-nav .nav-link");
+
+        navLinks.forEach((link) => {
+          if (link.getAttribute("href") === currentPath) {
+            link.classList.add("active");
+          }
+        });
+
+        // Add hover effects to dropdown items
+        const dropdownItems = document.querySelectorAll(".dropdown-item");
+        dropdownItems.forEach((item) => {
+          item.addEventListener("mouseenter", function () {
+            this.style.transform = "translateX(5px)";
+            this.style.transition = "transform 0.2s ease";
+          });
+
+          item.addEventListener("mouseleave", function () {
+            this.style.transform = "translateX(0)";
+          });
+        });
+
+        // Add loading indicators for navigation clicks
+        const actionLinks = document.querySelectorAll('a[href^="/"]');
+        actionLinks.forEach((link) => {
+          link.addEventListener("click", function () {
+            // Skip for external links or dropdowns
+            if (
+              this.getAttribute("href").startsWith("http") ||
+              this.getAttribute("href") === "#" ||
+              this.hasAttribute("data-bs-toggle")
+            ) {
+              return;
+            }
+
+            // Add loading state
+            const originalText = this.innerHTML;
+            this.innerHTML =
+              '<i class="fas fa-spinner fa-spin me-1"></i>' + this.textContent;
+
+            // Remove loading state after a short delay (will be replaced by page load)
+            setTimeout(() => {
+              this.innerHTML = originalText;
+            }, 2000);
+          });
+        });
+      });
+
+      // Auto-hide alerts after 5 seconds
+      document.addEventListener("DOMContentLoaded", function () {
+        const alerts = document.querySelectorAll(".alert");
+        alerts.forEach((alert) => {
+          // Don't auto-hide danger alerts (errors should be persistent)
+          if (!alert.classList.contains("alert-danger")) {
+            setTimeout(() => {
+              const bsAlert = new bootstrap.Alert(alert);
+              bsAlert.close();
+            }, 5000);
+          }
+        });
+      });
+    </script>
 
     {% block extra_js %}{% endblock %}
   </body>

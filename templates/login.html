@@ -53,12 +53,24 @@ Booking{% endblock %} {% block content %}
             >
           </div>
 
-          <div class="d-grid gap-2">
+          <div class="d-grid gap-2 mb-3">
             <button type="submit" class="btn btn-primary">
               <i class="fas fa-sign-in-alt me-2"></i>Login
             </button>
           </div>
         </form>
+
+        <!-- Registration Section -->
+        <hr class="my-3" />
+        <div class="text-center">
+          <p class="text-muted mb-2 small">New to Rainbow Towers?</p>
+          <a
+            href="{{ url_for('register') }}"
+            class="btn btn-outline-success btn-sm"
+          >
+            <i class="fas fa-user-plus me-2"></i>Create Account
+          </a>
+        </div>
       </div>
       <div class="card-footer text-center py-3">
         <div class="small text-muted">

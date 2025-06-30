@@ -1,0 +1,680 @@
+<!-- Create this file as templates/admin/activity_logs.html -->
+{% extends "layout.html" %}
+
+{% block title %}{{ title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.activity-log-row {
+    transition: all 0.2s ease;
+}
+.activity-log-row:hover {
+    background-color: #f8f9fa;
+}
+.activity-description {
+    max-width: 300px;
+    word-wrap: break-word;
+}
+.card {
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    border: none;
+}
+.badge {
+    font-size: 0.75rem;
+}
+.filter-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+}
+.stats-card {
+    transition: transform 0.2s ease;
+}
+.stats-card:hover {
+    transform: translateY(-2px);
+}
+.activity-icon {
+    width: 35px;
+    height: 35px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    margin-right: 12px;
+}
+.icon-success { background-color: rgba(40, 167, 69, 0.1); color: #28a745; }
+.icon-failed { background-color: rgba(220, 53, 69, 0.1); color: #dc3545; }
+.icon-warning { background-color: rgba(255, 193, 7, 0.1); color: #ffc107; }
+.icon-default { background-color: rgba(108, 117, 125, 0.1); color: #6c757d; }
+.page-header {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    color: white;
+    margin: -1.5rem -1.5rem 2rem -1.5rem;
+    padding: 2rem 1.5rem;
+    border-radius: 0.5rem 0.5rem 0 0;
+}
+.refresh-indicator {
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <!-- Page Header -->
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="page-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h1 class="h3 mb-2">
+                            <i class="fas fa-history me-2"></i>{{ title }}
+                        </h1>
+                        <p class="mb-0 opacity-75">Monitor user activities and system events across your application</p>
+                    </div>
+                    <div>
+                        {% if current_user.role in ['admin', 'manager'] %}
+                        <a href="{{ url_for('activity_stats') }}" class="btn btn-light me-2">
+                            <i class="fas fa-chart-bar me-1"></i>Statistics
+                        </a>
+                        {% endif %}
+                        <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light">
+                            <i class="fas fa-arrow-left me-1"></i>Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Results Summary Cards -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stats-card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="activity-icon icon-default">
+                                <i class="fas fa-list"></i>
+                            </div>
+                            <div>
+                                <h4 class="mb-0 text-primary">{{ "{:,}".format(pagination.total) }}</h4>
+                                <small class="text-muted">Total Activities</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="activity-icon icon-success">
+                                <i class="fas fa-check"></i>
+                            </div>
+                            <div>
+                                <h4 class="mb-0 text-success">{{ logs|selectattr('status', 'equalto', 'success')|list|length }}</h4>
+                                <small class="text-muted">Successful</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="activity-icon icon-failed">
+                                <i class="fas fa-times"></i>
+                            </div>
+                            <div>
+                                <h4 class="mb-0 text-danger">{{ logs|selectattr('status', 'equalto', 'failed')|list|length }}</h4>
+                                <small class="text-muted">Failed</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stats-card border-0 shadow-sm">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="activity-icon icon-warning">
+                                <i class="fas fa-exclamation-triangle"></i>
+                            </div>
+                            <div>
+                                <h4 class="mb-0 text-warning">{{ logs|selectattr('status', 'equalto', 'warning')|list|length }}</h4>
+                                <small class="text-muted">Warnings</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filters -->
+        <div class="card filter-card mb-4 border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-filter me-2 text-primary"></i>Filters & Search
+                    </h5>
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle me-1"></i>
+                        Showing {{ logs|length }} of {{ "{:,}".format(pagination.total) }} activities
+                    </small>
+                </div>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="row g-3">
+                    <div class="col-md-3">
+                        <label for="user" class="form-label fw-semibold">
+                            <i class="fas fa-user me-1"></i>User
+                        </label>
+                        <input type="text" class="form-control" id="user" name="user" 
+                               value="{{ filters.user or '' }}" placeholder="Search by user name or email">
+                    </div>
+                    <div class="col-md-3">
+                        <label for="activity_type" class="form-label fw-semibold">
+                            <i class="fas fa-tag me-1"></i>Activity Type
+                        </label>
+                        <select class="form-select" id="activity_type" name="activity_type">
+                            <option value="">All Types</option>
+                            {% for activity_type in unique_activity_types %}
+                            <option value="{{ activity_type }}" 
+                                    {% if filters.activity_type == activity_type %}selected{% endif %}>
+                                {{ activity_type.replace('_', ' ').title() }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="status" class="form-label fw-semibold">
+                            <i class="fas fa-traffic-light me-1"></i>Status
+                        </label>
+                        <select class="form-select" id="status" name="status">
+                            <option value="all" {% if filters.status == 'all' %}selected{% endif %}>All</option>
+                            <option value="success" {% if filters.status == 'success' %}selected{% endif %}>Success</option>
+                            <option value="failed" {% if filters.status == 'failed' %}selected{% endif %}>Failed</option>
+                            <option value="warning" {% if filters.status == 'warning' %}selected{% endif %}>Warning</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <label for="date_from" class="form-label fw-semibold">
+                            <i class="fas fa-calendar me-1"></i>From Date
+                        </label>
+                        <input type="date" class="form-control" id="date_from" name="date_from" 
+                               value="{{ filters.date_from or '' }}">
+                    </div>
+                    <div class="col-md-2">
+                        <label for="date_to" class="form-label fw-semibold">
+                            <i class="fas fa-calendar me-1"></i>To Date
+                        </label>
+                        <input type="date" class="form-control" id="date_to" name="date_to" 
+                               value="{{ filters.date_to or '' }}">
+                    </div>
+                    <div class="col-12">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-search me-1"></i>Apply Filters
+                                </button>
+                                <a href="{{ url_for('activity_logs') }}" class="btn btn-outline-secondary ms-2">
+                                    <i class="fas fa-times me-1"></i>Clear Filters
+                                </a>
+                            </div>
+                            <div>
+                                <button type="button" class="btn btn-outline-info" onclick="exportData()">
+                                    <i class="fas fa-download me-1"></i>Export
+                                </button>
+                                <button type="button" class="btn btn-outline-success" onclick="refreshLogs()" title="Refresh logs">
+                                    <i class="fas fa-sync-alt refresh-indicator"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Activity Logs -->
+        <div class="card border-0 shadow-sm">
+            <div class="card-header bg-white border-bottom">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="fas fa-list me-2 text-primary"></i>Activity Logs
+                    </h5>
+                    <div class="d-flex align-items-center">
+                        <span class="badge bg-secondary me-2">
+                            Page {{ pagination.page }} of {{ pagination.total_pages }}
+                        </span>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" id="autoRefresh" onchange="toggleAutoRefresh()">
+                            <label class="form-check-label small text-muted" for="autoRefresh">
+                                Auto-refresh
+                            </label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body p-0">
+                {% if logs %}
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="border-0 ps-4">User</th>
+                                <th class="border-0">Activity</th>
+                                <th class="border-0">Description</th>
+                                <th class="border-0">Resource</th>
+                                <th class="border-0">Time</th>
+                                <th class="border-0">Status</th>
+                                <th class="border-0 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for log in logs %}
+                            <tr class="activity-log-row">
+                                <td class="py-3 ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="activity-icon icon-{{ log.status }}">
+                                            {% if log.activity_type == 'login_success' %}
+                                                <i class="fas fa-sign-in-alt"></i>
+                                            {% elif log.activity_type == 'login_failed' %}
+                                                <i class="fas fa-sign-in-alt"></i>
+                                            {% elif log.activity_type == 'logout' %}
+                                                <i class="fas fa-sign-out-alt"></i>
+                                            {% elif log.activity_type == 'create_booking' %}
+                                                <i class="fas fa-plus"></i>
+                                            {% elif log.activity_type == 'cancel_booking' %}
+                                                <i class="fas fa-times-circle"></i>
+                                            {% elif log.activity_type == 'page_view' %}
+                                                <i class="fas fa-eye"></i>
+                                            {% elif log.activity_type == 'error_occurred' %}
+                                                <i class="fas fa-exclamation-triangle"></i>
+                                            {% elif log.activity_type == 'generate_report' %}
+                                                <i class="fas fa-file-alt"></i>
+                                            {% else %}
+                                                <i class="fas fa-cog"></i>
+                                            {% endif %}
+                                        </div>
+                                        <div>
+                                            <div class="fw-semibold text-dark">{{ log.user_name }}</div>
+                                            <small class="text-muted">{{ log.user_email }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3">
+                                    <span class="badge bg-secondary">
+                                        {{ log.activity_type.replace('_', ' ').title() }}
+                                    </span>
+                                </td>
+                                <td class="py-3">
+                                    <div class="activity-description">
+                                        {{ log.activity_description }}
+                                    </div>
+                                    {% if log.ip_address %}
+                                    <small class="text-muted d-block mt-1">
+                                        <i class="fas fa-globe me-1"></i>{{ log.ip_address }}
+                                    </small>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3">
+                                    {% if log.resource_type and log.resource_id %}
+                                    <span class="badge bg-info text-white">
+                                        <i class="fas fa-tag me-1"></i>{{ log.resource_type|title }} #{{ log.resource_id }}
+                                    </span>
+                                    {% else %}
+                                    <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3">
+                                    <div class="text-muted">
+                                        {% if log.created_at %}
+                                        <div>
+                                            <i class="fas fa-calendar me-1"></i>
+                                            {{ log.created_at.strftime('%m/%d/%Y') }}
+                                        </div>
+                                        <div>
+                                            <i class="fas fa-clock me-1"></i>
+                                            {{ log.created_at.strftime('%I:%M %p') }}
+                                        </div>
+                                        {% else %}
+                                        <span class="text-muted">Unknown</span>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td class="py-3">
+                                    {% if log.status == 'success' %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check me-1"></i>Success
+                                    </span>
+                                    {% elif log.status == 'failed' %}
+                                    <span class="badge bg-danger">
+                                        <i class="fas fa-times me-1"></i>Failed
+                                    </span>
+                                    {% elif log.status == 'warning' %}
+                                    <span class="badge bg-warning text-dark">
+                                        <i class="fas fa-exclamation-triangle me-1"></i>Warning
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">{{ log.status|title }}</span>
+                                    {% endif %}
+                                </td>
+                                <td class="py-3 text-center">
+                                    <div class="btn-group btn-group-sm">
+                                        {% if log.metadata %}
+                                        <button type="button" class="btn btn-outline-info btn-sm" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#metadataModal"
+                                                onclick="showMetadata({{ log.metadata | tojson | safe }}, '{{ log.activity_description }}')"
+                                                title="View metadata">
+                                            <i class="fas fa-info-circle"></i>
+                                        </button>
+                                        {% endif %}
+                                        {% if log.user_id and current_user.role in ['admin', 'manager'] %}
+                                        <a href="{{ url_for('user_activity_logs', user_id=log.user_id) }}" 
+                                           class="btn btn-outline-primary btn-sm" 
+                                           title="View user's activity">
+                                            <i class="fas fa-user"></i>
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-5">
+                    <div class="mb-4">
+                        <i class="fas fa-search fa-4x text-muted"></i>
+                    </div>
+                    <h5 class="text-muted mb-2">No activity logs found</h5>
+                    <p class="text-muted">Try adjusting your filters or check back later for new activities.</p>
+                    <div class="mt-4">
+                        <a href="{{ url_for('activity_logs') }}" class="btn btn-outline-primary me-2">
+                            <i class="fas fa-filter me-1"></i>Clear Filters
+                        </a>
+                        <button onclick="refreshLogs()" class="btn btn-primary">
+                            <i class="fas fa-refresh me-1"></i>Refresh
+                        </button>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Pagination -->
+        {% if pagination.total_pages > 1 %}
+        <nav aria-label="Activity logs pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                {% if pagination.has_prev %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('activity_logs', page=1, **filters) }}" title="First page">
+                        <i class="fas fa-angle-double-left"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('activity_logs', page=pagination.prev_num, **filters) }}">
+                        <i class="fas fa-chevron-left"></i> Previous
+                    </a>
+                </li>
+                {% endif %}
+                
+                {% for page_num in range(max(1, pagination.page - 2), min(pagination.total_pages + 1, pagination.page + 3)) %}
+                <li class="page-item {% if page_num == pagination.page %}active{% endif %}">
+                    <a class="page-link" href="{{ url_for('activity_logs', page=page_num, **filters) }}">
+                        {{ page_num }}
+                    </a>
+                </li>
+                {% endfor %}
+                
+                {% if pagination.has_next %}
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('activity_logs', page=pagination.next_num, **filters) }}">
+                        Next <i class="fas fa-chevron-right"></i>
+                    </a>
+                </li>
+                <li class="page-item">
+                    <a class="page-link" href="{{ url_for('activity_logs', page=pagination.total_pages, **filters) }}" title="Last page">
+                        <i class="fas fa-angle-double-right"></i>
+                    </a>
+                </li>
+                {% endif %}
+            </ul>
+            
+            <!-- Pagination Info -->
+            <div class="text-center mt-2">
+                <small class="text-muted">
+                    Showing {{ ((pagination.page - 1) * pagination.per_page) + 1 }} to 
+                    {{ min(pagination.page * pagination.per_page, pagination.total) }} of 
+                    {{ "{:,}".format(pagination.total) }} activities
+                </small>
+            </div>
+        </nav>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Metadata Modal -->
+<div class="modal fade" id="metadataModal" tabindex="-1" aria-labelledby="metadataModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="metadataModalLabel">
+                    <i class="fas fa-info-circle me-2"></i>Activity Metadata
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-lightbulb me-2"></i>
+                    <strong>Activity Description:</strong> <span id="modalActivityDescription"></span>
+                </div>
+                <div class="bg-light rounded p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <strong>Metadata Details:</strong>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" onclick="copyMetadata()">
+                            <i class="fas fa-copy me-1"></i>Copy
+                        </button>
+                    </div>
+                    <pre id="modalMetadataContent" class="mb-0" style="white-space: pre-wrap; font-size: 0.9rem; max-height: 400px; overflow-y: auto;"></pre>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let autoRefreshInterval;
+
+function showMetadata(metadata, description) {
+    document.getElementById('modalActivityDescription').textContent = description;
+    document.getElementById('modalMetadataContent').textContent = JSON.stringify(metadata, null, 2);
+}
+
+function copyMetadata() {
+    const content = document.getElementById('modalMetadataContent').textContent;
+    navigator.clipboard.writeText(content).then(() => {
+        // Create a temporary success message
+        const btn = event.target.closest('button');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = '<i class="fas fa-check me-1"></i>Copied!';
+        btn.classList.remove('btn-outline-secondary');
+        btn.classList.add('btn-success');
+        
+        setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.classList.remove('btn-success');
+            btn.classList.add('btn-outline-secondary');
+        }, 2000);
+    }).catch(() => {
+        alert('Failed to copy metadata. Please select and copy manually.');
+    });
+}
+
+function refreshLogs() {
+    const refreshBtn = document.querySelector('.refresh-indicator');
+    refreshBtn.style.animation = 'spin 1s linear infinite';
+    
+    setTimeout(() => {
+        window.location.reload();
+    }, 500);
+}
+
+function toggleAutoRefresh() {
+    const checkbox = document.getElementById('autoRefresh');
+    
+    if (checkbox.checked) {
+        // Start auto-refresh every 30 seconds
+        autoRefreshInterval = setInterval(() => {
+            // Only refresh if the page is visible and no filters are applied
+            if (document.visibilityState === 'visible' && 
+                {% if not (filters.user or filters.activity_type or filters.status != 'all' or filters.date_from or filters.date_to) %}true{% else %}false{% endif %}) {
+                refreshLogs();
+            }
+        }, 30000);
+        
+        // Show notification
+        showNotification('Auto-refresh enabled', 'success');
+    } else {
+        // Stop auto-refresh
+        if (autoRefreshInterval) {
+            clearInterval(autoRefreshInterval);
+        }
+        showNotification('Auto-refresh disabled', 'info');
+    }
+}
+
+function exportData() {
+    // This would implement CSV/Excel export functionality
+    showNotification('Export functionality coming soon!', 'info');
+}
+
+function showNotification(message, type) {
+    // Create a temporary notification
+    const notification = document.createElement('div');
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+    notification.innerHTML = `
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 3 seconds
+    setTimeout(() => {
+        if (notification.parentNode) {
+            notification.remove();
+        }
+    }, 3000);
+}
+
+// Add loading states to form submissions
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    if (form) {
+        form.addEventListener('submit', function() {
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Loading...';
+            submitBtn.disabled = true;
+            
+            // Re-enable after 5 seconds as fallback
+            setTimeout(() => {
+                submitBtn.innerHTML = originalText;
+                submitBtn.disabled = false;
+            }, 5000);
+        });
+    }
+
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl/Cmd + R for refresh
+        if ((e.ctrlKey || e.metaKey) && e.key === 'r') {
+            e.preventDefault();
+            refreshLogs();
+        }
+        
+        // Escape to clear search
+        if (e.key === 'Escape') {
+            const userInput = document.getElementById('user');
+            if (userInput && userInput === document.activeElement) {
+                userInput.value = '';
+            }
+        }
+    });
+
+    // Add real-time search for user field
+    const userInput = document.getElementById('user');
+    if (userInput) {
+        let searchTimeout;
+        userInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            const submitBtn = document.querySelector('button[type="submit"]');
+            
+            searchTimeout = setTimeout(() => {
+                if (this.value.length > 2 || this.value.length === 0) {
+                    submitBtn.click();
+                }
+            }, 1000);
+        });
+    }
+    
+    // Highlight recent activities (less than 5 minutes old)
+    const now = new Date();
+    const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+    
+    document.querySelectorAll('.activity-log-row').forEach(row => {
+        const timeElements = row.querySelectorAll('td:nth-child(5) div');
+        if (timeElements.length >= 2) {
+            try {
+                const dateStr = timeElements[0].textContent.trim().replace(/.*/, '');
+                const timeStr = timeElements[1].textContent.trim().replace(/.*/, '');
+                
+                // Add subtle highlighting for very recent activities
+                row.style.animation = 'fadeIn 0.5s ease-in';
+            } catch (e) {
+                // Ignore parsing errors
+            }
+        }
+    });
+});
+
+// CSS animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+    
+    .activity-log-row {
+        animation: fadeIn 0.3s ease-in;
+    }
+    
+    .table-responsive {
+        border-radius: 0.5rem;
+    }
+    
+    .btn-group-sm .btn {
+        border-radius: 0.25rem;
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

@@ -1,0 +1,835 @@
+<!-- Create this file as templates/admin/activity_stats.html -->
+{% extends "layout.html" %} {% block title %}{{ title }}{% endblock %} {% block
+extra_css %}
+<style>
+  .stats-card {
+    transition: all 0.3s ease;
+    border: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+    background: linear-gradient(135deg, #fff 0%, #f8f9fa 100%);
+  }
+
+  .stats-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+
+  .metric-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+  }
+
+  .icon-total {
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+  }
+  .icon-users {
+    background: linear-gradient(135deg, #28a745, #1e7e34);
+    color: white;
+  }
+  .icon-success {
+    background: linear-gradient(135deg, #17a2b8, #117a8b);
+    color: white;
+  }
+  .icon-failed {
+    background: linear-gradient(135deg, #dc3545, #c82333);
+    color: white;
+  }
+
+  .chart-container {
+    position: relative;
+    height: 300px;
+    margin: 20px 0;
+  }
+
+  .activity-item {
+    padding: 12px 0;
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s ease;
+  }
+
+  .activity-item:hover {
+    background-color: #f8f9fa;
+    border-radius: 6px;
+    margin: 0 -15px;
+    padding: 12px 15px;
+  }
+
+  .activity-item:last-child {
+    border-bottom: none;
+  }
+
+  .progress-bar-animated {
+    animation: progress-bar-stripes 1s linear infinite;
+  }
+
+  .badge-activity {
+    font-size: 0.8rem;
+    padding: 6px 12px;
+  }
+
+  .user-avatar {
+    width: 35px;
+    height: 35px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #6c757d, #495057);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    margin-right: 12px;
+  }
+
+  .trend-indicator {
+    font-size: 0.9rem;
+    margin-left: 8px;
+  }
+
+  .trend-up {
+    color: #28a745;
+  }
+  .trend-down {
+    color: #dc3545;
+  }
+  .trend-neutral {
+    color: #6c757d;
+  }
+
+  .page-header {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    color: white;
+    margin: -1.5rem -1.5rem 2rem -1.5rem;
+    padding: 2rem 1.5rem;
+    border-radius: 0.5rem 0.5rem 0 0;
+  }
+
+  .daily-chart-bar {
+    background: linear-gradient(to top, #007bff, #0056b3);
+    min-height: 4px;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+    cursor: pointer;
+  }
+
+  .daily-chart-bar:hover {
+    background: linear-gradient(to top, #0056b3, #004085);
+  }
+
+  .health-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 8px;
+    animation: pulse 2s infinite;
+  }
+
+  .health-good {
+    background-color: #28a745;
+  }
+  .health-warning {
+    background-color: #ffc107;
+  }
+  .health-critical {
+    background-color: #dc3545;
+  }
+
+  @keyframes pulse {
+    0% {
+      box-shadow: 0 0 0 0 rgba(40, 167, 69, 0.7);
+    }
+    70% {
+      box-shadow: 0 0 0 10px rgba(40, 167, 69, 0);
+    }
+    100% {
+      box-shadow: 0 0 0 0 rgba(40, 167, 69, 0);
+    }
+  }
+
+  .activity-type-icon {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    margin-right: 10px;
+  }
+
+  .refresh-indicator {
+    animation: spin 2s linear infinite;
+  }
+
+  @keyframes spin {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="row">
+  <div class="col-12">
+    <!-- Page Header -->
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="page-header">
+        <div class="d-flex justify-content-between align-items-center">
+          <div>
+            <h1 class="h3 mb-2">
+              <i class="fas fa-chart-line me-2"></i>{{ title }}
+            </h1>
+            <p class="mb-0 opacity-75">
+              Comprehensive analytics and insights into system activity and user
+              engagement
+            </p>
+          </div>
+          <div>
+            <div class="btn-group me-2">
+              <button
+                type="button"
+                class="btn btn-light dropdown-toggle"
+                data-bs-toggle="dropdown"
+              >
+                <i class="fas fa-calendar me-1"></i>{{ stats.period_days }} Days
+              </button>
+              <ul class="dropdown-menu">
+                <li><a class="dropdown-item" href="?days=7">Last 7 Days</a></li>
+                <li>
+                  <a class="dropdown-item" href="?days=30">Last 30 Days</a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="?days=90">Last 90 Days</a>
+                </li>
+                <li><hr class="dropdown-divider" /></li>
+                <li><a class="dropdown-item" href="?days=365">Last Year</a></li>
+              </ul>
+            </div>
+            <a href="{{ url_for('activity_logs') }}" class="btn btn-light me-2">
+              <i class="fas fa-list me-1"></i>View Logs
+            </a>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline-light">
+              <i class="fas fa-arrow-left me-1"></i>Dashboard
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Key Metrics -->
+    <div class="row mb-4">
+      <div class="col-md-3">
+        <div class="card stats-card">
+          <div class="card-body text-center">
+            <div class="metric-icon icon-total mx-auto">
+              <i class="fas fa-chart-bar"></i>
+            </div>
+            <h3 class="text-primary mb-1">
+              {{ "{:,}".format(stats.total_activities) }}
+            </h3>
+            <p class="text-muted mb-2">Total Activities</p>
+            <small class="trend-indicator trend-up">
+              <i class="fas fa-arrow-up"></i> {{ stats.period_days }} day period
+            </small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stats-card">
+          <div class="card-body text-center">
+            <div class="metric-icon icon-users mx-auto">
+              <i class="fas fa-users"></i>
+            </div>
+            <h3 class="text-success mb-1">{{ stats.unique_users }}</h3>
+            <p class="text-muted mb-2">Active Users</p>
+            <small class="trend-indicator trend-up">
+              <i class="fas fa-users me-1"></i> Engaged
+            </small>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stats-card">
+          <div class="card-body text-center">
+            <div class="metric-icon icon-success mx-auto">
+              <i class="fas fa-check-circle"></i>
+            </div>
+            <h3 class="text-info mb-1">{{ stats.success_rate }}%</h3>
+            <p class="text-muted mb-2">Success Rate</p>
+            <div class="progress mt-2" style="height: 6px">
+              <div
+                class="progress-bar bg-info progress-bar-animated"
+                style="width: {{ stats.success_rate }}%"
+              ></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-3">
+        <div class="card stats-card">
+          <div class="card-body text-center">
+            <div class="metric-icon icon-failed mx-auto">
+              <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h3 class="text-danger mb-1">{{ stats.failed_activities }}</h3>
+            <p class="text-muted mb-2">Failed Actions</p>
+            <small
+              class="trend-indicator {% if stats.failed_activities < 10 %}trend-up{% else %}trend-down{% endif %}"
+            >
+              {% if stats.failed_activities < 10 %}
+              <i class="fas fa-thumbs-up"></i> Low {% else %}
+              <i class="fas fa-exclamation"></i> Monitor {% endif %}
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="row">
+      <!-- Activity Breakdown Chart -->
+      <div class="col-md-8">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">
+                <i class="fas fa-pie-chart me-2 text-primary"></i>Activity
+                Breakdown
+              </h5>
+              <button
+                class="btn btn-sm btn-outline-secondary"
+                onclick="refreshStats()"
+              >
+                <i class="fas fa-sync-alt refresh-indicator"></i>
+              </button>
+            </div>
+          </div>
+          <div class="card-body">
+            {% if stats.activity_breakdown %}
+            <div class="row">
+              {% for activity_type, count in stats.activity_breakdown[:8] %}
+              <div class="col-md-6 mb-3">
+                <div class="activity-item">
+                  <div
+                    class="d-flex justify-content-between align-items-center"
+                  >
+                    <div class="d-flex align-items-center">
+                      <div class="activity-type-icon bg-primary text-white">
+                        {% if 'login' in activity_type %}
+                        <i class="fas fa-sign-in-alt"></i>
+                        {% elif 'booking' in activity_type %}
+                        <i class="fas fa-calendar"></i>
+                        {% elif 'page' in activity_type %}
+                        <i class="fas fa-eye"></i>
+                        {% elif 'error' in activity_type %}
+                        <i class="fas fa-exclamation-triangle"></i>
+                        {% elif 'report' in activity_type %}
+                        <i class="fas fa-file-alt"></i>
+                        {% else %}
+                        <i class="fas fa-cog"></i>
+                        {% endif %}
+                      </div>
+                      <div>
+                        <strong class="d-block"
+                          >{{ activity_type.replace('_', ' ').title() }}</strong
+                        >
+                        <small class="text-muted">{{ count }} activities</small>
+                      </div>
+                    </div>
+                    <div class="text-end">
+                      <span class="badge badge-activity bg-primary">
+                        {{ "%.1f"|format((count / stats.total_activities * 100)
+                        if stats.total_activities > 0 else 0) }}%
+                      </span>
+                    </div>
+                  </div>
+                  <div class="progress mt-2" style="height: 6px">
+                    <div
+                      class="progress-bar bg-primary"
+                      style="width: {{ (count / stats.total_activities * 100) if stats.total_activities > 0 else 0 }}%"
+                    ></div>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+              <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+              <h6 class="text-muted mb-2">No Activity Data</h6>
+              <p class="text-muted small">
+                No activity data available for the selected period.
+              </p>
+              <button
+                class="btn btn-outline-primary btn-sm"
+                onclick="refreshStats()"
+              >
+                <i class="fas fa-refresh me-1"></i>Refresh Data
+              </button>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Most Active Users -->
+      <div class="col-md-4">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0">
+              <i class="fas fa-crown me-2 text-warning"></i>Most Active Users
+            </h5>
+          </div>
+          <div class="card-body">
+            {% if stats.most_active_users %} {% for user_name, activity_count in
+            stats.most_active_users %}
+            <div class="d-flex align-items-center mb-3">
+              <div class="user-avatar">{{ user_name[0].upper() }}</div>
+              <div class="flex-grow-1">
+                <div class="fw-semibold">{{ user_name }}</div>
+                <small class="text-muted"
+                  >{{ activity_count }} activities</small
+                >
+                <div class="progress mt-1" style="height: 4px">
+                  <div
+                    class="progress-bar bg-warning"
+                    style="width: {{ (activity_count / stats.most_active_users[0][1] * 100) if stats.most_active_users else 0 }}%"
+                  ></div>
+                </div>
+              </div>
+              <div class="text-end">
+                <span class="badge bg-warning text-dark"
+                  >#{{ loop.index }}</span
+                >
+              </div>
+            </div>
+            {% endfor %} {% else %}
+            <div class="text-center py-4">
+              <i class="fas fa-users fa-3x text-muted mb-3"></i>
+              <h6 class="text-muted mb-2">No User Data</h6>
+              <p class="text-muted small">No user activity data available.</p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Daily Activity Trend -->
+    <div class="row mt-4">
+      <div class="col-12">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom">
+            <div class="d-flex justify-content-between align-items-center">
+              <h5 class="mb-0">
+                <i class="fas fa-chart-line me-2 text-primary"></i>Daily
+                Activity Trend (Last 7 Days)
+              </h5>
+              <small class="text-muted">
+                <i class="fas fa-info-circle me-1"></i>
+                Hover over bars for details
+              </small>
+            </div>
+          </div>
+          <div class="card-body">
+            {% if stats.daily_activity %}
+            <div class="row text-center">
+              {% set max_count = stats.daily_activity|map(attribute='1')|max %}
+              {% for date, count in stats.daily_activity %}
+              <div class="col">
+                <div class="mb-3">
+                  <div
+                    class="daily-chart-bar mx-auto"
+                    style="height: {{ (count / max_count * 80) if max_count > 0 else 4 }}px; width: 30px;"
+                    title="{{ date }}: {{ count }} activities"
+                    data-bs-toggle="tooltip"
+                  ></div>
+                </div>
+                <small class="text-muted d-block mb-1"> {{ date[-5:] }} </small>
+                <strong class="text-primary">{{ count }}</strong>
+              </div>
+              {% endfor %}
+            </div>
+
+            <!-- Trend Summary -->
+            <div class="row mt-4 pt-3 border-top">
+              <div class="col-md-4 text-center">
+                <div class="text-muted small">Average Daily</div>
+                <strong class="text-info"
+                  >{{ "%.1f"|format(stats.total_activities / 7 if
+                  stats.total_activities > 0 else 0) }}</strong
+                >
+              </div>
+              <div class="col-md-4 text-center">
+                <div class="text-muted small">Peak Day</div>
+                <strong class="text-success"
+                  >{{ max_count if max_count else 0 }}</strong
+                >
+              </div>
+              <div class="col-md-4 text-center">
+                <div class="text-muted small">Total Week</div>
+                <strong class="text-primary"
+                  >{{ stats.daily_activity|map(attribute='1')|sum }}</strong
+                >
+              </div>
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+              <i class="fas fa-chart-line fa-3x text-muted mb-3"></i>
+              <h6 class="text-muted mb-2">No Trend Data</h6>
+              <p class="text-muted small">
+                No daily activity data available for analysis.
+              </p>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- System Health & Performance -->
+    <div class="row mt-4">
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0">
+              <i class="fas fa-heartbeat me-2 text-danger"></i>System Health
+            </h5>
+          </div>
+          <div class="card-body">
+            <!-- Health Indicators -->
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <div class="d-flex align-items-center mb-3">
+                  <span class="health-indicator health-good"></span>
+                  <div>
+                    <div class="fw-semibold">Success Rate</div>
+                    <small class="text-muted"
+                      >{{ stats.success_rate }}% operations successful</small
+                    >
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="d-flex align-items-center mb-3">
+                  <span
+                    class="health-indicator {% if stats.failed_activities < 10 %}health-good{% elif stats.failed_activities < 50 %}health-warning{% else %}health-critical{% endif %}"
+                  ></span>
+                  <div>
+                    <div class="fw-semibold">Error Rate</div>
+                    <small class="text-muted"
+                      >{{ stats.failed_activities }} failed operations</small
+                    >
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Performance Metrics -->
+            <div class="row text-center">
+              <div class="col-4">
+                <div class="border-end">
+                  <h4 class="text-success mb-1">{{ stats.success_rate }}%</h4>
+                  <small class="text-muted">Reliability</small>
+                </div>
+              </div>
+              <div class="col-4">
+                <div class="border-end">
+                  <h4 class="text-info mb-1">
+                    {{ "%.1f"|format(stats.total_activities / stats.unique_users
+                    if stats.unique_users > 0 else 0) }}
+                  </h4>
+                  <small class="text-muted">Avg per User</small>
+                </div>
+              </div>
+              <div class="col-4">
+                <h4 class="text-primary mb-1">
+                  {{ "%.1f"|format(stats.total_activities / stats.period_days if
+                  stats.period_days > 0 else 0) }}
+                </h4>
+                <small class="text-muted">Daily Average</small>
+              </div>
+            </div>
+
+            <!-- System Reliability Progress -->
+            <div class="mt-4">
+              <div
+                class="d-flex justify-content-between align-items-center mb-2"
+              >
+                <span class="text-muted">System Reliability</span>
+                <span class="fw-bold text-success"
+                  >{{ stats.success_rate }}%</span
+                >
+              </div>
+              <div class="progress" style="height: 8px">
+                <div
+                  class="progress-bar bg-success progress-bar-animated"
+                  style="width: {{ stats.success_rate }}%"
+                ></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Insights -->
+      <div class="col-md-6">
+        <div class="card border-0 shadow-sm">
+          <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0">
+              <i class="fas fa-lightbulb me-2 text-warning"></i>Quick Insights
+            </h5>
+          </div>
+          <div class="card-body">
+            <!-- Recent Activity Summary -->
+            <div class="mb-4">
+              <h6 class="text-muted mb-3">Activity Summary</h6>
+              {% if stats.activity_breakdown %} {% for activity_type, count in
+              stats.activity_breakdown[:5] %}
+              <div
+                class="d-flex justify-content-between align-items-center mb-2"
+              >
+                <div class="d-flex align-items-center">
+                  <i
+                    class="fas fa-circle text-primary me-2"
+                    style="font-size: 0.5rem"
+                  ></i>
+                  <span>{{ activity_type.replace('_', ' ').title() }}</span>
+                </div>
+                <span class="badge bg-secondary">{{ count }}</span>
+              </div>
+              {% endfor %} {% endif %}
+            </div>
+
+            <!-- Key Performance Indicators -->
+            <div class="mb-4">
+              <h6 class="text-muted mb-3">Performance Indicators</h6>
+              <div class="row text-center">
+                <div class="col-6 mb-3">
+                  <div class="border rounded p-2">
+                    <i class="fas fa-users text-info fa-2x mb-1"></i>
+                    <div class="fw-bold">
+                      {{ "%.1f"|format((stats.unique_users /
+                      (stats.total_activities / 10)) if stats.total_activities >
+                      0 else 0) }}%
+                    </div>
+                    <small class="text-muted">User Engagement</small>
+                  </div>
+                </div>
+                <div class="col-6 mb-3">
+                  <div class="border rounded p-2">
+                    <i class="fas fa-chart-line text-success fa-2x mb-1"></i>
+                    <div class="fw-bold">
+                      {{ "%.1f"|format(stats.total_activities /
+                      stats.period_days if stats.period_days > 0 else 0) }}
+                    </div>
+                    <small class="text-muted">Activity Rate</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="text-center">
+              <a
+                href="{{ url_for('activity_logs') }}"
+                class="btn btn-outline-primary btn-sm me-2"
+              >
+                <i class="fas fa-external-link-alt me-1"></i>View Detailed Logs
+              </a>
+              <button
+                class="btn btn-outline-info btn-sm"
+                onclick="exportReport()"
+              >
+                <i class="fas fa-download me-1"></i>Export Report
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Data Freshness Indicator -->
+    <div class="mt-4 text-center">
+      <small class="text-muted">
+        <i class="fas fa-clock me-1"></i>
+        Last updated:
+        <span id="lastUpdated"
+          >{{ moment().format('MMMM Do YYYY, h:mm:ss a') }}</span
+        >
+        <button class="btn btn-link btn-sm p-0 ms-2" onclick="refreshStats()">
+          <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+      </small>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  let autoRefreshInterval;
+
+  function refreshStats() {
+    const refreshBtn = document.querySelector(".refresh-indicator");
+    refreshBtn.style.animation = "spin 1s linear infinite";
+
+    // Update timestamp
+    document.getElementById("lastUpdated").textContent =
+      new Date().toLocaleString();
+
+    setTimeout(() => {
+      window.location.reload();
+    }, 1000);
+  }
+
+  function exportReport() {
+    // Placeholder for export functionality
+    showNotification("Export functionality coming soon!", "info");
+  }
+
+  function showNotification(message, type) {
+    const notification = document.createElement("div");
+    notification.className = `alert alert-${type} alert-dismissible fade show position-fixed`;
+    notification.style.cssText =
+      "top: 20px; right: 20px; z-index: 9999; min-width: 300px;";
+    notification.innerHTML = `
+        <i class="fas fa-info-circle me-2"></i>${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+
+    document.body.appendChild(notification);
+
+    setTimeout(() => {
+      if (notification.parentNode) {
+        notification.remove();
+      }
+    }, 3000);
+  }
+
+  // Initialize tooltips and animations
+  document.addEventListener("DOMContentLoaded", function () {
+    // Initialize Bootstrap tooltips
+    var tooltipTriggerList = [].slice.call(
+      document.querySelectorAll('[data-bs-toggle="tooltip"]')
+    );
+    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
+
+    // Animate progress bars on load
+    const progressBars = document.querySelectorAll(".progress-bar");
+    progressBars.forEach((bar) => {
+      const width = bar.style.width;
+      bar.style.width = "0%";
+      setTimeout(() => {
+        bar.style.transition = "width 1.5s ease-in-out";
+        bar.style.width = width;
+      }, 300);
+    });
+
+    // Animate chart bars
+    const chartBars = document.querySelectorAll(".daily-chart-bar");
+    chartBars.forEach((bar, index) => {
+      const height = bar.style.height;
+      bar.style.height = "4px";
+      setTimeout(() => {
+        bar.style.transition = "height 0.8s ease-out";
+        bar.style.height = height;
+      }, 500 + index * 100);
+    });
+
+    // Animate metric cards
+    const metricCards = document.querySelectorAll(".stats-card");
+    metricCards.forEach((card, index) => {
+      card.style.opacity = "0";
+      card.style.transform = "translateY(20px)";
+      setTimeout(() => {
+        card.style.transition = "all 0.6s ease-out";
+        card.style.opacity = "1";
+        card.style.transform = "translateY(0)";
+      }, index * 150);
+    });
+
+    // Add hover effects to chart bars
+    chartBars.forEach((bar) => {
+      bar.addEventListener("mouseenter", function () {
+        this.style.transform = "scaleY(1.1)";
+        this.style.transformOrigin = "bottom";
+      });
+
+      bar.addEventListener("mouseleave", function () {
+        this.style.transform = "scaleY(1)";
+      });
+    });
+
+    // Auto-refresh every 60 seconds (optional)
+    autoRefreshInterval = setInterval(() => {
+      if (document.visibilityState === "visible") {
+        // Only refresh if no dropdown is open
+        const activeDropdowns = document.querySelectorAll(
+          ".dropdown-menu.show"
+        );
+        if (activeDropdowns.length === 0) {
+          refreshStats();
+        }
+      }
+    }, 60000);
+
+    // Keyboard shortcuts
+    document.addEventListener("keydown", function (e) {
+      // Ctrl/Cmd + R for refresh
+      if ((e.ctrlKey || e.metaKey) && e.key === "r") {
+        e.preventDefault();
+        refreshStats();
+      }
+
+      // Ctrl/Cmd + E for export
+      if ((e.ctrlKey || e.metaKey) && e.key === "e") {
+        e.preventDefault();
+        exportReport();
+      }
+    });
+  });
+
+  // Clean up on page unload
+  window.addEventListener("beforeunload", function () {
+    if (autoRefreshInterval) {
+      clearInterval(autoRefreshInterval);
+    }
+  });
+
+  // Add counter animation for metrics
+  function animateValue(element, start, end, duration) {
+    let startTimestamp = null;
+    const step = (timestamp) => {
+      if (!startTimestamp) startTimestamp = timestamp;
+      const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+      const value = Math.floor(progress * (end - start) + start);
+      element.textContent = value.toLocaleString();
+      if (progress < 1) {
+        window.requestAnimationFrame(step);
+      }
+    };
+    window.requestAnimationFrame(step);
+  }
+
+  // Initialize counter animations after DOM load
+  setTimeout(() => {
+    const counters = document.querySelectorAll(".stats-card h3");
+    counters.forEach((counter) => {
+      const finalValue = parseInt(counter.textContent.replace(/,/g, ""));
+      if (!isNaN(finalValue)) {
+        animateValue(counter, 0, finalValue, 2000);
+      }
+    });
+  }, 800);
+</script>
+{% endblock %}

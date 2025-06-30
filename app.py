@@ -19,13 +19,17 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
 from wtforms import StringField, PasswordField, BooleanField, SelectField, DateTimeField, TextAreaField, IntegerField, DecimalField, SelectMultipleField
-from wtforms.validators import DataRequired, Email, Length, ValidationError
+from wtforms.validators import DataRequired, Email, Length, ValidationError, EqualTo
 import json
 from decimal import Decimal
 from flask_wtf.csrf import CSRFProtect
 from supabase import create_client, Client
 from dotenv import load_dotenv
 import requests
+import functools
+import traceback
+import json
+import threading
 
 # STEP 1: Add this function right after your imports, before "# Load environment variables"
 
@@ -75,6 +79,9 @@ app.config['SESSION_REFRESH_EACH_REQUEST'] = True
 app.config['WTF_CSRF_ENABLED'] = True
 app.config['WTF_CSRF_TIME_LIMIT'] = 3600
 app.config['WTF_CSRF_SSL_STRICT'] = False
+
+ACTIVITY_LOG_RETENTION_DAYS = int(os.environ.get('ACTIVITY_LOG_RETENTION_DAYS', 90))
+ACTIVITY_LOG_ENABLED = os.environ.get('ACTIVITY_LOG_ENABLED', 'true').lower() == 'true'
 
 # Load environment variables
 load_dotenv()
@@ -154,7 +161,7 @@ def production_session_validation():
     if (request.endpoint and 
         (request.endpoint.startswith('static') or 
          request.endpoint.startswith('debug') or
-         request.endpoint in ['login', 'logout', 'health_check', 'debug_database_connection', 'debug_sample_data', 'debug_test_queries'] or
+         request.endpoint in ['login', 'logout', 'register', 'health_check', 'debug_database_connection', 'debug_sample_data', 'debug_test_queries'] or
          request.path.startswith('/static/') or
          request.path.startswith('/debug/'))):
         return
@@ -164,11 +171,11 @@ def production_session_validation():
         print(f"🔍 PROD: Request to {request.endpoint} by {'authenticated' if current_user.is_authenticated else 'anonymous'} user")
     
     # Simplified validation - only check if user needs to be authenticated
-    if not current_user.is_authenticated and request.endpoint not in ['login', 'health_check']:
+    if not current_user.is_authenticated and request.endpoint not in ['login', 'register', 'health_check']:
         if request.endpoint and not request.endpoint.startswith('static'):
             print(f"🔒 Redirecting unauthenticated user from {request.endpoint} to login")
             return redirect(url_for('login'))
-    
+        
 # Add a new debug route to check session status
 @app.route('/debug/session')
 def debug_session():
@@ -322,16 +329,25 @@ def authenticate_user(email, password):
         return None
     
 def create_user_supabase(email, password, first_name, last_name, role='staff'):
-    """Create new user in Supabase"""
+    """Create new user in Supabase with enhanced error handling"""
     try:
+        print(f"DEBUG: Creating user - {email}, {first_name} {last_name}, role: {role}")
+        
         # Create user in Supabase Auth
         auth_response = supabase_admin.auth.admin.create_user({
             "email": email,
             "password": password,
-            "email_confirm": True  # Auto-confirm for internal users
+            "email_confirm": True,  # Auto-confirm for internal users
+            "user_metadata": {
+                "first_name": first_name,
+                "last_name": last_name,
+                "role": role
+            }
         })
         
         if auth_response.user:
+            print(f"DEBUG: Auth user created successfully with ID: {auth_response.user.id}")
+            
             # Create profile in users table using admin client
             profile_data = {
                 'id': auth_response.user.id,
@@ -340,16 +356,41 @@ def create_user_supabase(email, password, first_name, last_name, role='staff'):
                 'last_name': last_name,
                 'username': email.split('@')[0],
                 'role': role,
-                'is_active': True
+                'is_active': True,
+                'created_at': datetime.now(UTC).isoformat()
             }
             
             # Use admin client to bypass RLS
-            supabase_admin.table('users').insert(profile_data).execute()
-            return True
-        return False
+            profile_response = supabase_admin.table('users').insert(profile_data).execute()
+            
+            if profile_response.data:
+                print(f"DEBUG: User profile created successfully")
+                return True
+            else:
+                print(f"ERROR: Failed to create user profile")
+                # Clean up auth user if profile creation failed
+                try:
+                    supabase_admin.auth.admin.delete_user(auth_response.user.id)
+                except:
+                    pass
+                return False
+        else:
+            print("ERROR: Failed to create auth user")
+            return False
+            
     except Exception as e:
         print(f"User creation error: {e}")
-        return False
+        
+        # Check for specific error types to provide better user feedback
+        error_message = str(e).lower()
+        if 'already registered' in error_message or 'already exists' in error_message:
+            raise Exception("Email already registered")
+        elif 'password' in error_message:
+            raise Exception("Password does not meet requirements")
+        elif 'email' in error_message and 'invalid' in error_message:
+            raise Exception("Invalid email format")
+        else:
+            raise Exception("Registration failed due to server error")
 
 def supabase_select(table_name, columns="*", filters=None, order_by=None, limit=None):
     """Enhanced select function with better error handling and RLS bypass"""
@@ -543,6 +584,232 @@ def convert_datetime_strings(data, datetime_fields=['start_time', 'end_time', 'c
         return converted
     return data
 
+def log_user_activity(
+    activity_type,
+    activity_description,
+    resource_type=None,
+    resource_id=None,
+    status='success',
+    metadata=None
+):
+    """
+    Log user activity to the database.
+    This function is designed to be non-blocking and safe.
+    """
+    try:
+        # Skip logging if user is not authenticated (for login attempts, handle separately)
+        if not current_user.is_authenticated and activity_type not in ['login_attempt', 'failed_login']:
+            return
+        
+        # Prepare user information
+        user_id = None
+        user_name = 'Anonymous'
+        user_email = 'unknown@example.com'
+        
+        if current_user.is_authenticated:
+            user_id = current_user.id
+            user_name = f"{current_user.first_name} {current_user.last_name}".strip() or current_user.email
+            user_email = current_user.email
+        
+        # Get request information safely
+        ip_address = None
+        user_agent = None
+        session_id = None
+        
+        if request:
+            ip_address = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR'))
+            user_agent = request.headers.get('User-Agent', '')[:500]  # Limit length
+        
+        if session:
+            session_id = session.get('session_id') or str(hash(str(session)))[:32]
+        
+        # Prepare activity log data
+        log_data = {
+            'user_id': user_id,
+            'user_name': user_name,
+            'user_email': user_email,
+            'activity_type': activity_type,
+            'activity_description': activity_description,
+            'resource_type': resource_type,
+            'resource_id': resource_id,
+            'ip_address': ip_address,
+            'user_agent': user_agent,
+            'session_id': session_id,
+            'status': status,
+            'metadata': json.dumps(metadata) if metadata else None,
+            'created_at': datetime.now(UTC).isoformat()
+        }
+        
+        # Insert into database using admin client (non-blocking)
+        try:
+            result = supabase_admin.table('user_activity_log').insert(log_data).execute()
+            if not result.data:
+                print(f"⚠️ WARNING: Activity log insert returned no data for {activity_type}")
+        except Exception as db_error:
+            # Log the error but don't raise it to avoid breaking the main functionality
+            print(f"❌ ERROR: Failed to log activity '{activity_type}': {db_error}")
+            
+    except Exception as e:
+        # Catch-all error handler - never let logging break the main app
+        print(f"❌ CRITICAL: Activity logger failed with error: {e}")
+        print(f"   Activity: {activity_type} - {activity_description}")
+
+
+def log_authentication_activity(activity_type, email, success=True, additional_info=None):
+    """
+    Special function for logging authentication activities (login, logout, registration).
+    This works even when current_user is not authenticated.
+    """
+    try:
+        # Get request information
+        ip_address = None
+        user_agent = None
+        
+        if request:
+            ip_address = request.environ.get('HTTP_X_FORWARDED_FOR', request.environ.get('REMOTE_ADDR'))
+            user_agent = request.headers.get('User-Agent', '')[:500]
+        
+        # Prepare log data for authentication events
+        log_data = {
+            'user_id': current_user.id if current_user.is_authenticated else None,
+            'user_name': email.split('@')[0],  # Use email prefix as name fallback
+            'user_email': email,
+            'activity_type': activity_type,
+            'activity_description': f"Authentication activity: {activity_type} for {email}",
+            'resource_type': 'authentication',
+            'resource_id': None,
+            'ip_address': ip_address,
+            'user_agent': user_agent,
+            'session_id': str(hash(str(session)))[:32] if session else None,
+            'status': 'success' if success else 'failed',
+            'metadata': json.dumps(additional_info) if additional_info else None,
+            'created_at': datetime.now(UTC).isoformat()
+        }
+        
+        # Insert into database
+        result = supabase_admin.table('user_activity_log').insert(log_data).execute()
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to log authentication activity: {e}")
+
+
+def activity_logged(activity_type, description_template=None, resource_type=None, status='success'):
+    """
+    Decorator to automatically log activities for route functions.
+    """
+    def decorator(func):
+        @functools.wraps(func)
+        def wrapper(*args, **kwargs):
+            start_time = datetime.now(UTC)
+            activity_status = status
+            result = None
+            error_info = None
+            
+            try:
+                # Execute the original function
+                result = func(*args, **kwargs)
+                
+                # Determine if the operation was successful
+                if hasattr(result, 'status_code') and result.status_code >= 400:
+                    activity_status = 'failed'
+                elif isinstance(result, dict) and result.get('error'):
+                    activity_status = 'failed'
+                
+            except Exception as e:
+                activity_status = 'failed'
+                error_info = str(e)
+                raise  # Re-raise the exception to maintain original behavior
+            
+            finally:
+                # Log the activity regardless of success/failure
+                try:
+                    # Prepare description
+                    if description_template:
+                        if '{result}' in description_template:
+                            description = description_template.format(
+                                result=str(result)[:200] if result else 'No result'
+                            )
+                        else:
+                            description = description_template
+                    else:
+                        description = f"Executed {func.__name__}"
+                    
+                    # Prepare metadata
+                    metadata = {
+                        'function_name': func.__name__,
+                        'execution_time_ms': int((datetime.now(UTC) - start_time).total_seconds() * 1000),
+                        'args_count': len(args),
+                        'kwargs_keys': list(kwargs.keys()) if kwargs else []
+                    }
+                    
+                    if error_info:
+                        metadata['error'] = error_info
+                    
+                    if hasattr(result, 'get') and result.get('id'):
+                        resource_id = result.get('id')
+                    else:
+                        resource_id = kwargs.get('id') or (args[0] if args and isinstance(args[0], int) else None)
+                    
+                    # Log the activity
+                    log_user_activity(
+                        activity_type=activity_type,
+                        activity_description=description,
+                        resource_type=resource_type,
+                        resource_id=resource_id,
+                        status=activity_status,
+                        metadata=metadata
+                    )
+                    
+                except Exception as log_error:
+                    print(f"❌ ERROR: Failed to log activity for {func.__name__}: {log_error}")
+            
+            return result
+        return wrapper
+    return decorator
+
+
+# Activity type constants for consistency
+class ActivityTypes:
+    # Authentication
+    LOGIN_SUCCESS = 'login_success'
+    LOGIN_FAILED = 'login_failed'
+    LOGOUT = 'logout'
+    REGISTRATION = 'registration'
+    
+    # Bookings
+    CREATE_BOOKING = 'create_booking'
+    UPDATE_BOOKING = 'update_booking'
+    DELETE_BOOKING = 'delete_booking'
+    CANCEL_BOOKING = 'cancel_booking'
+    CHANGE_BOOKING_STATUS = 'change_booking_status'
+    
+    # Rooms
+    CREATE_ROOM = 'create_room'
+    UPDATE_ROOM = 'update_room'
+    DELETE_ROOM = 'delete_room'
+    VIEW_ROOM = 'view_room'
+    
+    # Clients
+    CREATE_CLIENT = 'create_client'
+    UPDATE_CLIENT = 'update_client'
+    DELETE_CLIENT = 'delete_client'
+    VIEW_CLIENT = 'view_client'
+    
+    # Add-ons
+    CREATE_ADDON = 'create_addon'
+    UPDATE_ADDON = 'update_addon'
+    DELETE_ADDON = 'delete_addon'
+    CREATE_ADDON_CATEGORY = 'create_addon_category'
+    
+    # Reports
+    GENERATE_REPORT = 'generate_report'
+    EXPORT_DATA = 'export_data'
+    
+    # System
+    PAGE_VIEW = 'page_view'
+    API_CALL = 'api_call'
+    ERROR_OCCURRED = 'error_occurred'
+
 # Enhanced client data access functions
 def get_all_clients_from_db():
     """Get all clients from Supabase database with enhanced error handling"""
@@ -678,6 +945,38 @@ class LoginForm(FlaskForm):
     username = StringField('Email', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
     remember_me = BooleanField('Remember Me')
+    
+class RegistrationForm(FlaskForm):
+    """User registration form"""
+    first_name = StringField('First Name', validators=[DataRequired(), Length(min=2, max=50)])
+    last_name = StringField('Last Name', validators=[DataRequired(), Length(min=2, max=50)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    password = PasswordField('Password', validators=[
+        DataRequired(), 
+        Length(min=8, message='Password must be at least 8 characters long')
+    ])
+    confirm_password = PasswordField('Confirm Password', validators=[
+        DataRequired(), 
+        EqualTo('password', message='Passwords must match')
+    ])
+    role = SelectField('Role', choices=[
+        ('staff', 'Staff Member'),
+        ('manager', 'Manager'),
+        ('admin', 'Administrator')
+    ], default='staff')
+    
+    def validate_email(self, field):
+        """Check if email already exists"""
+        try:
+            # Check if user already exists in Supabase
+            existing_users = supabase_admin.table('users').select('email').eq('email', field.data.lower()).execute()
+            if existing_users.data:
+                raise ValidationError('Email address already registered. Please use a different email or try logging in.')
+        except Exception as e:
+            # If we can't check (e.g., database issue), we'll let the registration attempt proceed
+            # and handle the duplicate error during actual registration
+            print(f"Warning: Could not check email uniqueness: {e}")
+
 
 class ClientForm(FlaskForm):
     """Form for adding/editing clients"""
@@ -964,7 +1263,7 @@ def calculate_booking_total(room_id, start_time, end_time, addon_ids=None, disco
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-    """User login page with Supabase authentication"""
+    """User login page with Supabase authentication - NOW WITH ACTIVITY LOGGING"""
     if current_user.is_authenticated:
         print("DEBUG: User already authenticated, redirecting to dashboard")
         return redirect(url_for('dashboard'))
@@ -977,26 +1276,47 @@ def login():
         if user:
             print(f"DEBUG: Authentication successful for user: {user.email}")
             
-            # Log the user in with Flask-Login
+            # Log successful login
+            try:
+                log_authentication_activity(
+                    ActivityTypes.LOGIN_SUCCESS,
+                    user.email,
+                    success=True,
+                    additional_info={
+                        'user_role': user.role,
+                        'login_time': datetime.now(UTC).isoformat()
+                    }
+                )
+            except Exception as log_error:
+                print(f"Failed to log login success: {log_error}")
+            
             login_result = login_user(user, remember=form.remember_me.data)
             print(f"DEBUG: Flask-Login result: {login_result}")
             print(f"DEBUG: Current user authenticated: {current_user.is_authenticated}")
             print(f"DEBUG: Current user ID: {getattr(current_user, 'id', 'None')}")
             
-            # Get next page
             next_page = request.args.get('next')
             print(f"DEBUG: Next page: {next_page}")
             
-            # Show success message
             flash(f'Welcome back, {user.first_name or user.email}!', 'success')
-            
-            # Force session save before redirect
             session.modified = True
             
             print(f"DEBUG: About to redirect to: {next_page or url_for('dashboard')}")
             return redirect(next_page or url_for('dashboard'))
         else:
             print("DEBUG: Authentication failed")
+            
+            # Log failed login
+            try:
+                log_authentication_activity(
+                    ActivityTypes.LOGIN_FAILED,
+                    form.username.data,
+                    success=False,
+                    additional_info={'attempt_time': datetime.now(UTC).isoformat()}
+                )
+            except Exception as log_error:
+                print(f"Failed to log login failure: {log_error}")
+            
             flash('Invalid email or password', 'danger')
     else:
         if form.errors:
@@ -1007,7 +1327,19 @@ def login():
 @app.route('/logout')
 @login_required
 def logout():
-    """User logout with Supabase"""
+    """User logout with Supabase - NOW WITH ACTIVITY LOGGING"""
+    # Log logout activity before actually logging out
+    if current_user.is_authenticated:
+        try:
+            log_authentication_activity(
+                ActivityTypes.LOGOUT,
+                current_user.email,
+                success=True,
+                additional_info={'logout_time': datetime.now(UTC).isoformat()}
+            )
+        except Exception as log_error:
+            print(f"Failed to log logout: {log_error}")
+    
     try:
         supabase.auth.sign_out()
         session.pop('supabase_session', None)
@@ -1018,6 +1350,68 @@ def logout():
     
     return redirect(url_for('login'))
 
+@app.route('/register', methods=['GET', 'POST'])
+def register():
+    """User registration page"""
+    # Redirect if user is already logged in
+    if current_user.is_authenticated:
+        flash('You are already logged in.', 'info')
+        return redirect(url_for('dashboard'))
+    
+    form = RegistrationForm()
+    
+    if form.validate_on_submit():
+        try:
+            print(f"DEBUG: Registration attempt for email: {form.email.data}")
+            
+            # Prepare user data
+            email = form.email.data.strip().lower()
+            password = form.password.data
+            first_name = form.first_name.data.strip()
+            last_name = form.last_name.data.strip()
+            role = form.role.data
+            
+            # Validate role permissions (optional: you can restrict who can create admin accounts)
+            if role == 'admin':
+                # Only existing admins can create admin accounts (optional security measure)
+                # You can remove this if you want anyone to be able to register as admin
+                flash('Admin accounts must be created by existing administrators. Please select a different role.', 'warning')
+                form.role.data = 'staff'  # Reset to staff
+                return render_template('register.html', title='Register', form=form)
+            
+            # Create user in Supabase
+            success = create_user_supabase(email, password, first_name, last_name, role)
+            
+            if success:
+                flash(f'Registration successful! Welcome, {first_name}! You can now log in with your credentials.', 'success')
+                
+                # Optionally auto-login the user after successful registration
+                # Uncomment the lines below if you want automatic login after registration
+                # user = authenticate_user(email, password)
+                # if user:
+                #     login_user(user)
+                #     return redirect(url_for('dashboard'))
+                
+                # Redirect to login page
+                return redirect(url_for('login'))
+            else:
+                flash('Registration failed. The email might already be in use or there was a server error. Please try again.', 'danger')
+                
+        except Exception as e:
+            print(f"Registration error: {e}")
+            if 'already registered' in str(e).lower() or 'already exists' in str(e).lower():
+                flash('This email address is already registered. Please try logging in instead.', 'warning')
+            else:
+                flash('Registration failed due to a server error. Please try again later.', 'danger')
+    else:
+        # Display form validation errors
+        for field, errors in form.errors.items():
+            for error in errors:
+                flash(f'{field.replace("_", " ").title()}: {error}', 'danger')
+    
+    return render_template('register.html', title='Register', form=form)
+
+
 # ===============================
 # Routes - Dashboard
 # ===============================
@@ -1027,7 +1421,19 @@ def logout():
 @app.route('/')
 @login_required
 def dashboard():
-    """Main dashboard page with enhanced error handling and debugging"""
+    """Main dashboard page with enhanced error handling and debugging - NOW WITH ACTIVITY LOGGING"""
+    
+    # Log page view
+    try:
+        log_user_activity(
+            ActivityTypes.PAGE_VIEW,
+            "Viewed dashboard",
+            resource_type='page',
+            metadata={'page': 'dashboard', 'timestamp': datetime.now(UTC).isoformat()}
+        )
+    except Exception as log_error:
+        print(f"Failed to log dashboard view: {log_error}")
+    
     try:
         print(f"🔍 DEBUG: Dashboard loading at {datetime.now(UTC)}")
         print(f"🔍 DEBUG: User authenticated: {current_user.is_authenticated}")
@@ -1257,6 +1663,17 @@ def dashboard():
         print(f"❌ CRITICAL ERROR in dashboard: {e}")
         import traceback
         traceback.print_exc()
+        
+        # Log dashboard error
+        try:
+            log_user_activity(
+                ActivityTypes.ERROR_OCCURRED,
+                f"Dashboard error: {str(e)}",
+                status='failed',
+                metadata={'error': str(e), 'page': 'dashboard'}
+            )
+        except Exception as log_error:
+            print(f"Failed to log dashboard error: {log_error}")
         
         # In production, show a user-friendly error page
         flash('Dashboard temporarily unavailable. Please try again.', 'danger')
@@ -2416,7 +2833,7 @@ def bookings():
 @app.route('/bookings/new', methods=['GET', 'POST'])
 @login_required
 def new_booking():
-    """Create a new booking using Supabase admin client with quotation auto-generation"""
+    """Create a new booking - ENHANCED WITH BETTER NOTIFICATIONS AND ERROR HANDLING"""
     form = BookingForm()
     
     # Initialize form.addons.data as empty list if None
@@ -2453,17 +2870,40 @@ def new_booking():
         
     except Exception as e:
         print(f"Error loading form data: {e}")
-        flash('Error loading form data', 'danger')
+        flash('Error loading form data. Please refresh the page and try again.', 'danger')
         return redirect(url_for('bookings'))
 
     if form.validate_on_submit():
         try:
-            # Check room availability
+            print(f"🔍 DEBUG: Processing new booking form submission...")
+            
+            # Step 1: Check room availability
             if not is_room_available_supabase(form.room_id.data, form.start_time.data, form.end_time.data):
-                flash('Room is not available for the selected time period', 'danger')
+                flash('❌ Room is not available for the selected time period. Please choose a different time or room.', 'danger')
+                
+                # Log failed booking attempt due to room availability
+                try:
+                    log_user_activity(
+                        ActivityTypes.CREATE_BOOKING,
+                        f"Failed to create booking '{form.title.data}' - room not available",
+                        resource_type='booking',
+                        status='failed',
+                        metadata={
+                            'reason': 'room_not_available',
+                            'room_id': form.room_id.data,
+                            'client_id': form.client_id.data,
+                            'start_time': form.start_time.data.isoformat(),
+                            'end_time': form.end_time.data.isoformat(),
+                            'title': form.title.data
+                        }
+                    )
+                except Exception as log_error:
+                    print(f"Failed to log booking availability failure: {log_error}")
+                
                 return render_template('bookings/form.html', title='New Booking', form=form, rooms=rooms_for_template)
             
-            # Calculate pricing
+            # Step 2: Calculate pricing
+            print(f"🔍 DEBUG: Calculating pricing for booking...")
             total_price = calculate_booking_total(
                 form.room_id.data, 
                 form.start_time.data, 
@@ -2471,8 +2911,26 @@ def new_booking():
                 form.addons.data, 
                 form.discount.data or 0
             )
+            print(f"✅ DEBUG: Total price calculated: ${total_price:.2f}")
             
-            # Create booking data
+            # Step 3: Get room and client names for better messaging
+            room_name = "Unknown Room"
+            client_name = "Unknown Client"
+            
+            try:
+                if form.room_id.data:
+                    room_data = supabase_admin.table('rooms').select('name').eq('id', form.room_id.data).execute()
+                    if room_data.data:
+                        room_name = room_data.data[0]['name']
+                
+                if form.client_id.data:
+                    client_data = supabase_admin.table('clients').select('company_name, contact_person').eq('id', form.client_id.data).execute()
+                    if client_data.data:
+                        client_name = client_data.data[0].get('company_name') or client_data.data[0].get('contact_person', 'Unknown Client')
+            except Exception as lookup_error:
+                print(f"Error getting room/client names: {lookup_error}")
+            
+            # Step 4: Create booking data
             booking_data = {
                 'room_id': form.room_id.data,
                 'client_id': form.client_id.data,
@@ -2487,72 +2945,228 @@ def new_booking():
                 'created_by': current_user.id
             }
             
-            # Insert booking
+            print(f"🔍 DEBUG: Inserting booking data...")
+            
+            # Step 5: Insert booking
             result = supabase_insert('bookings', booking_data)
             
             if result:
                 booking_id = result['id']
+                print(f"✅ DEBUG: Booking created successfully with ID: {booking_id}")
                 
-                # Add selected add-ons to junction table
+                # Step 6: Add selected add-ons to junction table
+                addon_count = 0
+                addon_names = []
                 if form.addons.data:
+                    print(f"🔍 DEBUG: Adding {len(form.addons.data)} add-ons to booking...")
                     for addon_id in form.addons.data:
                         addon_booking_data = {
                             'booking_id': booking_id,
                             'addon_id': addon_id,
                             'quantity': 1
                         }
-                        supabase_insert('booking_addons', addon_booking_data)
+                        addon_result = supabase_insert('booking_addons', addon_booking_data)
+                        
+                        if addon_result:
+                            addon_count += 1
+                            # Get addon name for messaging
+                            try:
+                                addon_data = supabase_admin.table('addons').select('name').eq('id', addon_id).execute()
+                                if addon_data.data:
+                                    addon_names.append(addon_data.data[0]['name'])
+                            except:
+                                addon_names.append(f'Addon #{addon_id}')
+                    
+                    print(f"✅ DEBUG: Successfully added {addon_count} add-ons")
                 
-                # Auto-generate quotation for tentative bookings
+                # Step 7: Log successful booking creation
+                try:
+                    log_user_activity(
+                        ActivityTypes.CREATE_BOOKING,
+                        f"Created booking '{form.title.data}' in {room_name} for {client_name}",
+                        resource_type='booking',
+                        resource_id=booking_id,
+                        metadata={
+                            'room_id': form.room_id.data,
+                            'room_name': room_name,
+                            'client_id': form.client_id.data,
+                            'client_name': client_name,
+                            'start_time': form.start_time.data.isoformat(),
+                            'end_time': form.end_time.data.isoformat(),
+                            'total_price': total_price,
+                            'status': form.status.data,
+                            'attendees': form.attendees.data,
+                            'addon_count': addon_count,
+                            'discount': float(form.discount.data or 0)
+                        }
+                    )
+                except Exception as log_error:
+                    print(f"Failed to log booking creation: {log_error}")
+                
+                # Step 8: Provide appropriate success message and next steps
                 if form.status.data == 'tentative':
-                    flash('Tentative booking created successfully. Generating quotation...', 'success')
+                    # Auto-generate quotation for tentative bookings
+                    try:
+                        log_user_activity(
+                            ActivityTypes.GENERATE_REPORT,
+                            f"Auto-generating quotation for tentative booking '{form.title.data}'",
+                            resource_type='quotation',
+                            resource_id=booking_id,
+                            metadata={
+                                'booking_id': booking_id,
+                                'booking_title': form.title.data,
+                                'auto_generated': True
+                            }
+                        )
+                    except Exception as log_error:
+                        print(f"Failed to log quotation generation: {log_error}")
+                    
+                    # Create detailed success message for tentative booking
+                    success_message = f"""
+                    ✅ <strong>Tentative booking created successfully!</strong><br>
+                    📋 <strong>Booking Details:</strong><br>
+                    • Event: {form.title.data}<br>
+                    • Room: {room_name}<br>
+                    • Client: {client_name}<br>
+                    • Date: {form.start_time.data.strftime('%d %B %Y')}<br>
+                    • Time: {form.start_time.data.strftime('%H:%M')} - {form.end_time.data.strftime('%H:%M')}<br>
+                    • Total: ${total_price:.2f}<br>
+                    📄 <strong>Next Step:</strong> Generating quotation for client approval...
+                    """
+                    
+                    flash(success_message, 'success')
                     return redirect(url_for('generate_quotation', id=booking_id))
-                else:
-                    flash('Booking created successfully', 'success')
+                    
+                elif form.status.data == 'confirmed':
+                    # Confirmed booking success message
+                    success_message = f"""
+                    ✅ <strong>Booking confirmed successfully!</strong><br>
+                    📋 <strong>Booking Details:</strong><br>
+                    • Event: {form.title.data}<br>
+                    • Room: {room_name}<br>
+                    • Client: {client_name}<br>
+                    • Date: {form.start_time.data.strftime('%d %B %Y')}<br>
+                    • Time: {form.start_time.data.strftime('%H:%M')} - {form.end_time.data.strftime('%H:%M')}<br>
+                    • Total: ${total_price:.2f}<br>
+                    """
+                    
+                    if addon_count > 0:
+                        success_message += f"• Add-ons: {', '.join(addon_names[:3])}{'...' if len(addon_names) > 3 else ''}<br>"
+                    
+                    success_message += "🎉 <strong>The room is now reserved!</strong> You can generate an invoice when ready."
+                    
+                    flash(success_message, 'success')
                     return redirect(url_for('view_booking', id=booking_id))
+                else:
+                    # Standard booking success message
+                    success_message = f"""
+                    ✅ <strong>Booking created successfully!</strong><br>
+                    📋 Event: {form.title.data} in {room_name}<br>
+                    👤 Client: {client_name}<br>
+                    💰 Total: ${total_price:.2f}
+                    """
+                    
+                    flash(success_message, 'success')
+                    return redirect(url_for('view_booking', id=booking_id))
+                
             else:
-                flash('Error creating booking', 'danger')
+                # Database insert failed
+                try:
+                    log_user_activity(
+                        ActivityTypes.CREATE_BOOKING,
+                        f"Failed to create booking '{form.title.data}' - database insert failed",
+                        resource_type='booking',
+                        status='failed',
+                        metadata={
+                            'reason': 'database_insert_failed',
+                            'room_id': form.room_id.data,
+                            'client_id': form.client_id.data,
+                            'start_time': form.start_time.data.isoformat(),
+                            'end_time': form.end_time.data.isoformat(),
+                            'title': form.title.data,
+                            'total_price': total_price
+                        }
+                    )
+                except Exception as log_error:
+                    print(f"Failed to log booking creation failure: {log_error}")
+                
+                flash('❌ Error creating booking. The data could not be saved. Please try again.', 'danger')
                 
         except Exception as e:
-            print(f"Error creating booking: {e}")
-            flash('Error creating booking', 'danger')
+            print(f"❌ ERROR creating booking: {e}")
+            import traceback
+            traceback.print_exc()
+            
+            # Log booking creation error with exception details
+            try:
+                log_user_activity(
+                    ActivityTypes.CREATE_BOOKING,
+                    f"Error creating booking '{form.title.data}': {str(e)}",
+                    resource_type='booking',
+                    status='failed',
+                    metadata={
+                        'reason': 'exception_occurred',
+                        'error': str(e),
+                        'error_type': type(e).__name__,
+                        'room_id': form.room_id.data,
+                        'client_id': form.client_id.data,
+                        'title': form.title.data
+                    }
+                )
+            except Exception as log_error:
+                print(f"Failed to log booking creation exception: {log_error}")
+            
+            flash('❌ Unexpected error creating booking. Please check all fields and try again.', 'danger')
+    else:
+        # Form validation errors
+        if request.method == 'POST' and form.errors:
+            try:
+                log_user_activity(
+                    ActivityTypes.CREATE_BOOKING,
+                    f"Booking creation failed due to form validation errors",
+                    resource_type='booking',
+                    status='failed',
+                    metadata={
+                        'reason': 'form_validation_failed',
+                        'form_errors': form.errors,
+                        'title': form.title.data or 'Unknown',
+                        'validation_errors': list(form.errors.keys())
+                    }
+                )
+            except Exception as log_error:
+                print(f"Failed to log form validation errors: {log_error}")
+            
+            # Display user-friendly validation error messages
+            error_messages = []
+            for field, errors in form.errors.items():
+                field_name = field.replace('_', ' ').title()
+                for error in errors:
+                    error_messages.append(f"{field_name}: {error}")
+            
+            if error_messages:
+                flash(f"❌ Please correct the following errors:<br>• " + "<br>• ".join(error_messages), 'danger')
+    
+    # Log page view for GET requests (when form is first loaded)
+    if request.method == 'GET':
+        try:
+            log_user_activity(
+                ActivityTypes.PAGE_VIEW,
+                "Viewed new booking form",
+                resource_type='page',
+                metadata={
+                    'page': 'new_booking',
+                    'form_type': 'booking_creation',
+                    'available_rooms': len(rooms_for_template),
+                    'timestamp': datetime.now(UTC).isoformat()
+                }
+            )
+        except Exception as log_error:
+            print(f"Failed to log new booking page view: {log_error}")
     
     return render_template('bookings/form.html', title='New Booking', form=form, rooms=rooms_for_template)
 
-@app.route('/bookings/<int:id>')
-@login_required
-def view_booking(id):
-    """View booking details using Supabase admin client"""
-    try:
-        booking_data = supabase_admin.table('bookings').select("""
-            *,
-            room:rooms(*),
-            client:clients(*),
-            booking_addons(
-                quantity,
-                addon:addons(
-                    id, name, description, price,
-                    category:addon_categories(name)
-                )
-            )
-        """).eq('id', id).execute()
-        
-        if not booking_data.data:
-            flash('Booking not found', 'danger')
-            return redirect(url_for('bookings'))
-        
-        booking = booking_data.data[0]
-        # Convert datetime strings to datetime objects for template
-        booking = convert_datetime_strings(booking)
-        
-        return render_template('bookings/view.html', 
-                             title=f'Booking: {booking["title"]}', 
-                             booking=booking)
-        
-    except Exception as e:
-        print(f"Error fetching booking: {e}")
-        flash('Error loading booking details', 'danger')
-        return redirect(url_for('bookings'))
+
+
 
 @app.route('/bookings/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -2695,14 +3309,54 @@ def edit_booking(id):
 @app.route('/bookings/<int:id>/delete', methods=['POST'])
 @login_required
 def delete_booking(id):
-    """Cancel a booking (soft delete)"""
+    """Cancel a booking (soft delete) - NOW WITH ACTIVITY LOGGING"""
     try:
+        # Get booking details before deletion for logging
+        booking_data = supabase_admin.table('bookings').select('title, room_id, client_id').eq('id', id).execute()
+        booking_title = booking_data.data[0]['title'] if booking_data.data else f'Booking #{id}'
+        
         result = supabase_update('bookings', {'status': 'cancelled'}, [('id', 'eq', id)])
+        
         if result:
+            try:
+                log_user_activity(
+                    ActivityTypes.CANCEL_BOOKING,
+                    f"Cancelled booking: {booking_title}",
+                    resource_type='booking',
+                    resource_id=id,
+                    metadata={'action': 'soft_delete', 'new_status': 'cancelled'}
+                )
+            except Exception as log_error:
+                print(f"Failed to log booking cancellation: {log_error}")
+            
             flash('Booking has been cancelled', 'success')
         else:
+            try:
+                log_user_activity(
+                    ActivityTypes.CANCEL_BOOKING,
+                    f"Failed to cancel booking: {booking_title}",
+                    resource_type='booking',
+                    resource_id=id,
+                    status='failed'
+                )
+            except Exception as log_error:
+                print(f"Failed to log booking cancellation failure: {log_error}")
+            
             flash('Error cancelling booking', 'danger')
+            
     except Exception as e:
+        try:
+            log_user_activity(
+                ActivityTypes.CANCEL_BOOKING,
+                f"Error cancelling booking #{id}: {str(e)}",
+                resource_type='booking',
+                resource_id=id,
+                status='failed',
+                metadata={'error': str(e)}
+            )
+        except Exception as log_error:
+            print(f"Failed to log booking cancellation error: {log_error}")
+        
         print(f"Error cancelling booking: {e}")
         flash('Error cancelling booking', 'danger')
     
@@ -2776,87 +3430,190 @@ def add_accommodation(id):
 @app.route('/bookings/<int:id>/quotation')
 @login_required
 def generate_quotation(id):
-    """Generate a quotation for a booking"""
+    """Generate a quotation for a booking - ENHANCED WITH ROBUST ERROR HANDLING"""
     try:
-        booking_data = supabase_admin.table('bookings').select("""
-            *,
-            room:rooms(*),
-            client:clients(*),
-            booking_addons(
-                quantity,
-                addon:addons(
-                    id, name, price,
-                    category:addon_categories(name)
-                )
-            )
-        """).eq('id', id).execute()
+        print(f"🔍 DEBUG: Generating quotation for booking ID {id}")
         
-        if not booking_data.data:
+        # Step 1: Get basic booking data first (simple query for reliability)
+        booking_response = supabase_admin.table('bookings').select('*').eq('id', id).execute()
+        
+        if not booking_response.data:
             flash('Booking not found', 'danger')
             return redirect(url_for('bookings'))
         
-        booking = booking_data.data[0]
-        booking = convert_datetime_strings(booking)
+        booking = booking_response.data[0]
+        print(f"✅ DEBUG: Found booking: {booking.get('title', 'Untitled')}")
         
-        # Calculate room rate and totals
-        start_time = booking['start_time']
-        end_time = booking['end_time']
-        if isinstance(start_time, str):
-            start_time = datetime.fromisoformat(start_time.replace('Z', '+00:00')).replace(tzinfo=None)
-            end_time = datetime.fromisoformat(end_time.replace('Z', '+00:00')).replace(tzinfo=None)
-        
-        duration_hours = (end_time - start_time).total_seconds() / 3600
-        room = booking['room']
-        
-        if duration_hours <= 4:
-            room_rate = float(room['hourly_rate']) * duration_hours
-            rate_type = f"Hourly Rate ({duration_hours:.1f} hours)"
-        elif duration_hours <= 6:
-            room_rate = float(room['half_day_rate'])
-            rate_type = "Half-day Rate"
+        # Step 2: Get room data separately for reliability
+        room = None
+        if booking.get('room_id'):
+            room_response = supabase_admin.table('rooms').select('*').eq('id', booking['room_id']).execute()
+            if room_response.data:
+                room = room_response.data[0]
+                print(f"✅ DEBUG: Found room: {room.get('name', 'Unknown')}")
+            else:
+                print(f"⚠️ WARNING: Room ID {booking['room_id']} not found")
+                flash('Room information not found for this booking', 'warning')
+                return redirect(url_for('view_booking', id=id))
         else:
-            room_rate = float(room['full_day_rate'])
-            rate_type = "Full-day Rate"
+            flash('No room associated with this booking', 'warning')
+            return redirect(url_for('view_booking', id=id))
         
-        # Calculate addons total
-        addons_total = 0
+        # Step 3: Get client data separately
+        client = None
+        if booking.get('client_id'):
+            client_response = supabase_admin.table('clients').select('*').eq('id', booking['client_id']).execute()
+            if client_response.data:
+                client = client_response.data[0]
+                print(f"✅ DEBUG: Found client: {client.get('company_name') or client.get('contact_person', 'Unknown')}")
+            else:
+                print(f"⚠️ WARNING: Client ID {booking['client_id']} not found")
+                flash('Client information not found for this booking', 'warning')
+                return redirect(url_for('view_booking', id=id))
+        else:
+            flash('No client associated with this booking', 'warning')
+            return redirect(url_for('view_booking', id=id))
+        
+        # Step 4: Get booking addons separately (robust approach)
         addon_items = []
-        if booking.get('booking_addons'):
-            for ba in booking['booking_addons']:
-                if ba.get('addon'):
-                    addon = ba['addon']
-                    quantity = ba.get('quantity', 1)
-                    price = float(addon['price'])
-                    total = price * quantity
-                    addons_total += total
-                    addon_items.append({
-                        'name': addon['name'],
-                        'category': addon.get('category', {}).get('name', 'Other'),
-                        'price': price,
-                        'quantity': quantity,
-                        'total': total
-                    })
+        addons_total = 0
+        try:
+            booking_addons_response = supabase_admin.table('booking_addons').select('*').eq('booking_id', id).execute()
+            
+            for ba in booking_addons_response.data if booking_addons_response.data else []:
+                addon_id = ba.get('addon_id')
+                if addon_id:
+                    # Get addon details
+                    addon_response = supabase_admin.table('addons').select('*').eq('id', addon_id).execute()
+                    if addon_response.data:
+                        addon = addon_response.data[0]
+                        quantity = ba.get('quantity', 1)
+                        price = float(addon.get('price', 0))
+                        total = price * quantity
+                        
+                        # Get category name
+                        category_name = 'Other'
+                        if addon.get('category_id'):
+                            cat_response = supabase_admin.table('addon_categories').select('name').eq('id', addon['category_id']).execute()
+                            if cat_response.data:
+                                category_name = cat_response.data[0]['name']
+                        
+                        addon_items.append({
+                            'name': addon.get('name', 'Unknown Addon'),
+                            'category': category_name,
+                            'price': price,
+                            'quantity': quantity,
+                            'total': total
+                        })
+                        addons_total += total
+                        
+            print(f"✅ DEBUG: Processed {len(addon_items)} addon items, total: ${addons_total:.2f}")
+            
+        except Exception as addon_error:
+            print(f"⚠️ WARNING: Error processing addons: {addon_error}")
+            # Continue without addons rather than failing completely
+            addon_items = []
+            addons_total = 0
         
-        # Add calculated fields
-        booking['room_rate'] = room_rate
-        booking['rate_type'] = rate_type
-        booking['addons_total'] = addons_total
-        booking['addon_items'] = addon_items
-        booking['duration_hours'] = duration_hours
+        # Step 5: Calculate room rate and totals
+        try:
+            # Parse booking times safely
+            if isinstance(booking.get('start_time'), str):
+                start_time = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00')).replace(tzinfo=None)
+                end_time = datetime.fromisoformat(booking['end_time'].replace('Z', '+00:00')).replace(tzinfo=None)
+            else:
+                start_time = booking['start_time']
+                end_time = booking['end_time']
+            
+            # Calculate duration
+            duration_hours = (end_time - start_time).total_seconds() / 3600
+            
+            # Calculate room rate based on duration
+            if duration_hours <= 4:
+                room_rate = float(room.get('hourly_rate', 0)) * duration_hours
+                rate_type = f"Hourly Rate ({duration_hours:.1f} hours)"
+            elif duration_hours <= 6:
+                room_rate = float(room.get('half_day_rate', 0))
+                rate_type = "Half-day Rate"
+            else:
+                room_rate = float(room.get('full_day_rate', 0))
+                rate_type = "Full-day Rate"
+            
+            print(f"✅ DEBUG: Room rate calculated: ${room_rate:.2f} ({rate_type})")
+            
+        except Exception as calc_error:
+            print(f"⚠️ WARNING: Error calculating room rate: {calc_error}")
+            # Use fallback values
+            room_rate = float(booking.get('total_price', 0)) * 0.7  # Estimate 70% is room cost
+            rate_type = "Estimated Rate"
+            start_time = datetime.now(UTC)
+            end_time = start_time + timedelta(hours=4)
+            duration_hours = 4
         
-        # Calculate totals
-        subtotal = room_rate + addons_total - float(booking.get('discount', 0))
-        vat_rate = 0.15
-        vat_amount = subtotal * vat_rate
-        total_with_vat = subtotal + vat_amount
+        # Step 6: Calculate totals with proper error handling
+        try:
+            discount = float(booking.get('discount', 0))
+            subtotal = room_rate + addons_total - discount
+            vat_rate = 0.15
+            vat_amount = subtotal * vat_rate
+            total_with_vat = subtotal + vat_amount
+            
+            # Ensure non-negative values
+            subtotal = max(subtotal, 0)
+            vat_amount = max(vat_amount, 0)
+            total_with_vat = max(total_with_vat, 0)
+            
+        except Exception as total_error:
+            print(f"⚠️ WARNING: Error calculating totals: {total_error}")
+            # Use booking total as fallback
+            total_price = float(booking.get('total_price', 100))
+            subtotal = total_price / 1.15  # Remove VAT
+            vat_amount = total_price - subtotal
+            total_with_vat = total_price
+            discount = float(booking.get('discount', 0))
         
-        booking['subtotal'] = subtotal
-        booking['vat_amount'] = vat_amount
-        booking['total_with_vat'] = total_with_vat
+        # Step 7: Prepare booking data for template
+        # Add calculated fields to booking object
+        booking.update({
+            'room': room,
+            'client': client,
+            'room_rate': round(room_rate, 2),
+            'rate_type': rate_type,
+            'addons_total': round(addons_total, 2),
+            'addon_items': addon_items,
+            'duration_hours': round(duration_hours, 1),
+            'subtotal': round(subtotal, 2),
+            'vat_amount': round(vat_amount, 2),
+            'total_with_vat': round(total_with_vat, 2),
+            'discount': discount
+        })
+        
+        # Convert datetime strings to datetime objects for template
+        booking = convert_datetime_strings(booking)
         
         # Generate quotation number and validity
         quotation_number = f"QUO-{booking['id']}-{datetime.now(UTC).strftime('%Y%m')}"
         valid_until = datetime.now(UTC) + timedelta(days=30)  # Valid for 30 days
+        
+        print(f"✅ DEBUG: Quotation data prepared successfully")
+        print(f"📊 DEBUG: Quotation summary - Room: ${room_rate:.2f}, Addons: ${addons_total:.2f}, Total: ${total_with_vat:.2f}")
+        
+        # Log quotation generation
+        try:
+            log_user_activity(
+                ActivityTypes.GENERATE_REPORT,
+                f"Generated quotation {quotation_number} for booking '{booking['title']}'",
+                resource_type='quotation',
+                resource_id=id,
+                metadata={
+                    'quotation_number': quotation_number,
+                    'total_amount': total_with_vat,
+                    'client_email': client.get('email'),
+                    'room_name': room.get('name')
+                }
+            )
+        except Exception as log_error:
+            print(f"Failed to log quotation generation: {log_error}")
         
         return render_template('bookings/quotation.html', 
                               title=f'Quotation for {booking["title"]}',
@@ -2867,90 +3624,186 @@ def generate_quotation(id):
                               timedelta=timedelta)
                               
     except Exception as e:
-        print(f"Quotation generation error: {e}")
-        flash('Error generating quotation', 'danger')
+        print(f"❌ CRITICAL ERROR in quotation generation: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Log the error
+        try:
+            log_user_activity(
+                ActivityTypes.ERROR_OCCURRED,
+                f"Quotation generation failed for booking ID {id}: {str(e)}",
+                resource_type='quotation',
+                resource_id=id,
+                status='failed',
+                metadata={'error': str(e), 'error_type': type(e).__name__}
+            )
+        except Exception as log_error:
+            print(f"Failed to log quotation error: {log_error}")
+        
+        flash('Error generating quotation. Please check the booking details and try again.', 'danger')
         return redirect(url_for('view_booking', id=id))
 
 @app.route('/bookings/<int:id>/invoice')
 @login_required
 def generate_invoice(id):
-    """Generate an invoice for a booking with calculated totals"""
+    """Generate an invoice for a booking - ENHANCED WITH ROBUST ERROR HANDLING"""
     try:
-        booking_data = supabase_admin.table('bookings').select("""
-            *,
-            room:rooms(*),
-            client:clients(*),
-            booking_addons(
-                quantity,
-                addon:addons(
-                    id, name, price,
-                    category:addon_categories(name)
-                )
-            )
-        """).eq('id', id).execute()
+        print(f"🔍 DEBUG: Generating invoice for booking ID {id}")
         
-        if not booking_data.data:
+        # Use the same robust approach as quotation generation
+        booking_response = supabase_admin.table('bookings').select('*').eq('id', id).execute()
+        
+        if not booking_response.data:
             flash('Booking not found', 'danger')
             return redirect(url_for('bookings'))
         
-        booking = booking_data.data[0]
+        booking = booking_response.data[0]
+        
+        # Check if booking is confirmed
+        if booking.get('status') != 'confirmed':
+            flash('Invoices can only be generated for confirmed bookings. Please confirm the booking first.', 'warning')
+            return redirect(url_for('view_booking', id=id))
+        
+        # Get room data
+        room = None
+        if booking.get('room_id'):
+            room_response = supabase_admin.table('rooms').select('*').eq('id', booking['room_id']).execute()
+            if room_response.data:
+                room = room_response.data[0]
+            else:
+                flash('Room information not found for this booking', 'warning')
+                return redirect(url_for('view_booking', id=id))
+        
+        # Get client data
+        client = None
+        if booking.get('client_id'):
+            client_response = supabase_admin.table('clients').select('*').eq('id', booking['client_id']).execute()
+            if client_response.data:
+                client = client_response.data[0]
+            else:
+                flash('Client information not found for this booking', 'warning')
+                return redirect(url_for('view_booking', id=id))
+        
+        # Get addons (same logic as quotation)
+        addon_items = []
+        addons_total = 0
+        try:
+            booking_addons_response = supabase_admin.table('booking_addons').select('*').eq('booking_id', id).execute()
+            
+            for ba in booking_addons_response.data if booking_addons_response.data else []:
+                addon_id = ba.get('addon_id')
+                if addon_id:
+                    addon_response = supabase_admin.table('addons').select('*').eq('id', addon_id).execute()
+                    if addon_response.data:
+                        addon = addon_response.data[0]
+                        quantity = ba.get('quantity', 1)
+                        price = float(addon.get('price', 0))
+                        total = price * quantity
+                        
+                        # Get category name
+                        category_name = 'Other'
+                        if addon.get('category_id'):
+                            cat_response = supabase_admin.table('addon_categories').select('name').eq('id', addon['category_id']).execute()
+                            if cat_response.data:
+                                category_name = cat_response.data[0]['name']
+                        
+                        addon_items.append({
+                            'name': addon.get('name', 'Unknown Addon'),
+                            'category': category_name,
+                            'price': price,
+                            'quantity': quantity,
+                            'total': total
+                        })
+                        addons_total += total
+        except Exception as addon_error:
+            print(f"Warning: Error processing addons for invoice: {addon_error}")
+            addon_items = []
+            addons_total = 0
+        
+        # Calculate room rate and totals (same logic as quotation)
+        try:
+            if isinstance(booking.get('start_time'), str):
+                start_time = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00')).replace(tzinfo=None)
+                end_time = datetime.fromisoformat(booking['end_time'].replace('Z', '+00:00')).replace(tzinfo=None)
+            else:
+                start_time = booking['start_time']
+                end_time = booking['end_time']
+            
+            duration_hours = (end_time - start_time).total_seconds() / 3600
+            
+            if duration_hours <= 4:
+                room_rate = float(room.get('hourly_rate', 0)) * duration_hours
+                rate_type = f"Hourly Rate ({duration_hours:.1f} hours)"
+            elif duration_hours <= 6:
+                room_rate = float(room.get('half_day_rate', 0))
+                rate_type = "Half-day Rate"
+            else:
+                room_rate = float(room.get('full_day_rate', 0))
+                rate_type = "Full-day Rate"
+                
+        except Exception as calc_error:
+            print(f"Warning: Error calculating room rate for invoice: {calc_error}")
+            room_rate = float(booking.get('total_price', 0)) * 0.7
+            rate_type = "Estimated Rate"
+            start_time = datetime.now(UTC)
+            end_time = start_time + timedelta(hours=4)
+            duration_hours = 4
+        
+        # Calculate totals
+        try:
+            discount = float(booking.get('discount', 0))
+            subtotal = room_rate + addons_total - discount
+            vat_rate = 0.15
+            vat_amount = subtotal * vat_rate
+            total_with_vat = subtotal + vat_amount
+            
+            subtotal = max(subtotal, 0)
+            vat_amount = max(vat_amount, 0)
+            total_with_vat = max(total_with_vat, 0)
+            
+        except Exception as total_error:
+            print(f"Warning: Error calculating totals for invoice: {total_error}")
+            total_price = float(booking.get('total_price', 100))
+            subtotal = total_price / 1.15
+            vat_amount = total_price - subtotal
+            total_with_vat = total_price
+            discount = float(booking.get('discount', 0))
+        
+        # Prepare booking data for template
+        booking.update({
+            'room': room,
+            'client': client,
+            'room_rate': round(room_rate, 2),
+            'rate_type': rate_type,
+            'addons_total': round(addons_total, 2),
+            'addon_items': addon_items,
+            'duration_hours': round(duration_hours, 1),
+            'subtotal': round(subtotal, 2),
+            'vat_amount': round(vat_amount, 2),
+            'total_with_vat': round(total_with_vat, 2),
+            'discount': discount
+        })
+        
         booking = convert_datetime_strings(booking)
         
-        # Calculate room rate based on duration
-        start_time = booking['start_time']
-        end_time = booking['end_time']
-        if isinstance(start_time, str):
-            start_time = datetime.fromisoformat(start_time.replace('Z', '+00:00')).replace(tzinfo=None)
-            end_time = datetime.fromisoformat(end_time.replace('Z', '+00:00')).replace(tzinfo=None)
+        print(f"✅ DEBUG: Invoice data prepared successfully")
         
-        duration_hours = (end_time - start_time).total_seconds() / 3600
-        room = booking['room']
-        
-        if duration_hours <= 4:
-            room_rate = float(room['hourly_rate']) * duration_hours
-            rate_type = f"Hourly Rate ({duration_hours:.1f} hours)"
-        elif duration_hours <= 6:
-            room_rate = float(room['half_day_rate'])
-            rate_type = "Half-day Rate"
-        else:
-            room_rate = float(room['full_day_rate'])
-            rate_type = "Full-day Rate"
-        
-        # Calculate addons total
-        addons_total = 0
-        addon_items = []
-        if booking.get('booking_addons'):
-            for ba in booking['booking_addons']:
-                if ba.get('addon'):
-                    addon = ba['addon']
-                    quantity = ba.get('quantity', 1)
-                    price = float(addon['price'])
-                    total = price * quantity
-                    addons_total += total
-                    addon_items.append({
-                        'name': addon['name'],
-                        'category': addon.get('category', {}).get('name', 'Other'),
-                        'price': price,
-                        'quantity': quantity,
-                        'total': total
-                    })
-        
-        # Add calculated fields to booking
-        booking['room_rate'] = room_rate
-        booking['rate_type'] = rate_type
-        booking['addons_total'] = addons_total
-        booking['addon_items'] = addon_items
-        booking['duration_hours'] = duration_hours
-        
-        # Calculate subtotal and tax
-        subtotal = room_rate + addons_total - float(booking.get('discount', 0))
-        vat_rate = 0.15  # 15% VAT
-        vat_amount = subtotal * vat_rate
-        total_with_vat = subtotal + vat_amount
-        
-        booking['subtotal'] = subtotal
-        booking['vat_amount'] = vat_amount
-        booking['total_with_vat'] = total_with_vat
+        # Log invoice generation
+        try:
+            log_user_activity(
+                ActivityTypes.GENERATE_REPORT,
+                f"Generated invoice for confirmed booking '{booking['title']}'",
+                resource_type='invoice',
+                resource_id=id,
+                metadata={
+                    'invoice_amount': total_with_vat,
+                    'client_email': client.get('email'),
+                    'room_name': room.get('name')
+                }
+            )
+        except Exception as log_error:
+            print(f"Failed to log invoice generation: {log_error}")
         
         return render_template('bookings/invoice.html', 
                               title=f'Invoice for {booking["title"]}',
@@ -2959,8 +3812,23 @@ def generate_invoice(id):
                               timedelta=timedelta)
                               
     except Exception as e:
-        print(f"Invoice generation error: {e}")
-        flash('Error generating invoice', 'danger')
+        print(f"❌ ERROR in invoice generation: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        try:
+            log_user_activity(
+                ActivityTypes.ERROR_OCCURRED,
+                f"Invoice generation failed for booking ID {id}: {str(e)}",
+                resource_type='invoice',
+                resource_id=id,
+                status='failed',
+                metadata={'error': str(e)}
+            )
+        except Exception as log_error:
+            print(f"Failed to log invoice error: {log_error}")
+        
+        flash('Error generating invoice. Please check the booking details and try again.', 'danger')
         return redirect(url_for('view_booking', id=id))
 
 @app.route('/bookings/<int:id>/send-quotation', methods=['POST'])
@@ -4607,6 +5475,21 @@ def page_not_found(e):
 
 @app.errorhandler(500)
 def internal_server_error(e):
+    """Log internal server errors"""
+    try:
+        log_user_activity(
+            ActivityTypes.ERROR_OCCURRED,
+            f"Internal server error: {str(e)}",
+            status='failed',
+            metadata={
+                'error_type': '500',
+                'url': request.url if request else 'unknown',
+                'method': request.method if request else 'unknown'
+            }
+        )
+    except Exception as log_error:
+        print(f"Failed to log 500 error: {log_error}")
+    
     return render_template('errors/500.html'), 500
 
 # ===============================
@@ -4715,6 +5598,831 @@ def backup_data():
         
     except Exception as e:
         print(f'❌ Backup failed: {e}')
+        
+def require_admin_or_manager(f):
+    """Decorator to require admin or manager role"""
+    @functools.wraps(f)
+    def decorated_function(*args, **kwargs):
+        if not current_user.is_authenticated:
+            return redirect(url_for('login'))
+        if current_user.role not in ['admin', 'manager']:
+            flash('Access denied. Administrator or Manager privileges required.', 'danger')
+            return redirect(url_for('dashboard'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+@app.route('/admin/activity-logs')
+@login_required
+@require_admin_or_manager
+def activity_logs():
+    """View all user activity logs (Admin/Manager only)"""
+    try:
+        # Get filter parameters
+        user_filter = request.args.get('user')
+        activity_type_filter = request.args.get('activity_type')
+        status_filter = request.args.get('status', 'all')
+        date_from = request.args.get('date_from')
+        date_to = request.args.get('date_to')
+        page = request.args.get('page', 1, type=int)
+        per_page = 50
+        
+        # Log this admin activity
+        try:
+            log_user_activity(
+                ActivityTypes.PAGE_VIEW,
+                "Viewed activity logs admin panel",
+                resource_type='admin',
+                metadata={
+                    'filters': {
+                        'user': user_filter,
+                        'activity_type': activity_type_filter,
+                        'status': status_filter,
+                        'date_from': date_from,
+                        'date_to': date_to
+                    }
+                }
+            )
+        except Exception as log_error:
+            print(f"Failed to log admin activity: {log_error}")
+        
+        # Build query
+        query = supabase_admin.table('user_activity_log').select('*')
+        
+        # Apply filters
+        if user_filter:
+            query = query.ilike('user_name', f'%{user_filter}%')
+        
+        if activity_type_filter:
+            query = query.eq('activity_type', activity_type_filter)
+        
+        if status_filter != 'all':
+            query = query.eq('status', status_filter)
+        
+        if date_from:
+            query = query.gte('created_at', date_from)
+        
+        if date_to:
+            # Add one day to include the entire end date
+            end_date = datetime.strptime(date_to, '%Y-%m-%d') + timedelta(days=1)
+            query = query.lt('created_at', end_date.isoformat())
+        
+        # Get total count for pagination
+        count_response = query.execute()
+        total_logs = len(count_response.data) if count_response.data else 0
+        
+        # Get paginated results
+        offset = (page - 1) * per_page
+        logs_response = query.order('created_at', desc=True).range(offset, offset + per_page - 1).execute()
+        
+        logs = logs_response.data if logs_response.data else []
+        
+        # Convert datetime strings and parse metadata
+        for log in logs:
+            if log.get('created_at'):
+                try:
+                    log['created_at'] = datetime.fromisoformat(log['created_at'].replace('Z', '+00:00'))
+                except:
+                    pass
+            
+            if log.get('metadata') and isinstance(log['metadata'], str):
+                try:
+                    log['metadata'] = json.loads(log['metadata'])
+                except:
+                    pass
+        
+        # Get unique activity types for filter dropdown
+        activity_types_response = supabase_admin.table('user_activity_log').select('activity_type').execute()
+        unique_activity_types = list(set([log['activity_type'] for log in activity_types_response.data if activity_types_response.data]))
+        unique_activity_types.sort()
+        
+        # Calculate pagination info
+        total_pages = (total_logs + per_page - 1) // per_page
+        
+        pagination_info = {
+            'page': page,
+            'per_page': per_page,
+            'total': total_logs,
+            'total_pages': total_pages,
+            'has_prev': page > 1,
+            'has_next': page < total_pages,
+            'prev_num': page - 1 if page > 1 else None,
+            'next_num': page + 1 if page < total_pages else None
+        }
+        
+        return render_template('admin/activity_logs.html',
+                              title='User Activity Logs',
+                              logs=logs,
+                              pagination=pagination_info,
+                              filters={
+                                  'user': user_filter,
+                                  'activity_type': activity_type_filter,
+                                  'status': status_filter,
+                                  'date_from': date_from,
+                                  'date_to': date_to
+                              },
+                              unique_activity_types=unique_activity_types)
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to load activity logs: {e}")
+        flash('Error loading activity logs', 'danger')
+        return redirect(url_for('dashboard'))
+    
+@app.route('/admin/activity-stats')
+@login_required
+@require_admin_or_manager
+def activity_stats():
+    """Dashboard for activity statistics (Admin/Manager only)"""
+    try:
+        # Get date range (default to last 30 days)
+        days = request.args.get('days', 30, type=int)
+        start_date = datetime.now(UTC) - timedelta(days=days)
+        
+        print(f"🔍 DEBUG: Generating activity stats for last {days} days")
+        
+        # Get activity logs for the period
+        logs_response = supabase_admin.table('user_activity_log').select('*').gte('created_at', start_date.isoformat()).execute()
+        
+        logs = logs_response.data if logs_response.data else []
+        print(f"✅ DEBUG: Found {len(logs)} activities for stats calculation")
+        
+        # Calculate basic statistics
+        total_activities = len(logs)
+        unique_users = len(set([log['user_id'] for log in logs if log.get('user_id')]))
+        successful_activities = len([log for log in logs if log.get('status') == 'success'])
+        failed_activities = len([log for log in logs if log.get('status') == 'failed'])
+        
+        # Activity breakdown by type
+        activity_breakdown = {}
+        for log in logs:
+            activity_type = log.get('activity_type', 'unknown')
+            activity_breakdown[activity_type] = activity_breakdown.get(activity_type, 0) + 1
+        
+        # Most active users
+        user_activity_count = {}
+        for log in logs:
+            user_name = log.get('user_name', 'Unknown')
+            user_activity_count[user_name] = user_activity_count.get(user_name, 0) + 1
+        
+        most_active_users = sorted(user_activity_count.items(), key=lambda x: x[1], reverse=True)[:10]
+        
+        # Daily activity trend (last 7 days)
+        daily_activity = {}
+        for i in range(7):
+            date = (datetime.now(UTC) - timedelta(days=i)).date()
+            daily_activity[date.isoformat()] = 0
+        
+        for log in logs:
+            try:
+                log_date = datetime.fromisoformat(log['created_at'].replace('Z', '+00:00')).date()
+                if log_date.isoformat() in daily_activity:
+                    daily_activity[log_date.isoformat()] += 1
+            except:
+                pass
+        
+        # Prepare statistics for template
+        stats = {
+            'total_activities': total_activities,
+            'unique_users': unique_users,
+            'successful_activities': successful_activities,
+            'failed_activities': failed_activities,
+            'success_rate': round((successful_activities / total_activities * 100), 1) if total_activities > 0 else 0,
+            'activity_breakdown': sorted(activity_breakdown.items(), key=lambda x: x[1], reverse=True),
+            'most_active_users': most_active_users,
+            'daily_activity': sorted(daily_activity.items()),
+            'period_days': days
+        }
+        
+        print(f"📊 DEBUG: Stats calculated - Total: {total_activities}, Users: {unique_users}, Success: {stats['success_rate']}%")
+        
+        # Log this admin activity
+        try:
+            log_user_activity(
+                ActivityTypes.PAGE_VIEW,
+                f"Viewed activity statistics dashboard ({days} days)",
+                resource_type='admin',
+                metadata={
+                    'period_days': days,
+                    'stats_generated_at': datetime.now(UTC).isoformat(),
+                    'total_activities_analyzed': total_activities,
+                    'unique_users_analyzed': unique_users
+                }
+            )
+        except Exception as log_error:
+            print(f"Failed to log admin activity: {log_error}")
+        
+        return render_template('admin/activity_stats.html',
+                              title='Activity Statistics',
+                              stats=stats)
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to load activity statistics: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Log the error
+        try:
+            log_user_activity(
+                ActivityTypes.ERROR_OCCURRED,
+                f"Activity statistics generation failed: {str(e)}",
+                status='failed',
+                metadata={'error': str(e), 'error_type': type(e).__name__}
+            )
+        except Exception as log_error:
+            print(f"Failed to log error: {log_error}")
+        
+        flash('Error loading activity statistics. Please try again.', 'danger')
+        return redirect(url_for('dashboard'))
+
+
+# Also add this route if you want to support user-specific activity logs for admins
+@app.route('/admin/activity-logs/user/<user_id>')
+@login_required
+@require_admin_or_manager
+def user_activity_logs(user_id):
+    """View activity logs for a specific user (Admin/Manager only)"""
+    try:
+        print(f"🔍 DEBUG: Loading activity logs for user ID: {user_id}")
+        
+        # Get user information
+        user_info_response = supabase_admin.table('users').select('*').eq('id', user_id).execute()
+        user_info = user_info_response.data[0] if user_info_response.data else None
+        
+        if not user_info:
+            flash('User not found', 'danger')
+            return redirect(url_for('activity_logs'))
+        
+        # Get user's activity logs
+        logs_response = supabase_admin.table('user_activity_log').select('*').eq('user_id', user_id).order('created_at', desc=True).limit(100).execute()
+        
+        logs = logs_response.data if logs_response.data else []
+        
+        # Process logs - convert datetime strings
+        for log in logs:
+            if log.get('created_at'):
+                try:
+                    log['created_at'] = datetime.fromisoformat(log['created_at'].replace('Z', '+00:00'))
+                except:
+                    pass
+            
+            if log.get('metadata') and isinstance(log['metadata'], str):
+                try:
+                    log['metadata'] = json.loads(log['metadata'])
+                except:
+                    pass
+        
+        # Calculate user statistics
+        total_activities = len(logs)
+        successful_activities = len([log for log in logs if log.get('status') == 'success'])
+        failed_activities = len([log for log in logs if log.get('status') == 'failed'])
+        
+        # Get activity breakdown
+        activity_breakdown = {}
+        for log in logs:
+            activity_type = log.get('activity_type', 'unknown')
+            activity_breakdown[activity_type] = activity_breakdown.get(activity_type, 0) + 1
+        
+        user_stats = {
+            'total_activities': total_activities,
+            'successful_activities': successful_activities,
+            'failed_activities': failed_activities,
+            'success_rate': round((successful_activities / total_activities * 100), 1) if total_activities > 0 else 0,
+            'activity_breakdown': activity_breakdown,
+            'last_activity': logs[0]['created_at'] if logs else None
+        }
+        
+        # Log this admin activity
+        try:
+            log_user_activity(
+                ActivityTypes.PAGE_VIEW,
+                f"Viewed activity logs for user: {user_info.get('first_name', '')} {user_info.get('last_name', '')}",
+                resource_type='admin',
+                metadata={
+                    'viewed_user_id': user_id,
+                    'viewed_user_email': user_info.get('email'),
+                    'activities_viewed': total_activities
+                }
+            )
+        except Exception as log_error:
+            print(f"Failed to log admin activity: {log_error}")
+        
+        return render_template('admin/user_activity_logs.html',
+                              title=f"Activity Logs - {user_info.get('first_name', '')} {user_info.get('last_name', '')}",
+                              user_info=user_info,
+                              logs=logs,
+                              stats=user_stats)
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to load user activity logs: {e}")
+        flash('Error loading user activity logs', 'danger')
+        return redirect(url_for('activity_logs'))
+
+
+@app.route('/my-activity')
+@login_required
+def my_activity():
+    """View current user's own activity logs"""
+    try:
+        # Get current user's activity logs
+        logs_response = supabase_admin.table('user_activity_log').select('*').eq('user_id', current_user.id).order('created_at', desc=True).limit(50).execute()
+        
+        logs = logs_response.data if logs_response.data else []
+        
+        # Process logs
+        for log in logs:
+            if log.get('created_at'):
+                try:
+                    log['created_at'] = datetime.fromisoformat(log['created_at'].replace('Z', '+00:00'))
+                except:
+                    pass
+            
+            if log.get('metadata') and isinstance(log['metadata'], str):
+                try:
+                    log['metadata'] = json.loads(log['metadata'])
+                except:
+                    pass
+        
+        # Log this page view
+        try:
+            log_user_activity(
+                ActivityTypes.PAGE_VIEW,
+                "Viewed own activity history",
+                resource_type='profile'
+            )
+        except Exception as log_error:
+            print(f"Failed to log activity view: {log_error}")
+        
+        return render_template('profile/my_activity.html',
+                              title='My Activity History',
+                              logs=logs)
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to load user's own activity logs: {e}")
+        flash('Error loading your activity history', 'danger')
+        return redirect(url_for('dashboard'))
+
+# ===============================
+# ADDITIONAL HELPER FUNCTIONS FOR ENHANCED BOOKING SYSTEM
+# ===============================
+
+def safe_float_conversion(value, default=0.0):
+    """Safely convert value to float with fallback"""
+    try:
+        if value is None:
+            return default
+        return float(value)
+    except (ValueError, TypeError):
+        return default
+
+def safe_int_conversion(value, default=0):
+    """Safely convert value to int with fallback"""
+    try:
+        if value is None:
+            return default
+        return int(value)
+    except (ValueError, TypeError):
+        return default
+
+def get_booking_with_details(booking_id):
+    """Get booking with all related details in a robust way"""
+    try:
+        print(f"🔍 DEBUG: Fetching complete booking details for ID {booking_id}")
+        
+        # Get basic booking data
+        booking_response = supabase_admin.table('bookings').select('*').eq('id', booking_id).execute()
+        
+        if not booking_response.data:
+            return None
+        
+        booking = booking_response.data[0]
+        
+        # Get room data
+        if booking.get('room_id'):
+            room_response = supabase_admin.table('rooms').select('*').eq('id', booking['room_id']).execute()
+            booking['room'] = room_response.data[0] if room_response.data else None
+        
+        # Get client data
+        if booking.get('client_id'):
+            client_response = supabase_admin.table('clients').select('*').eq('id', booking['client_id']).execute()
+            booking['client'] = client_response.data[0] if client_response.data else None
+        
+        # Get booking addons
+        booking_addons = []
+        try:
+            ba_response = supabase_admin.table('booking_addons').select('*').eq('booking_id', booking_id).execute()
+            
+            for ba in ba_response.data if ba_response.data else []:
+                if ba.get('addon_id'):
+                    addon_response = supabase_admin.table('addons').select('*').eq('id', ba['addon_id']).execute()
+                    if addon_response.data:
+                        addon = addon_response.data[0]
+                        ba['addon'] = addon
+                        booking_addons.append(ba)
+        except Exception as addon_error:
+            print(f"Warning: Error fetching addons: {addon_error}")
+        
+        booking['booking_addons'] = booking_addons
+        
+        # Convert datetime strings
+        booking = convert_datetime_strings(booking)
+        
+        print(f"✅ DEBUG: Successfully fetched complete booking details")
+        return booking
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to fetch booking details: {e}")
+        return None
+
+def calculate_booking_totals(booking, room_rates=None):
+    """Calculate all booking totals including room rate, addons, VAT, etc."""
+    try:
+        # Parse times safely
+        if isinstance(booking.get('start_time'), str):
+            start_time = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00')).replace(tzinfo=None)
+            end_time = datetime.fromisoformat(booking['end_time'].replace('Z', '+00:00')).replace(tzinfo=None)
+        else:
+            start_time = booking.get('start_time')
+            end_time = booking.get('end_time')
+        
+        if not start_time or not end_time:
+            # Use fallback values
+            duration_hours = 4
+            room_rate = safe_float_conversion(booking.get('total_price', 0)) * 0.7
+            rate_type = "Estimated Rate"
+        else:
+            duration_hours = (end_time - start_time).total_seconds() / 3600
+            
+            # Get room rates
+            if room_rates:
+                hourly_rate = safe_float_conversion(room_rates.get('hourly_rate', 0))
+                half_day_rate = safe_float_conversion(room_rates.get('half_day_rate', 0))
+                full_day_rate = safe_float_conversion(room_rates.get('full_day_rate', 0))
+            else:
+                # Use booking's room data or fallback
+                room = booking.get('room', {})
+                hourly_rate = safe_float_conversion(room.get('hourly_rate', 50))
+                half_day_rate = safe_float_conversion(room.get('half_day_rate', 200))
+                full_day_rate = safe_float_conversion(room.get('full_day_rate', 350))
+            
+            # Calculate room rate based on duration
+            if duration_hours <= 4:
+                room_rate = hourly_rate * duration_hours
+                rate_type = f"Hourly Rate ({duration_hours:.1f} hours)"
+            elif duration_hours <= 6:
+                room_rate = half_day_rate
+                rate_type = "Half-day Rate"
+            else:
+                room_rate = full_day_rate
+                rate_type = "Full-day Rate"
+        
+        # Calculate addons total
+        addons_total = 0
+        addon_items = []
+        
+        for ba in booking.get('booking_addons', []):
+            if ba.get('addon'):
+                addon = ba['addon']
+                quantity = safe_int_conversion(ba.get('quantity', 1), 1)
+                price = safe_float_conversion(addon.get('price', 0))
+                total = price * quantity
+                addons_total += total
+                
+                # Get category name
+                category_name = 'Other'
+                if addon.get('category_id'):
+                    try:
+                        cat_response = supabase_admin.table('addon_categories').select('name').eq('id', addon['category_id']).execute()
+                        if cat_response.data:
+                            category_name = cat_response.data[0]['name']
+                    except:
+                        pass
+                
+                addon_items.append({
+                    'name': addon.get('name', 'Unknown Addon'),
+                    'category': category_name,
+                    'price': price,
+                    'quantity': quantity,
+                    'total': total
+                })
+        
+        # Calculate discount and totals
+        discount = safe_float_conversion(booking.get('discount', 0))
+        subtotal = max(room_rate + addons_total - discount, 0)
+        vat_rate = 0.15
+        vat_amount = subtotal * vat_rate
+        total_with_vat = subtotal + vat_amount
+        
+        return {
+            'room_rate': round(room_rate, 2),
+            'rate_type': rate_type,
+            'addons_total': round(addons_total, 2),
+            'addon_items': addon_items,
+            'duration_hours': round(duration_hours, 1),
+            'discount': discount,
+            'subtotal': round(subtotal, 2),
+            'vat_amount': round(vat_amount, 2),
+            'total_with_vat': round(total_with_vat, 2)
+        }
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to calculate booking totals: {e}")
+        # Return safe fallback values
+        total_price = safe_float_conversion(booking.get('total_price', 100))
+        return {
+            'room_rate': round(total_price * 0.7, 2),
+            'rate_type': 'Estimated Rate',
+            'addons_total': round(total_price * 0.3, 2),
+            'addon_items': [],
+            'duration_hours': 4,
+            'discount': 0,
+            'subtotal': round(total_price / 1.15, 2),
+            'vat_amount': round(total_price - (total_price / 1.15), 2),
+            'total_with_vat': round(total_price, 2)
+        }
+
+# ===============================
+# ENHANCED VIEW BOOKING ROUTE
+# ===============================
+
+@app.route('/bookings/<int:id>')
+@login_required
+def view_booking(id):
+    """View booking details with enhanced error handling and complete data"""
+    try:
+        print(f"🔍 DEBUG: Loading booking details for ID {id}")
+        
+        # Get complete booking details
+        booking = get_booking_with_details(id)
+        
+        if not booking:
+            flash('Booking not found', 'danger')
+            return redirect(url_for('bookings'))
+        
+        # Calculate totals
+        totals = calculate_booking_totals(booking)
+        
+        # Add calculated fields to booking
+        booking.update(totals)
+        
+        # Log page view
+        try:
+            log_user_activity(
+                ActivityTypes.PAGE_VIEW,
+                f"Viewed booking details for '{booking.get('title', 'Unknown Event')}'",
+                resource_type='booking',
+                resource_id=id,
+                metadata={
+                    'booking_status': booking.get('status'),
+                    'client_name': booking.get('client', {}).get('company_name') or booking.get('client', {}).get('contact_person'),
+                    'room_name': booking.get('room', {}).get('name')
+                }
+            )
+        except Exception as log_error:
+            print(f"Failed to log booking view: {log_error}")
+        
+        print(f"✅ DEBUG: Successfully loaded booking '{booking.get('title', 'Unknown')}'")
+        
+        return render_template('bookings/view.html', 
+                             title=f'Booking: {booking["title"]}', 
+                             booking=booking)
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to load booking details: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        try:
+            log_user_activity(
+                ActivityTypes.ERROR_OCCURRED,
+                f"Error viewing booking ID {id}: {str(e)}",
+                resource_type='booking',
+                resource_id=id,
+                status='failed',
+                metadata={'error': str(e)}
+            )
+        except Exception as log_error:
+            print(f"Failed to log booking view error: {log_error}")
+        
+        flash('Error loading booking details. Please try again.', 'danger')
+        return redirect(url_for('bookings'))
+
+# ===============================
+# ENHANCED NOTIFICATION SYSTEM
+# ===============================
+
+def create_booking_notification(booking_id, notification_type, message, priority='normal'):
+    """Create a notification for booking-related events"""
+    try:
+        notification_data = {
+            'booking_id': booking_id,
+            'user_id': current_user.id if current_user.is_authenticated else None,
+            'type': notification_type,
+            'message': message,
+            'priority': priority,
+            'is_read': False,
+            'created_at': datetime.now(UTC).isoformat()
+        }
+        
+        # You could store these in a notifications table if you have one
+        # For now, we'll use the activity log system
+        log_user_activity(
+            f'notification_{notification_type}',
+            message,
+            resource_type='notification',
+            resource_id=booking_id,
+            metadata={'priority': priority, 'notification_type': notification_type}
+        )
+        
+        return True
+        
+    except Exception as e:
+        print(f"Failed to create notification: {e}")
+        return False
+
+def send_booking_status_notification(booking_id, old_status, new_status):
+    """Send notification when booking status changes"""
+    try:
+        booking = get_booking_with_details(booking_id)
+        if not booking:
+            return False
+        
+        client_name = 'Unknown Client'
+        if booking.get('client'):
+            client_name = booking['client'].get('company_name') or booking['client'].get('contact_person', 'Unknown Client')
+        
+        status_messages = {
+            'tentative': f"📋 Booking '{booking['title']}' for {client_name} is now tentative. Quotation can be generated.",
+            'confirmed': f"✅ Booking '{booking['title']}' for {client_name} has been confirmed! Invoice can now be generated.",
+            'cancelled': f"❌ Booking '{booking['title']}' for {client_name} has been cancelled."
+        }
+        
+        message = status_messages.get(new_status, f"Booking status updated to {new_status}")
+        priority = 'high' if new_status == 'confirmed' else 'normal'
+        
+        create_booking_notification(booking_id, 'status_change', message, priority)
+        
+        return True
+        
+    except Exception as e:
+        print(f"Failed to send status notification: {e}")
+        return False
+
+# ===============================
+# ENHANCED TEMPLATE FILTERS
+# ===============================
+
+@app.template_filter('money')
+def money_filter(amount):
+    """Format money amounts consistently"""
+    try:
+        if amount is None:
+            return "$0.00"
+        return f"${float(amount):.2f}"
+    except (ValueError, TypeError):
+        return "$0.00"
+
+@app.template_filter('duration')
+def duration_filter(hours):
+    """Format duration in hours to human readable format"""
+    try:
+        hours = float(hours)
+        if hours < 1:
+            minutes = int(hours * 60)
+            return f"{minutes} minutes"
+        elif hours == 1:
+            return "1 hour"
+        elif hours < 24:
+            return f"{hours:.1f} hours"
+        else:
+            days = int(hours // 24)
+            remaining_hours = hours % 24
+            if remaining_hours == 0:
+                return f"{days} day{'s' if days > 1 else ''}"
+            else:
+                return f"{days} day{'s' if days > 1 else ''} {remaining_hours:.1f} hours"
+    except (ValueError, TypeError):
+        return "Unknown duration"
+
+@app.template_filter('booking_status_color')
+def booking_status_color_filter(status):
+    """Get Bootstrap color class for booking status"""
+    status_colors = {
+        'tentative': 'warning',
+        'confirmed': 'success',
+        'cancelled': 'danger',
+        'completed': 'info'
+    }
+    return status_colors.get(status, 'secondary')
+
+@app.template_filter('nl2br')
+def nl2br_filter(text):
+    """Convert newlines to HTML breaks"""
+    if not text:
+        return ''
+    return text.replace('\n', '<br>')
+
+# ===============================
+# ERROR RECOVERY FUNCTIONS
+# ===============================
+
+def recover_booking_data(booking_id):
+    """Attempt to recover missing booking data"""
+    try:
+        print(f"🔧 DEBUG: Attempting to recover data for booking {booking_id}")
+        
+        # Get basic booking
+        booking_response = supabase_admin.table('bookings').select('*').eq('id', booking_id).execute()
+        
+        if not booking_response.data:
+            return None
+        
+        booking = booking_response.data[0]
+        
+        # Check and recover room data
+        if booking.get('room_id') and not booking.get('room'):
+            room_response = supabase_admin.table('rooms').select('*').eq('id', booking['room_id']).execute()
+            if room_response.data:
+                booking['room'] = room_response.data[0]
+                print(f"✅ DEBUG: Recovered room data for booking {booking_id}")
+        
+        # Check and recover client data
+        if booking.get('client_id') and not booking.get('client'):
+            client_response = supabase_admin.table('clients').select('*').eq('id', booking['client_id']).execute()
+            if client_response.data:
+                booking['client'] = client_response.data[0]
+                print(f"✅ DEBUG: Recovered client data for booking {booking_id}")
+        
+        return booking
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to recover booking data: {e}")
+        return None
+
+# ===============================
+# VALIDATION HELPERS
+# ===============================
+
+def validate_booking_times(start_time, end_time):
+    """Validate booking start and end times"""
+    errors = []
+    
+    try:
+        # Ensure end time is after start time
+        if end_time <= start_time:
+            errors.append("End time must be after start time")
+        
+        # Check if booking is in the past
+        if start_time < datetime.now(UTC):
+            errors.append("Booking cannot be scheduled in the past")
+        
+        # Check if booking is too far in the future (optional)
+        max_future = datetime.now(UTC) + timedelta(days=365)
+        if start_time > max_future:
+            errors.append("Booking cannot be scheduled more than 1 year in advance")
+        
+        # Check business hours (optional - customize as needed)
+        if start_time.hour < 6 or start_time.hour > 22:
+            errors.append("Bookings must be within business hours (6 AM - 10 PM)")
+        
+        if end_time.hour < 6 or end_time.hour > 23:
+            errors.append("Bookings must end within business hours (6 AM - 11 PM)")
+        
+        # Check duration limits
+        duration_hours = (end_time - start_time).total_seconds() / 3600
+        if duration_hours > 12:
+            errors.append("Bookings cannot exceed 12 hours")
+        
+        if duration_hours < 0.5:
+            errors.append("Bookings must be at least 30 minutes long")
+    
+    except Exception as e:
+        errors.append(f"Invalid date/time format: {str(e)}")
+    
+    return errors
+
+def validate_booking_capacity(room_id, attendees):
+    """Validate that room capacity is sufficient for attendees"""
+    try:
+        if not attendees or attendees <= 0:
+            return []  # No validation needed if attendees not specified
+        
+        room_response = supabase_admin.table('rooms').select('name, capacity').eq('id', room_id).execute()
+        
+        if not room_response.data:
+            return ["Selected room not found"]
+        
+        room = room_response.data[0]
+        capacity = room.get('capacity', 0)
+        
+        if attendees > capacity:
+            return [f"Room '{room['name']}' has capacity for {capacity} people, but {attendees} attendees specified"]
+        
+        if attendees > capacity * 0.9:  # Warn if over 90% capacity
+            return [f"Warning: Room will be at {(attendees/capacity*100):.0f}% capacity"]
+        
+        return []
+        
+    except Exception as e:
+        return [f"Error validating room capacity: {str(e)}"]
 
 # ===============================
 # Main Entry Point

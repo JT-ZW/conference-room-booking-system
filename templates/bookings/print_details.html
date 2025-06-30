@@ -5,294 +5,551 @@ Conference Booking{% endblock %} {% block extra_css %}
     .no-print {
       display: none !important;
     }
-
     body {
       background-color: white !important;
     }
-
     .container {
       max-width: 100% !important;
       width: 100% !important;
     }
-
     .card {
       border: none !important;
       box-shadow: none !important;
     }
-
     .page-break {
       page-break-after: always;
+    }
+    .booking-header {
+      background: white !important;
+      color: black !important;
+    }
+    .accommodation-details {
+      background: white !important;
+      color: black !important;
+      border: 1px solid #ccc !important;
+    }
+    .status-banners {
+      background: white !important;
+      color: black !important;
+      border: 1px solid #ccc !important;
     }
   }
 
   .booking-header {
-    border-left: 4px solid;
-    padding-left: 1rem;
+    border-left: 6px solid;
+    padding-left: 1.5rem;
+    margin-bottom: 2rem;
   }
 
   .booking-tentative {
     border-color: #f6c23e;
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
   }
   .booking-confirmed {
     border-color: #1cc88a;
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
   }
   .booking-cancelled {
     border-color: #e74a3b;
+    background: linear-gradient(135deg, #f8d7da 0%, #f1aeb5 100%);
   }
 
   .detail-section {
-    margin-bottom: 25px;
+    margin-bottom: 35px;
+    background: #f8f9fc;
+    padding: 25px;
+    border-radius: 10px;
+    border-left: 4px solid #4e73df;
   }
 
   .detail-section-title {
-    font-size: 18px;
+    font-size: 20px;
     color: #4e73df;
-    margin-bottom: 15px;
-    padding-bottom: 5px;
-    border-bottom: 1px solid #e3e6f0;
+    margin-bottom: 20px;
+    padding-bottom: 8px;
+    border-bottom: 2px solid #e3e6f0;
+    display: flex;
+    align-items: center;
   }
 
   .detail-label {
     font-weight: bold;
+    color: #2e59d9;
+    font-size: 0.95em;
+  }
+
+  .detail-value {
     color: #5a5c69;
+    font-size: 0.95em;
   }
 
   .addon-badge {
-    background-color: #f8f9fc;
-    color: #4e73df;
-    border: 1px solid #e3e6f0;
+    background: linear-gradient(135deg, #4e73df 0%, #3c5aa6 100%);
+    color: white;
+    border: none;
     font-size: 0.85rem;
-    padding: 0.5rem 0.75rem;
-    border-radius: 0.25rem;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
     margin-right: 0.5rem;
     margin-bottom: 0.5rem;
     display: inline-block;
+    font-weight: 500;
   }
 
   .accommodation-details {
-    background-color: #f8f9fc;
-    border-left: 4px solid #4e73df;
-    padding: 15px;
-    margin-bottom: 20px;
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-left: 5px solid #2196f3;
+    padding: 20px;
+    margin-bottom: 25px;
+    border-radius: 8px;
   }
 
   .print-footer {
-    margin-top: 50px;
-    padding-top: 15px;
-    border-top: 1px solid #e3e6f0;
+    margin-top: 60px;
+    padding-top: 25px;
+    border-top: 2px solid #e3e6f0;
     text-align: center;
-    font-size: 0.85rem;
+    font-size: 0.9rem;
     color: #666;
   }
 
   .confirmation-banner {
-    background-color: #1cc88a;
+    background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
     color: white;
-    padding: 15px;
-    margin-bottom: 25px;
-    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 30px;
+    border-radius: 12px;
     text-align: center;
+    animation: fadeInDown 0.6s ease-out;
   }
 
   .tentative-banner {
-    background-color: #f6c23e;
+    background: linear-gradient(135deg, #f6c23e 0%, #d4a843 100%);
     color: white;
-    padding: 15px;
-    margin-bottom: 25px;
-    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 30px;
+    border-radius: 12px;
     text-align: center;
+    animation: fadeInDown 0.6s ease-out;
   }
 
   .cancelled-banner {
-    background-color: #e74a3b;
+    background: linear-gradient(135deg, #e74a3b 0%, #c23321 100%);
     color: white;
-    padding: 15px;
-    margin-bottom: 25px;
-    border-radius: 5px;
+    padding: 20px;
+    margin-bottom: 30px;
+    border-radius: 12px;
     text-align: center;
+    animation: fadeInDown 0.6s ease-out;
+  }
+
+  @keyframes fadeInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .venue-map {
     width: 100%;
-    height: 200px;
-    background-color: #f8f9fc;
-    border: 1px solid #e3e6f0;
-    margin-top: 15px;
+    height: 250px;
+    background: linear-gradient(135deg, #f8f9fc 0%, #e3e6f0 100%);
+    border: 2px dashed #4e73df;
+    border-radius: 10px;
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
   }
 
   .qr-code {
     text-align: center;
-    margin-bottom: 20px;
+    margin-bottom: 30px;
+    padding: 25px;
+    background: linear-gradient(135deg, #f8f9fc 0%, #e3e6f0 100%);
+    border-radius: 15px;
+    border: 3px dashed #4e73df;
   }
 
   .qr-code img {
-    max-width: 120px;
+    max-width: 140px;
+    border: 4px solid #4e73df;
+    border-radius: 12px;
+    padding: 12px;
+    background: white;
+  }
+
+  .action-buttons {
+    background: linear-gradient(135deg, #858796 0%, #60616f 100%);
+    color: white;
+    padding: 25px;
+    border-radius: 15px;
+    margin-bottom: 25px;
+  }
+
+  .btn-enhanced {
+    border-radius: 25px;
+    padding: 10px 20px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+  }
+
+  .btn-enhanced:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .error-notice {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border-left: 4px solid #f6c23e;
+    color: #856404;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 25px 0;
+  }
+
+  .success-highlight {
+    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+    border-left: 5px solid #28a745;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+  }
+
+  .price-summary {
+    background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+    border-left: 5px solid #f6c23e;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+  }
+
+  .terms-section {
+    background: linear-gradient(135deg, #f8f9fc 0%, #e3e6f0 100%);
+    border-left: 5px solid #6f42c1;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+  }
+
+  .contact-section {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border-left: 5px solid #2196f3;
+    padding: 20px;
+    border-radius: 8px;
+    margin: 20px 0;
+  }
+
+  .company-header {
+    background: linear-gradient(135deg, #4e73df 0%, #3c5aa6 100%);
+    color: white;
+    padding: 2rem;
+    border-radius: 15px;
+    margin-bottom: 2rem;
+    text-align: center;
+  }
+
+  .booking-meta {
+    font-size: 0.9em;
+    color: #6c757d;
+    margin-top: 0.5rem;
+  }
+
+  .amenity-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-top: 15px;
+  }
+
+  .amenity-item {
+    background: #e3f2fd;
+    color: #1976d2;
+    padding: 8px 12px;
+    border-radius: 15px;
+    font-size: 0.9em;
+    text-align: center;
+  }
+
+  .data-warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
   }
 </style>
 {% endblock %} {% block content %}
-<!-- Action Buttons (Not Printed) -->
-<div class="d-flex justify-content-between align-items-center mb-4 no-print">
-  <h1 class="booking-header booking-{{ booking.status }}">Booking Details</h1>
-  <div>
-    <a
-      href="{{ url_for('view_booking', id=booking.id) }}"
-      class="btn btn-outline-secondary me-2"
-    >
-      <i class="fas fa-arrow-left me-1"></i>Back to Booking
-    </a>
-    <button
-      type="button"
-      class="btn btn-outline-primary me-2"
-      onclick="window.print()"
-    >
-      <i class="fas fa-print me-1"></i>Print Details
-    </button>
-    <button type="button" class="btn btn-primary" id="downloadPdf">
-      <i class="fas fa-download me-1"></i>Download PDF
-    </button>
+<!-- Enhanced Action Buttons (Not Printed) -->
+<div class="action-buttons no-print">
+  <div class="d-flex justify-content-between align-items-center">
+    <div>
+      <h2 class="mb-1"><i class="fas fa-file-alt me-2"></i>Booking Details</h2>
+      <p class="mb-0 opacity-75">
+        Complete booking information for printing and reference
+      </p>
+    </div>
+    <div class="btn-group">
+      <a
+        href="{{ url_for('view_booking', id=booking.id) }}"
+        class="btn btn-light btn-enhanced"
+      >
+        <i class="fas fa-arrow-left me-2"></i>Back to Booking
+      </a>
+      <button
+        type="button"
+        class="btn btn-light btn-enhanced"
+        onclick="window.print()"
+      >
+        <i class="fas fa-print me-2"></i>Print Details
+      </button>
+      <button
+        type="button"
+        class="btn btn-primary btn-enhanced"
+        id="downloadPdf"
+      >
+        <i class="fas fa-download me-2"></i>Download PDF
+      </button>
+    </div>
   </div>
 </div>
 
 <!-- Printable Booking Details -->
-<div class="card shadow-sm border-0">
+<div class="card shadow-lg border-0">
   <div class="card-body p-4" id="booking-details-content">
-    <!-- Logo and Company Header -->
-    <div class="row mb-4">
-      <div class="col-md-6">
-        <h1>Rainbow Towers</h1>
-        <p>Hotel & Conference Centre</p>
-      </div>
-      <div class="col-md-6 text-md-end">
-        <img
-          src="/static/img/logo.png"
-          alt="Rainbow Towers Logo"
-          style="max-height: 80px"
-        />
-      </div>
-    </div>
-
-    <!-- Status Banner -->
-    {% if booking.status == 'confirmed' %}
-    <div class="confirmation-banner">
-      <h4 class="mb-0">
-        <i class="fas fa-check-circle me-2"></i>CONFIRMED BOOKING
-      </h4>
-    </div>
-    {% elif booking.status == 'tentative' %}
-    <div class="tentative-banner">
-      <h4 class="mb-0">
-        <i class="fas fa-exclamation-circle me-2"></i>TENTATIVE BOOKING
-      </h4>
-      <p class="mb-0 small">
-        This booking is tentative and requires confirmation.
-      </p>
-    </div>
-    {% else %}
-    <div class="cancelled-banner">
-      <h4 class="mb-0"><i class="fas fa-ban me-2"></i>CANCELLED BOOKING</h4>
-    </div>
-    {% endif %}
-
-    <!-- Event & QR Code -->
-    <div class="row mb-4">
-      <div class="col-md-8">
-        <h2 class="mb-1">{{ booking.title }}</h2>
-        <p class="lead mb-0">
-          Booking Reference: <strong>BK-{{ booking.id }}</strong>
-        </p>
-      </div>
-      <div class="col-md-4">
-        <div class="qr-code">
+    <!-- Enhanced Company Header -->
+    <div class="company-header">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <h1 class="mb-1">Rainbow Towers</h1>
+          <h4 class="mb-0 opacity-75">Hotel & Conference Centre</h4>
+        </div>
+        <div class="col-md-4 text-end">
           <img
-            src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=BK-{{ booking.id }}"
-            alt="Booking QR Code"
+            src="/static/img/logo.png"
+            alt="Rainbow Towers Logo"
+            style="max-height: 80px; filter: brightness(0) invert(1)"
           />
-          <div class="small text-muted mt-1">Scan for quick check-in</div>
         </div>
       </div>
     </div>
 
-    <!-- Main Details -->
+    <!-- Error Handling Notice -->
+    {% if not booking.room or not booking.client %}
+    <div class="error-notice">
+      <i class="fas fa-exclamation-triangle me-2"></i>
+      <strong>Notice:</strong> Some booking details may be incomplete or
+      unavailable. {% if not booking.room %} <br />• Room information missing or
+      incomplete {% endif %} {% if not booking.client %} <br />• Client
+      information missing or incomplete {% endif %}
+    </div>
+    {% endif %}
+
+    <!-- Enhanced Status Banner -->
+    {% if booking.status == 'confirmed' %}
+    <div class="confirmation-banner">
+      <h3 class="mb-2">
+        <i class="fas fa-check-circle fa-2x me-3"></i>
+        CONFIRMED BOOKING
+      </h3>
+      <p class="mb-0 fs-5">
+        This booking has been confirmed and is ready for the event.
+      </p>
+    </div>
+    {% elif booking.status == 'tentative' %}
+    <div class="tentative-banner">
+      <h3 class="mb-2">
+        <i class="fas fa-clock fa-2x me-3"></i>
+        TENTATIVE BOOKING
+      </h3>
+      <p class="mb-0 fs-5">
+        This booking is tentative and requires confirmation.
+      </p>
+    </div>
+    {% elif booking.status == 'cancelled' %}
+    <div class="cancelled-banner">
+      <h3 class="mb-2">
+        <i class="fas fa-ban fa-2x me-3"></i>
+        CANCELLED BOOKING
+      </h3>
+      <p class="mb-0 fs-5">This booking has been cancelled.</p>
+    </div>
+    {% endif %}
+
+    <!-- Event Title & QR Code -->
+    <div class="row mb-4">
+      <div class="col-md-8">
+        <div class="booking-header booking-{{ booking.status or 'tentative' }}">
+          <h2 class="mb-2">
+            {{ booking.title or 'Event Title Not Specified' }}
+          </h2>
+          <div class="booking-meta">
+            <strong>Booking Reference:</strong> BK-{{ booking.id }}
+            <span class="ms-3"
+              ><strong>Created:</strong> {{ booking.created_at.strftime('%d %B
+              %Y') if booking.created_at else 'Date not available' }}</span
+            >
+          </div>
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="qr-code">
+          <img
+            src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data=BK-{{ booking.id }}"
+            alt="Booking QR Code"
+          />
+          <div class="fw-bold mt-3 text-primary">Scan for quick check-in</div>
+          <small class="text-muted">BK-{{ booking.id }}</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Details Grid -->
     <div class="row">
       <!-- Left Column -->
       <div class="col-md-6">
-        <!-- Event Details -->
+        <!-- Enhanced Event Details -->
         <div class="detail-section">
           <h3 class="detail-section-title">
             <i class="fas fa-calendar-alt me-2"></i>Event Details
           </h3>
           <div class="row mb-3">
+            <div class="col-sm-4 detail-label">Event Title:</div>
+            <div class="col-sm-8 detail-value">
+              {{ booking.title or 'Not specified' }}
+            </div>
+          </div>
+          <div class="row mb-3">
             <div class="col-sm-4 detail-label">Date:</div>
-            <div class="col-sm-8">
-              {{ booking.start_time.strftime('%A, %d %B %Y') }}
+            <div class="col-sm-8 detail-value">
+              {% if booking.start_time %} {{ booking.start_time.strftime('%A, %d
+              %B %Y') if booking.start_time and not booking.start_time is string
+              else booking.start_time[:10] if booking.start_time else 'To be
+              determined' }} {% else %} To be determined {% endif %}
             </div>
           </div>
           <div class="row mb-3">
             <div class="col-sm-4 detail-label">Time:</div>
-            <div class="col-sm-8">
-              {{ booking.start_time.strftime('%H:%M') }} - {{
-              booking.end_time.strftime('%H:%M') }}
+            <div class="col-sm-8 detail-value">
+              {% if booking.start_time and booking.end_time %} {{
+              booking.start_time.strftime('%H:%M') if booking.start_time and not
+              booking.start_time is string else booking.start_time[11:16] if
+              booking.start_time else 'TBD' }} - {{
+              booking.end_time.strftime('%H:%M') if booking.end_time and not
+              booking.end_time is string else booking.end_time[11:16] if
+              booking.end_time else 'TBD' }} {% else %} To be determined {%
+              endif %}
             </div>
           </div>
           <div class="row mb-3">
             <div class="col-sm-4 detail-label">Duration:</div>
-            <div class="col-sm-8">
-              {% set duration = (booking.end_time -
-              booking.start_time).total_seconds() / 3600 %} {{ duration|round(1)
-              }} hours {% if duration <= 4 %} (Hourly Rate) {% elif duration <=
-              6 %} (Half-day Rate) {% else %} (Full-day Rate) {% endif %}
+            <div class="col-sm-8 detail-value">
+              {% if booking.start_time and booking.end_time %} {% if
+              booking.start_time is string %} {% set duration_hours = 4 %} {%
+              else %} {% set duration_hours = ((booking.end_time -
+              booking.start_time).total_seconds() / 3600) %} {% endif %} {{
+              duration_hours|round(1) }} hours {% if duration_hours <= 4 %}
+              (Hourly Rate) {% elif duration_hours <= 6 %} (Half-day Rate) {%
+              else %} (Full-day Rate) {% endif %} {% else %} Duration to be
+              confirmed {% endif %}
             </div>
           </div>
           <div class="row mb-3">
             <div class="col-sm-4 detail-label">Attendees:</div>
-            <div class="col-sm-8">
+            <div class="col-sm-8 detail-value">
               {{ booking.attendees or 'Not specified' }}
+            </div>
+          </div>
+          <div class="row mb-0">
+            <div class="col-sm-4 detail-label">Status:</div>
+            <div class="col-sm-8">
+              <span
+                class="badge bg-{{ booking.status|booking_status_color }} px-3 py-2"
+              >
+                {% if booking.status == 'confirmed' %}
+                <i class="fas fa-check me-1"></i>Confirmed {% elif
+                booking.status == 'tentative' %}
+                <i class="fas fa-clock me-1"></i>Tentative {% elif
+                booking.status == 'cancelled' %}
+                <i class="fas fa-ban me-1"></i>Cancelled {% else %} {{
+                booking.status|title or 'Pending' }} {% endif %}
+              </span>
             </div>
           </div>
         </div>
 
-        <!-- Venue Details -->
+        <!-- Enhanced Venue Details -->
         <div class="detail-section">
           <h3 class="detail-section-title">
             <i class="fas fa-map-marker-alt me-2"></i>Venue Details
           </h3>
+
+          {% if booking.room %}
           <div class="row mb-3">
             <div class="col-sm-4 detail-label">Room:</div>
-            <div class="col-sm-8">{{ booking.room.name }}</div>
+            <div class="col-sm-8 detail-value">{{ booking.room.name }}</div>
           </div>
           <div class="row mb-3">
             <div class="col-sm-4 detail-label">Capacity:</div>
-            <div class="col-sm-8">{{ booking.room.capacity }} people</div>
-          </div>
-          <div class="row mb-3">
-            <div class="col-sm-4 detail-label">Location:</div>
-            <div class="col-sm-8">
-              Rainbow Towers Hotel & Conference Centre<br />Harare, Zimbabwe
+            <div class="col-sm-8 detail-value">
+              {{ booking.room.capacity or 'Not specified' }} people
             </div>
           </div>
-          {% if booking.room.amenities %}
+          <div class="row mb-3">
+            <div class="col-sm-4 detail-label">Description:</div>
+            <div class="col-sm-8 detail-value">
+              {{ booking.room.description or 'No description available' }}
+            </div>
+          </div>
+          {% else %}
+          <div class="data-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>Room information not
+            available
+          </div>
+          {% endif %}
+
+          <div class="row mb-3">
+            <div class="col-sm-4 detail-label">Location:</div>
+            <div class="col-sm-8 detail-value">
+              Rainbow Towers Hotel & Conference Centre<br />
+              Harare, Zimbabwe
+            </div>
+          </div>
+
+          {% if booking.room and booking.room.amenities %}
           <div class="row mb-3">
             <div class="col-sm-4 detail-label">Amenities:</div>
             <div class="col-sm-8">
-              {% for amenity in booking.room.amenities_list %}
-              <div class="addon-badge">{{ amenity }}</div>
-              {% endfor %}
+              <div class="amenity-grid">
+                {% if booking.room.amenities is string %} {% for amenity in
+                booking.room.amenities.split(',') %}
+                <div class="amenity-item">
+                  <i class="fas fa-check me-1"></i>{{ amenity.strip() }}
+                </div>
+                {% endfor %} {% elif booking.room.amenities is iterable %} {%
+                for amenity in booking.room.amenities %}
+                <div class="amenity-item">
+                  <i class="fas fa-check me-1"></i>{{ amenity }}
+                </div>
+                {% endfor %} {% endif %}
+              </div>
             </div>
           </div>
           {% endif %}
+
           <div class="venue-map">
-            <!-- You could replace this with a static map image of the hotel -->
-            <div
-              style="
-                width: 100%;
-                height: 100%;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                background-color: #eaecf4;
-              "
-            >
-              <i class="fas fa-map fa-3x text-muted"></i>
+            <div class="text-center">
+              <i class="fas fa-map fa-4x text-muted mb-3"></i>
+              <div class="text-muted">
+                <strong>Rainbow Towers Location</strong><br />
+                Detailed venue map available at reception
+              </div>
             </div>
           </div>
         </div>
@@ -300,58 +557,84 @@ Conference Booking{% endblock %} {% block extra_css %}
 
       <!-- Right Column -->
       <div class="col-md-6">
-        <!-- Client Details -->
+        <!-- Enhanced Client Details -->
         <div class="detail-section">
           <h3 class="detail-section-title">
             <i class="fas fa-user me-2"></i>Client Information
           </h3>
+
+          {% if booking.client %}
           <div class="row mb-3">
             <div class="col-sm-4 detail-label">Organization:</div>
-            <div class="col-sm-8">
+            <div class="col-sm-8 detail-value">
               {{ booking.client.company_name or 'Individual Client' }}
             </div>
           </div>
           <div class="row mb-3">
-            <div class="col-sm-4 detail-label">Contact:</div>
-            <div class="col-sm-8">{{ booking.client.contact_person }}</div>
+            <div class="col-sm-4 detail-label">Contact Person:</div>
+            <div class="col-sm-8 detail-value">
+              {{ booking.client.contact_person or 'Not specified' }}
+            </div>
           </div>
           <div class="row mb-3">
             <div class="col-sm-4 detail-label">Email:</div>
-            <div class="col-sm-8">{{ booking.client.email }}</div>
+            <div class="col-sm-8 detail-value">
+              {{ booking.client.email or 'Not provided' }}
+            </div>
           </div>
           {% if booking.client.phone %}
           <div class="row mb-3">
             <div class="col-sm-4 detail-label">Phone:</div>
-            <div class="col-sm-8">{{ booking.client.phone }}</div>
+            <div class="col-sm-8 detail-value">{{ booking.client.phone }}</div>
           </div>
           {% endif %} {% if booking.client.address %}
-          <div class="row mb-3">
+          <div class="row mb-0">
             <div class="col-sm-4 detail-label">Address:</div>
-            <div class="col-sm-8">{{ booking.client.address|nl2br }}</div>
+            <div class="col-sm-8 detail-value">
+              {{ booking.client.address|nl2br }}
+            </div>
+          </div>
+          {% endif %} {% else %}
+          <div class="data-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>Client information
+            not available
           </div>
           {% endif %}
         </div>
 
-        <!-- Add-ons & Services -->
+        <!-- Enhanced Add-ons & Services -->
         <div class="detail-section">
           <h3 class="detail-section-title">
             <i class="fas fa-plus-circle me-2"></i>Add-ons & Services
           </h3>
-          {% if booking.addons %}
+
+          {% if booking.addon_items %}
           <div class="mb-3">
-            {% for addon in booking.addons %}
+            {% for addon in booking.addon_items %}
             <div class="addon-badge">
-              <i class="fas fa-check text-success me-1"></i>
-              {{ addon.name }}
+              <i class="fas fa-check me-1"></i>
+              {{ addon.name or 'Service' }} - ${{ addon.price or 0 }} {% if
+              addon.quantity and addon.quantity > 1 %} (x{{ addon.quantity }})
+              {% endif %}
             </div>
             {% endfor %}
+          </div>
+          <div class="success-highlight">
+            <strong>Total Add-ons Value:</strong> ${{ booking.addons_total or 0
+            }}
+          </div>
+          {% elif booking.addons_total and booking.addons_total > 0 %}
+          <div class="success-highlight">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Add-ons included:</strong> ${{ booking.addons_total }} worth
+            of additional services
           </div>
           {% else %}
           <p class="text-muted">No add-ons selected for this booking.</p>
           {% endif %}
         </div>
 
-        <!-- Accommodation Details (if any) -->
+        <!-- Enhanced Accommodation Details (if any) -->
         {% if booking.accommodations %}
         <div class="detail-section">
           <h3 class="detail-section-title">
@@ -359,44 +642,44 @@ Conference Booking{% endblock %} {% block extra_css %}
           </h3>
           {% for accommodation in booking.accommodations %}
           <div class="accommodation-details">
-            <h5 class="mb-2">{{ accommodation.room_type|capitalize }} Room</h5>
+            <h5 class="mb-3">
+              <i class="fas fa-home me-2"></i>{{
+              accommodation.room_type|capitalize }} Room
+            </h5>
             <div class="row mb-2">
               <div class="col-sm-4 detail-label">Check-in:</div>
-              <div class="col-sm-8">
-                {{ accommodation.check_in.strftime('%A, %d %B %Y') }}
+              <div class="col-sm-8 detail-value">
+                {{ accommodation.check_in.strftime('%A, %d %B %Y') if
+                accommodation.check_in else 'TBD' }}
               </div>
             </div>
             <div class="row mb-2">
               <div class="col-sm-4 detail-label">Check-out:</div>
-              <div class="col-sm-8">
-                {{ accommodation.check_out.strftime('%A, %d %B %Y') }}
+              <div class="col-sm-8 detail-value">
+                {{ accommodation.check_out.strftime('%A, %d %B %Y') if
+                accommodation.check_out else 'TBD' }}
               </div>
             </div>
             <div class="row mb-2">
               <div class="col-sm-4 detail-label">Duration:</div>
-              <div class="col-sm-8">
-                {{ (accommodation.check_out - accommodation.check_in).days }}
-                nights
+              <div class="col-sm-8 detail-value">
+                {% if accommodation.check_in and accommodation.check_out %} {{
+                (accommodation.check_out - accommodation.check_in).days }}
+                nights {% else %} Duration TBD {% endif %}
               </div>
             </div>
             <div class="row mb-2">
               <div class="col-sm-4 detail-label">Rooms:</div>
-              <div class="col-sm-8">{{ accommodation.number_of_rooms }}</div>
-            </div>
-            <div class="row mb-2">
-              <div class="col-sm-4 detail-label">Status:</div>
-              <div class="col-sm-8">
-                <span
-                  class="badge bg-{% if accommodation.status == 'confirmed' %}success{% elif accommodation.status == 'requested' %}warning{% else %}danger{% endif %}"
-                >
-                  {{ accommodation.status|capitalize }}
-                </span>
+              <div class="col-sm-8 detail-value">
+                {{ accommodation.number_of_rooms or 1 }}
               </div>
             </div>
             {% if accommodation.special_requests %}
             <div class="row mb-0">
-              <div class="col-sm-4 detail-label">Requests:</div>
-              <div class="col-sm-8">{{ accommodation.special_requests }}</div>
+              <div class="col-sm-4 detail-label">Special Requests:</div>
+              <div class="col-sm-8 detail-value">
+                {{ accommodation.special_requests }}
+              </div>
             </div>
             {% endif %}
           </div>
@@ -404,107 +687,187 @@ Conference Booking{% endblock %} {% block extra_css %}
         </div>
         {% endif %}
 
-        <!-- Price Summary -->
-        <div class="detail-section">
+        <!-- Enhanced Price Summary -->
+        <div class="price-summary">
           <h3 class="detail-section-title">
             <i class="fas fa-receipt me-2"></i>Price Summary
           </h3>
+
           <div class="row mb-2">
-            <div class="col-sm-8">Room Charges:</div>
-            <div class="col-sm-4 text-end">${{ booking.room_rate }}</div>
+            <div class="col-8 detail-label">Room Charges:</div>
+            <div class="col-4 text-end detail-value">
+              ${{ booking.room_rate or 0 }}
+            </div>
           </div>
+
+          {% if booking.addons_total and booking.addons_total > 0 %}
           <div class="row mb-2">
-            <div class="col-sm-8">Add-ons:</div>
-            <div class="col-sm-4 text-end">${{ booking.addons_total }}</div>
+            <div class="col-8 detail-label">Add-ons & Services:</div>
+            <div class="col-4 text-end detail-value">
+              ${{ booking.addons_total }}
+            </div>
           </div>
-          {% if booking.discount > 0 %}
+          {% endif %} {% if booking.discount and booking.discount > 0 %}
           <div class="row mb-2">
-            <div class="col-sm-8">Discount:</div>
-            <div class="col-sm-4 text-end text-danger">
+            <div class="col-8 detail-label text-success">Discount Applied:</div>
+            <div class="col-4 text-end text-success">
               -${{ booking.discount }}
             </div>
           </div>
           {% endif %}
-          <div class="row mb-0">
-            <div class="col-sm-8"><strong>Total Price:</strong></div>
-            <div class="col-sm-4 text-end">
-              <strong>${{ booking.total_price }}</strong>
+
+          <hr />
+
+          {% if booking.subtotal %}
+          <div class="row mb-2">
+            <div class="col-8 detail-label">Subtotal:</div>
+            <div class="col-4 text-end detail-value">
+              ${{ booking.subtotal }}
             </div>
           </div>
+          <div class="row mb-2">
+            <div class="col-8 detail-label">VAT (15%):</div>
+            <div class="col-4 text-end detail-value">
+              ${{ booking.vat_amount or 0 }}
+            </div>
+          </div>
+          <div class="row mb-0">
+            <div class="col-8">
+              <strong class="text-primary">Total Amount:</strong>
+            </div>
+            <div class="col-4 text-end">
+              <strong class="text-primary fs-5"
+                >${{ booking.total_with_vat or booking.total_price or 0
+                }}</strong
+              >
+            </div>
+          </div>
+          {% else %}
+          <div class="row mb-0">
+            <div class="col-8">
+              <strong class="text-primary">Total Amount:</strong>
+            </div>
+            <div class="col-4 text-end">
+              <strong class="text-primary fs-5"
+                >${{ booking.total_price or 0 }}</strong
+              >
+            </div>
+          </div>
+          {% endif %}
         </div>
       </div>
     </div>
 
-    <!-- Notes Section -->
+    <!-- Enhanced Notes Section -->
     {% if booking.notes %}
-    <div class="detail-section">
+    <div class="success-highlight">
       <h3 class="detail-section-title">
-        <i class="fas fa-sticky-note me-2"></i>Notes
+        <i class="fas fa-sticky-note me-2"></i>Additional Notes
       </h3>
       <div class="p-3 bg-light rounded">{{ booking.notes|nl2br }}</div>
     </div>
     {% endif %}
 
-    <!-- Contact Information -->
-    <div class="detail-section">
+    <!-- Enhanced Contact Information -->
+    <div class="contact-section">
       <h3 class="detail-section-title">
         <i class="fas fa-phone me-2"></i>Contact Information
       </h3>
       <div class="row">
         <div class="col-md-6">
           <div class="mb-2">
-            <strong>Bookings Department:</strong> +263-242-772633
+            <strong
+              ><i class="fas fa-calendar-check me-2"></i>Bookings
+              Department:</strong
+            ><br />
+            +263-242-772633
           </div>
           <div class="mb-2">
-            <strong>Email:</strong> bookings@rainbowtowers.co.zw
+            <strong><i class="fas fa-envelope me-2"></i>Email:</strong><br />
+            bookings@rainbowtowers.co.zw
+          </div>
+          <div class="mb-0">
+            <strong><i class="fas fa-clock me-2"></i>Business Hours:</strong
+            ><br />
+            Monday - Sunday: 24/7
           </div>
         </div>
         <div class="col-md-6">
-          <div class="mb-2"><strong>24/7 Support:</strong> +263-242-772634</div>
           <div class="mb-2">
-            <strong>Website:</strong> www.rainbowtowers.co.zw
+            <strong><i class="fas fa-headset me-2"></i>24/7 Support:</strong
+            ><br />
+            +263-242-772634
+          </div>
+          <div class="mb-2">
+            <strong><i class="fas fa-globe me-2"></i>Website:</strong><br />
+            www.rainbowtowers.co.zw
+          </div>
+          <div class="mb-0">
+            <strong><i class="fas fa-map-marker-alt me-2"></i>Location:</strong
+            ><br />
+            Harare, Zimbabwe
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Terms and Conditions Summary -->
-    <div class="detail-section">
+    <!-- Enhanced Terms and Conditions Summary -->
+    <div class="terms-section">
       <h3 class="detail-section-title">
-        <i class="fas fa-file-contract me-2"></i>Terms & Conditions
+        <i class="fas fa-file-contract me-2"></i>Terms & Conditions Summary
       </h3>
-      <ul class="mb-0 small">
-        <li>
-          Check-in for the venue is 30 minutes before the event start time.
-        </li>
-        <li>
-          Cancellations must be made at least 48 hours before the event to avoid
-          cancellation fees.
-        </li>
-        <li>
-          Full payment is due on arrival unless credit arrangements have been
-          made in advance.
-        </li>
-        <li>
-          Changes to add-ons may be made up to 24 hours before the event,
-          subject to availability.
-        </li>
-        <li>
-          The client is responsible for any damage to facilities or equipment
-          during the booking period.
-        </li>
-        <li>
-          For detailed terms and conditions, please visit our website or contact
+      <div class="row">
+        <div class="col-md-6">
+          <ul class="mb-0">
+            <li>Check-in for venue is 30 minutes before event start time</li>
+            <li>Event setup and breakdown time included in booking duration</li>
+            <li>
+              Additional equipment available on request (charges may apply)
+            </li>
+          </ul>
+        </div>
+        <div class="col-md-6">
+          <ul class="mb-0">
+            <li>Cancellations require 48 hours notice to avoid fees</li>
+            <li>Full payment due on arrival unless pre-arranged</li>
+            <li>Damage to facilities will incur additional charges</li>
+          </ul>
+        </div>
+      </div>
+      <div class="mt-3">
+        <small class="text-muted">
+          <i class="fas fa-info-circle me-1"></i>
+          For complete terms and conditions, please visit our website or contact
           our bookings department.
-        </li>
-      </ul>
+        </small>
+      </div>
     </div>
 
-    <!-- Print Footer -->
+    <!-- Enhanced Print Footer -->
     <div class="print-footer">
-      <p>Thank you for choosing Rainbow Towers Hotel & Conference Centre!</p>
-      <p>Document generated on {{ now.strftime('%d %B %Y at %H:%M') }}</p>
-      <p>Booking ID: BK-{{ booking.id }}</p>
+      <div class="row">
+        <div class="col-md-8">
+          <h5 class="text-primary">Thank you for choosing Rainbow Towers!</h5>
+          <p class="mb-1">
+            We look forward to hosting your event and ensuring its success.
+          </p>
+        </div>
+        <div class="col-md-4 text-end">
+          <p class="mb-1">Document generated on</p>
+          <p class="mb-1">
+            <strong>{{ now.strftime('%d %B %Y at %H:%M') }}</strong>
+          </p>
+        </div>
+      </div>
+      <hr class="my-3" />
+      <div class="row">
+        <div class="col-md-6">
+          <p class="small mb-0">Booking Reference: BK-{{ booking.id }}</p>
+        </div>
+        <div class="col-md-6 text-end">
+          <p class="small mb-0">Rainbow Towers Hotel & Conference Centre</p>
+        </div>
+      </div>
     </div>
   </div>
 </div>
@@ -512,24 +875,137 @@ Conference Booking{% endblock %} {% block extra_css %}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    document
-      .getElementById("downloadPdf")
-      .addEventListener("click", function () {
-        // Configure options
-        const options = {
-          margin: [10, 10, 10, 10],
-          filename: "booking-details-{{ booking.id }}.pdf",
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-        };
+    // Enhanced PDF download functionality
+    document.getElementById("downloadPdf").addEventListener("click", function () {
+      const button = this;
+      const originalText = button.innerHTML;
 
-        // Get the element to print
-        const element = document.getElementById("booking-details-content");
+      // Show loading state
+      button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating PDF...';
+      button.disabled = true;
 
-        // Generate PDF
-        html2pdf().set(options).from(element).save();
+      // Configure PDF options for booking details
+      const options = {
+        margin: [10, 10, 10, 10],
+        filename: "booking-details-{{ booking.id }}.pdf",
+        image: { type: "jpeg", quality: 0.98 },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          letterRendering: true,
+          allowTaint: false
+        },
+        jsPDF: {
+          unit: "mm",
+          format: "a4",
+          orientation: "portrait",
+          putOnlyUsedFonts: true,
+          compress: true
+        },
+      };
+
+      // Get the element to convert
+      const element = document.getElementById("booking-details-content");
+
+      // Generate PDF with error handling
+      html2pdf()
+        .set(options)
+        .from(element)
+        .save()
+        .then(() => {
+          // Reset button state
+          button.innerHTML = originalText;
+          button.disabled = false;
+
+          // Show success notification
+          showNotification('Booking details PDF downloaded successfully!', 'success');
+        })
+        .catch((error) => {
+          console.error('PDF generation error:', error);
+          button.innerHTML = originalText;
+          button.disabled = false;
+
+          // Show error notification
+          showNotification('Error generating PDF. Please try again.', 'error');
+        });
+    });
+
+    // Enhanced notification system
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
+      notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
+      notification.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
+        ${message}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      `;
+
+      document.body.appendChild(notification);
+
+      // Auto-remove after 5 seconds
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.remove();
+        }
+      }, 5000);
+    }
+
+    // Enhanced print functionality
+    const originalPrint = window.print;
+    window.print = function() {
+      // Add print-specific styles
+      const printStyles = document.createElement('style');
+      printStyles.textContent = `
+        @media print {
+          .company-header { background: white !important; color: black !important; }
+          .booking-header { background: white !important; color: black !important; }
+          .confirmation-banner, .tentative-banner, .cancelled-banner {
+            background: white !important; color: black !important; border: 1px solid #ccc !important;
+          }
+          .detail-section, .accommodation-details, .price-summary, .terms-section, .contact-section {
+            background: white !important; border: 1px solid #ccc !important;
+          }
+        }
+      `;
+      document.head.appendChild(printStyles);
+
+      // Call original print
+      originalPrint.call(window);
+
+      // Remove print styles after printing
+      setTimeout(() => {
+        if (printStyles.parentNode) {
+          printStyles.remove();
+        }
+      }, 1000);
+    };
+
+    // Track user interactions
+    document.querySelectorAll('button, a').forEach(element => {
+      element.addEventListener('click', function() {
+        console.log('User interaction:', this.textContent.trim() || this.title || 'Unknown action');
       });
+    });
+
+    // Check for missing data and warn user
+    const missingData = [];
+    {% if not booking.room %}
+      missingData.push('Room information');
+    {% endif %}
+    {% if not booking.client %}
+      missingData.push('Client information');
+    {% endif %}
+    {% if not booking.start_time %}
+      missingData.push('Event timing');
+    {% endif %}
+
+    if (missingData.length > 0) {
+      console.warn('Missing booking data:', missingData);
+      showNotification(`Some booking details are incomplete: ${missingData.join(', ')}`, 'warning');
+    }
+
+    console.log('Enhanced booking details page loaded for booking #{{ booking.id }}');
   });
 </script>
 {% endblock %}

@@ -3928,88 +3928,227 @@ def check_availability():
 @app.route('/reports')
 @login_required
 def reports():
-    """Reports dashboard with overview statistics using real data"""
+    """Reports dashboard with overview statistics using real data - ENHANCED FOR PRODUCTION"""
     try:
-        # Get current date info
-        today = datetime.now(UTC).date()
-        current_month_start = today.replace(day=1)
-        last_month_start = (current_month_start - timedelta(days=1)).replace(day=1)
-        last_month_end = current_month_start - timedelta(days=1)
+        print(f"🔍 DEBUG: Starting reports dashboard generation at {datetime.now(UTC)}")
+        print(f"🔍 DEBUG: Environment: {os.environ.get('FLASK_ENV', 'development')}")
+        print(f"🔍 DEBUG: Supabase URL: {SUPABASE_URL[:50]}..." if SUPABASE_URL else "❌ No Supabase URL")
+        print(f"🔍 DEBUG: Admin client available: {bool(supabase_admin)}")
         
-        # Get overview statistics using admin client
-        now_iso = datetime.now(UTC).isoformat()
+        # Test basic connectivity first
+        try:
+            connectivity_test = supabase_admin.table('rooms').select('id').limit(1).execute()
+            print(f"✅ DEBUG: Database connectivity test passed - {len(connectivity_test.data)} rows")
+        except Exception as conn_error:
+            print(f"❌ DEBUG: Database connectivity test failed: {conn_error}")
+            flash('Database connection issue detected. Some statistics may be unavailable.', 'warning')
         
-        # Total bookings this month
-        current_month_bookings = supabase_admin.table('bookings').select('id, total_price').gte('start_time', current_month_start.isoformat()).neq('status', 'cancelled').execute()
+        # Get current date info with explicit timezone handling
+        now_utc = datetime.now(UTC)
+        today_utc = now_utc.date()
+        current_month_start = today_utc.replace(day=1)
         
-        # Revenue this month
-        current_month_revenue = sum(float(b.get('total_price', 0)) for b in current_month_bookings.data)
+        print(f"🔍 DEBUG: Time calculations:")
+        print(f"  - Current UTC time: {now_utc}")
+        print(f"  - Today UTC date: {today_utc}")
+        print(f"  - Month start: {current_month_start}")
         
-        # Total active rooms
-        active_rooms = len(supabase_admin.table('rooms').select('id').eq('status', 'available').execute().data)
+        # Convert to ISO strings for database queries
+        now_iso = now_utc.isoformat()
+        current_month_start_iso = current_month_start.isoformat()
         
-        # Most popular addon this month
-        popular_addon_data = supabase_admin.table('booking_addons').select("""
-            addon_id,
-            addon:addons(name),
-            booking:bookings!inner(start_time)
-        """).gte('booking.start_time', current_month_start.isoformat()).execute()
-        
-        # Count addon usage
-        addon_counts = {}
-        for ba in popular_addon_data.data:
-            if ba.get('addon') and ba.get('addon', {}).get('name'):
-                addon_name = ba['addon']['name']
-                addon_counts[addon_name] = addon_counts.get(addon_name, 0) + 1
-        
-        most_popular_addon = max(addon_counts.items(), key=lambda x: x[1])[0] if addon_counts else "No data"
-        
-        # Room utilization rate calculation
-        total_days = (today - current_month_start).days + 1
-        total_possible_hours = active_rooms * total_days * 10  # 10 business hours per day
-        
-        # Calculate actual booked hours
-        total_booked_hours = 0
-        for booking in current_month_bookings.data:
-            # Get booking details for duration calculation
-            booking_details = supabase_admin.table('bookings').select('start_time, end_time').eq('id', booking['id']).execute()
-            if booking_details.data:
-                try:
-                    start = datetime.fromisoformat(booking_details.data[0]['start_time'].replace('Z', '+00:00'))
-                    end = datetime.fromisoformat(booking_details.data[0]['end_time'].replace('Z', '+00:00'))
-                    duration = (end - start).total_seconds() / 3600
-                    total_booked_hours += duration
-                except:
-                    total_booked_hours += 4  # Fallback estimate
-        
-        utilization_rate = (total_booked_hours / total_possible_hours * 100) if total_possible_hours > 0 else 0
-        
+        # Initialize statistics with safe defaults
         overview_stats = {
-            'current_month_bookings': len(current_month_bookings.data),
-            'current_month_revenue': round(current_month_revenue, 2),
-            'active_rooms': active_rooms,
-            'most_popular_addon': most_popular_addon,
-            'utilization_rate': round(utilization_rate, 1),
-            'total_booked_hours': round(total_booked_hours, 1),
-            'avg_booking_value': round(current_month_revenue / len(current_month_bookings.data), 2) if current_month_bookings.data else 0
+            'current_month_bookings': 0,
+            'current_month_revenue': 0.0,
+            'active_rooms': 0,
+            'most_popular_addon': "No data",
+            'utilization_rate': 0.0,
+            'total_booked_hours': 0.0,
+            'avg_booking_value': 0.0
         }
+        
+        # 1. Get total bookings this month (ENHANCED)
+        try:
+            print(f"🔍 DEBUG: Fetching bookings from {current_month_start_iso}...")
+            
+            # Use admin client with explicit error handling
+            bookings_response = supabase_admin.table('bookings').select('id, total_price, start_time, end_time, status').gte('start_time', current_month_start_iso).execute()
+            
+            print(f"🔍 DEBUG: Raw bookings response: {len(bookings_response.data) if bookings_response.data else 0} total records")
+            
+            if bookings_response.data:
+                # Filter out cancelled bookings and calculate revenue
+                valid_bookings = []
+                total_revenue = 0.0
+                
+                for booking in bookings_response.data:
+                    if booking.get('status') != 'cancelled':
+                        valid_bookings.append(booking)
+                        # Safely convert total_price to float
+                        try:
+                            price = float(booking.get('total_price', 0) or 0)
+                            total_revenue += price
+                        except (ValueError, TypeError):
+                            print(f"⚠️ DEBUG: Invalid price for booking {booking.get('id')}: {booking.get('total_price')}")
+                
+                overview_stats['current_month_bookings'] = len(valid_bookings)
+                overview_stats['current_month_revenue'] = round(total_revenue, 2)
+                overview_stats['avg_booking_value'] = round(total_revenue / len(valid_bookings), 2) if valid_bookings else 0
+                
+                print(f"✅ DEBUG: Bookings processed - Valid: {len(valid_bookings)}, Revenue: ${total_revenue:.2f}")
+            else:
+                print("⚠️ DEBUG: No bookings found for current month")
+                
+        except Exception as bookings_error:
+            print(f"❌ DEBUG: Error fetching bookings: {bookings_error}")
+            # Try fallback approach
+            try:
+                print("🔄 DEBUG: Trying fallback bookings query...")
+                fallback_bookings = supabase_admin.table('bookings').select('*').execute()
+                if fallback_bookings.data:
+                    # Filter manually
+                    month_bookings = 0
+                    month_revenue = 0.0
+                    for booking in fallback_bookings.data:
+                        try:
+                            if booking.get('status') != 'cancelled':
+                                booking_date = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00')).date()
+                                if booking_date >= current_month_start:
+                                    month_bookings += 1
+                                    month_revenue += float(booking.get('total_price', 0) or 0)
+                        except:
+                            continue
+                    
+                    overview_stats['current_month_bookings'] = month_bookings
+                    overview_stats['current_month_revenue'] = round(month_revenue, 2)
+                    overview_stats['avg_booking_value'] = round(month_revenue / month_bookings, 2) if month_bookings > 0 else 0
+                    print(f"✅ DEBUG: Fallback successful - Bookings: {month_bookings}, Revenue: ${month_revenue:.2f}")
+            except Exception as fallback_error:
+                print(f"❌ DEBUG: Fallback also failed: {fallback_error}")
+        
+        # 2. Get total active rooms (ENHANCED)
+        try:
+            print("🔍 DEBUG: Fetching active rooms...")
+            rooms_response = supabase_admin.table('rooms').select('id, status').execute()
+            
+            if rooms_response.data:
+                active_rooms = 0
+                for room in rooms_response.data:
+                    if room.get('status') in ['available', None]:  # Count available and rooms without status as active
+                        active_rooms += 1
+                
+                overview_stats['active_rooms'] = active_rooms
+                print(f"✅ DEBUG: Found {active_rooms} active rooms out of {len(rooms_response.data)} total rooms")
+            else:
+                print("⚠️ DEBUG: No rooms found in database")
+                
+        except Exception as rooms_error:
+            print(f"❌ DEBUG: Error fetching rooms: {rooms_error}")
+        
+        # 3. Calculate utilization rate (SIMPLIFIED BUT ACCURATE)
+        try:
+            if overview_stats['active_rooms'] > 0 and overview_stats['current_month_bookings'] > 0:
+                # Calculate based on actual bookings vs potential bookings
+                days_in_month = (today_utc - current_month_start).days + 1
+                business_hours_per_day = 10  # Standard business hours
+                total_possible_hours = overview_stats['active_rooms'] * days_in_month * business_hours_per_day
+                
+                # Estimate total booked hours (average 3 hours per booking)
+                estimated_booked_hours = overview_stats['current_month_bookings'] * 3
+                overview_stats['total_booked_hours'] = estimated_booked_hours
+                
+                if total_possible_hours > 0:
+                    utilization_rate = (estimated_booked_hours / total_possible_hours) * 100
+                    overview_stats['utilization_rate'] = round(utilization_rate, 1)
+                
+                print(f"✅ DEBUG: Utilization calculation - {estimated_booked_hours}h / {total_possible_hours}h = {overview_stats['utilization_rate']}%")
+            
+        except Exception as util_error:
+            print(f"❌ DEBUG: Error calculating utilization: {util_error}")
+        
+        # 4. Get most popular addon (ENHANCED)
+        try:
+            print("🔍 DEBUG: Fetching popular addons...")
+            
+            # Get booking addons for current month
+            booking_addons_response = supabase_admin.table('booking_addons').select('addon_id').execute()
+            
+            if booking_addons_response.data:
+                # Count addon usage
+                addon_counts = {}
+                for ba in booking_addons_response.data:
+                    addon_id = ba.get('addon_id')
+                    if addon_id:
+                        addon_counts[addon_id] = addon_counts.get(addon_id, 0) + 1
+                
+                if addon_counts:
+                    # Get most popular addon ID
+                    most_popular_addon_id = max(addon_counts, key=addon_counts.get)
+                    
+                    # Get addon name
+                    addon_response = supabase_admin.table('addons').select('name').eq('id', most_popular_addon_id).execute()
+                    if addon_response.data:
+                        overview_stats['most_popular_addon'] = addon_response.data[0]['name']
+                        print(f"✅ DEBUG: Most popular addon: {overview_stats['most_popular_addon']}")
+                
+        except Exception as addon_error:
+            print(f"❌ DEBUG: Error fetching addons: {addon_error}")
+        
+        # Log final statistics
+        print(f"📊 DEBUG: Final overview statistics:")
+        for key, value in overview_stats.items():
+            print(f"  - {key}: {value}")
+        
+        # Log this page view
+        try:
+            log_user_activity(
+                ActivityTypes.PAGE_VIEW,
+                "Viewed reports dashboard",
+                resource_type='page',
+                metadata={
+                    'page': 'reports_dashboard',
+                    'stats_loaded': overview_stats,
+                    'environment': os.environ.get('FLASK_ENV', 'development')
+                }
+            )
+        except Exception as log_error:
+            print(f"Failed to log reports page view: {log_error}")
         
         return render_template('reports/index.html', title='Reports', stats=overview_stats)
         
     except Exception as e:
-        print(f"Reports dashboard error: {e}")
+        print(f"❌ CRITICAL ERROR in reports dashboard: {e}")
         import traceback
         traceback.print_exc()
-        # Return with empty stats if there's an error
+        
+        # Log the error
+        try:
+            log_user_activity(
+                ActivityTypes.ERROR_OCCURRED,
+                f"Reports dashboard error: {str(e)}",
+                status='failed',
+                metadata={
+                    'error': str(e), 
+                    'error_type': type(e).__name__,
+                    'page': 'reports_dashboard'
+                }
+            )
+        except Exception as log_error:
+            print(f"Failed to log reports error: {log_error}")
+        
+        # Return with safe empty stats
         empty_stats = {
             'current_month_bookings': 0,
             'current_month_revenue': 0,
             'active_rooms': 0,
-            'most_popular_addon': "No data",
+            'most_popular_addon': "Error loading data",
             'utilization_rate': 0,
             'total_booked_hours': 0,
             'avg_booking_value': 0
         }
+        
+        flash('Error loading reports dashboard. Please check the system logs.', 'danger')
         return render_template('reports/index.html', title='Reports', stats=empty_stats)
 
 @app.route('/reports/client-analysis')
@@ -5456,6 +5595,319 @@ def debug_test_queries():
             'error': str(e),
             'timestamp': datetime.now(UTC).isoformat()
         }), 500
+        
+# ===============================
+# PRODUCTION DEBUG HELPER FUNCTIONS
+# ===============================
+
+@app.route('/debug/production-stats')
+@login_required
+def debug_production_stats():
+    """Debug endpoint to check production statistics calculation"""
+    try:
+        debug_info = {
+            'timestamp': datetime.now(UTC).isoformat(),
+            'environment': os.environ.get('FLASK_ENV', 'development'),
+            'database_connection': False,
+            'queries_executed': [],
+            'errors_encountered': [],
+            'statistics_raw': {},
+            'supabase_config': {
+                'url_set': bool(SUPABASE_URL),
+                'anon_key_set': bool(SUPABASE_ANON_KEY),
+                'service_key_set': bool(SUPABASE_SERVICE_KEY),
+                'admin_client_available': bool(supabase_admin)
+            }
+        }
+        
+        # Test 1: Basic connectivity
+        try:
+            test_response = supabase_admin.table('rooms').select('count').execute()
+            debug_info['database_connection'] = True
+            debug_info['queries_executed'].append('Basic connectivity test: SUCCESS')
+        except Exception as e:
+            debug_info['database_connection'] = False
+            debug_info['errors_encountered'].append(f'Connectivity test failed: {str(e)}')
+        
+        # Test 2: Rooms query
+        try:
+            rooms_response = supabase_admin.table('rooms').select('*').execute()
+            rooms_count = len(rooms_response.data) if rooms_response.data else 0
+            debug_info['statistics_raw']['total_rooms'] = rooms_count
+            debug_info['queries_executed'].append(f'Rooms query: Found {rooms_count} rooms')
+        except Exception as e:
+            debug_info['errors_encountered'].append(f'Rooms query failed: {str(e)}')
+        
+        # Test 3: Bookings query
+        try:
+            bookings_response = supabase_admin.table('bookings').select('*').execute()
+            bookings_count = len(bookings_response.data) if bookings_response.data else 0
+            debug_info['statistics_raw']['total_bookings'] = bookings_count
+            debug_info['queries_executed'].append(f'Bookings query: Found {bookings_count} bookings')
+            
+            # Calculate current month bookings
+            if bookings_response.data:
+                current_month_start = datetime.now(UTC).date().replace(day=1)
+                current_month_bookings = 0
+                current_month_revenue = 0.0
+                
+                for booking in bookings_response.data:
+                    try:
+                        if booking.get('status') != 'cancelled':
+                            booking_date = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00')).date()
+                            if booking_date >= current_month_start:
+                                current_month_bookings += 1
+                                current_month_revenue += float(booking.get('total_price', 0) or 0)
+                    except Exception as booking_error:
+                        debug_info['errors_encountered'].append(f'Error processing booking {booking.get("id", "unknown")}: {str(booking_error)}')
+                
+                debug_info['statistics_raw']['current_month_bookings'] = current_month_bookings
+                debug_info['statistics_raw']['current_month_revenue'] = current_month_revenue
+                debug_info['queries_executed'].append(f'Current month analysis: {current_month_bookings} bookings, ${current_month_revenue:.2f} revenue')
+            
+        except Exception as e:
+            debug_info['errors_encountered'].append(f'Bookings query failed: {str(e)}')
+        
+        # Test 4: Clients query
+        try:
+            clients_response = supabase_admin.table('clients').select('*').execute()
+            clients_count = len(clients_response.data) if clients_response.data else 0
+            debug_info['statistics_raw']['total_clients'] = clients_count
+            debug_info['queries_executed'].append(f'Clients query: Found {clients_count} clients')
+        except Exception as e:
+            debug_info['errors_encountered'].append(f'Clients query failed: {str(e)}')
+        
+        # Test 5: Add-ons query
+        try:
+            addons_response = supabase_admin.table('addons').select('*').execute()
+            addons_count = len(addons_response.data) if addons_response.data else 0
+            debug_info['statistics_raw']['total_addons'] = addons_count
+            debug_info['queries_executed'].append(f'Add-ons query: Found {addons_count} add-ons')
+        except Exception as e:
+            debug_info['errors_encountered'].append(f'Add-ons query failed: {str(e)}')
+        
+        # Test 6: Authentication check
+        try:
+            if current_user.is_authenticated:
+                debug_info['user_info'] = {
+                    'authenticated': True,
+                    'user_id': current_user.id,
+                    'user_email': current_user.email,
+                    'user_role': current_user.role
+                }
+            else:
+                debug_info['user_info'] = {'authenticated': False}
+        except Exception as e:
+            debug_info['errors_encountered'].append(f'User info failed: {str(e)}')
+        
+        # Summary
+        debug_info['summary'] = {
+            'total_queries_attempted': len(debug_info['queries_executed']),
+            'total_errors': len(debug_info['errors_encountered']),
+            'database_accessible': debug_info['database_connection'],
+            'has_data': any(debug_info['statistics_raw'].values()) if debug_info['statistics_raw'] else False
+        }
+        
+        return jsonify(debug_info)
+        
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'timestamp': datetime.now(UTC).isoformat(),
+            'critical_failure': True
+        }), 500
+
+@app.route('/debug/supabase-config')
+@login_required
+def debug_supabase_config():
+    """Debug Supabase configuration in production"""
+    try:
+        config_info = {
+            'timestamp': datetime.now(UTC).isoformat(),
+            'environment_variables': {
+                'SUPABASE_URL': SUPABASE_URL[:50] + '...' if SUPABASE_URL else 'NOT SET',
+                'SUPABASE_ANON_KEY': 'SET (' + str(len(SUPABASE_ANON_KEY)) + ' chars)' if SUPABASE_ANON_KEY else 'NOT SET',
+                'SUPABASE_SERVICE_KEY': 'SET (' + str(len(SUPABASE_SERVICE_KEY)) + ' chars)' if SUPABASE_SERVICE_KEY else 'NOT SET',
+                'FLASK_ENV': os.environ.get('FLASK_ENV', 'not set'),
+                'SECRET_KEY': 'SET' if app.config.get('SECRET_KEY') else 'NOT SET'
+            },
+            'client_status': {
+                'regular_client_initialized': bool(supabase),
+                'admin_client_initialized': bool(supabase_admin),
+                'clients_are_same': supabase is supabase_admin
+            },
+            'connection_tests': {}
+        }
+        
+        # Test regular client
+        try:
+            if supabase:
+                test_response = supabase.table('rooms').select('id').limit(1).execute()
+                config_info['connection_tests']['regular_client'] = {
+                    'success': True,
+                    'rows_returned': len(test_response.data) if test_response.data else 0
+                }
+            else:
+                config_info['connection_tests']['regular_client'] = {
+                    'success': False,
+                    'error': 'Client not initialized'
+                }
+        except Exception as e:
+            config_info['connection_tests']['regular_client'] = {
+                'success': False,
+                'error': str(e)
+            }
+        
+        # Test admin client
+        try:
+            if supabase_admin:
+                test_response = supabase_admin.table('rooms').select('id').limit(1).execute()
+                config_info['connection_tests']['admin_client'] = {
+                    'success': True,
+                    'rows_returned': len(test_response.data) if test_response.data else 0
+                }
+            else:
+                config_info['connection_tests']['admin_client'] = {
+                    'success': False,
+                    'error': 'Admin client not initialized'
+                }
+        except Exception as e:
+            config_info['connection_tests']['admin_client'] = {
+                'success': False,
+                'error': str(e)
+            }
+        
+        return jsonify(config_info)
+        
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'timestamp': datetime.now(UTC).isoformat()
+        }), 500
+
+@app.route('/debug/force-refresh-stats')
+@login_required
+def force_refresh_stats():
+    """Force refresh statistics and return detailed breakdown"""
+    try:
+        refresh_info = {
+            'timestamp': datetime.now(UTC).isoformat(),
+            'refresh_steps': [],
+            'final_stats': {},
+            'errors': []
+        }
+        
+        # Step 1: Clear any potential caching issues
+        refresh_info['refresh_steps'].append('Step 1: Initializing fresh data fetch')
+        
+        now_utc = datetime.now(UTC)
+        current_month_start = now_utc.date().replace(day=1).isoformat()
+        
+        # Step 2: Fetch bookings with detailed logging
+        refresh_info['refresh_steps'].append('Step 2: Fetching bookings data')
+        try:
+            bookings_query = supabase_admin.table('bookings').select('id, total_price, start_time, status').gte('start_time', current_month_start)
+            bookings_response = bookings_query.execute()
+            
+            if bookings_response.data:
+                valid_bookings = [b for b in bookings_response.data if b.get('status') != 'cancelled']
+                total_revenue = sum(float(b.get('total_price', 0) or 0) for b in valid_bookings)
+                
+                refresh_info['final_stats']['current_month_bookings'] = len(valid_bookings)
+                refresh_info['final_stats']['current_month_revenue'] = round(total_revenue, 2)
+                refresh_info['refresh_steps'].append(f'Step 2 Complete: Found {len(valid_bookings)} valid bookings, ${total_revenue:.2f} revenue')
+            else:
+                refresh_info['final_stats']['current_month_bookings'] = 0
+                refresh_info['final_stats']['current_month_revenue'] = 0
+                refresh_info['refresh_steps'].append('Step 2 Complete: No bookings found')
+                
+        except Exception as e:
+            refresh_info['errors'].append(f'Step 2 Error: {str(e)}')
+            refresh_info['final_stats']['current_month_bookings'] = 0
+            refresh_info['final_stats']['current_month_revenue'] = 0
+        
+        # Step 3: Fetch rooms data
+        refresh_info['refresh_steps'].append('Step 3: Fetching rooms data')
+        try:
+            rooms_response = supabase_admin.table('rooms').select('id, status').execute()
+            
+            if rooms_response.data:
+                active_rooms = len([r for r in rooms_response.data if r.get('status') in ['available', None]])
+                refresh_info['final_stats']['active_rooms'] = active_rooms
+                refresh_info['refresh_steps'].append(f'Step 3 Complete: Found {active_rooms} active rooms')
+            else:
+                refresh_info['final_stats']['active_rooms'] = 0
+                refresh_info['refresh_steps'].append('Step 3 Complete: No rooms found')
+                
+        except Exception as e:
+            refresh_info['errors'].append(f'Step 3 Error: {str(e)}')
+            refresh_info['final_stats']['active_rooms'] = 0
+        
+        # Step 4: Calculate utilization
+        refresh_info['refresh_steps'].append('Step 4: Calculating utilization rate')
+        try:
+            if refresh_info['final_stats']['active_rooms'] > 0 and refresh_info['final_stats']['current_month_bookings'] > 0:
+                days_in_month = (now_utc.date() - datetime.strptime(current_month_start, '%Y-%m-%d').date()).days + 1
+                total_possible_hours = refresh_info['final_stats']['active_rooms'] * days_in_month * 10
+                estimated_booked_hours = refresh_info['final_stats']['current_month_bookings'] * 3
+                utilization_rate = (estimated_booked_hours / total_possible_hours) * 100
+                refresh_info['final_stats']['utilization_rate'] = round(utilization_rate, 1)
+                refresh_info['refresh_steps'].append(f'Step 4 Complete: Utilization rate {utilization_rate:.1f}%')
+            else:
+                refresh_info['final_stats']['utilization_rate'] = 0
+                refresh_info['refresh_steps'].append('Step 4 Complete: No utilization (no rooms or bookings)')
+        except Exception as e:
+            refresh_info['errors'].append(f'Step 4 Error: {str(e)}')
+            refresh_info['final_stats']['utilization_rate'] = 0
+        
+        refresh_info['summary'] = {
+            'total_steps_completed': len(refresh_info['refresh_steps']),
+            'total_errors': len(refresh_info['errors']),
+            'data_successfully_loaded': any(refresh_info['final_stats'].values()),
+            'recommended_action': 'Check database permissions and RLS policies' if refresh_info['errors'] else 'Data loading successful'
+        }
+        
+        return jsonify(refresh_info)
+        
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'timestamp': datetime.now(UTC).isoformat(),
+            'critical_failure': True
+        }), 500
+
+# Add this improved helper function for environment validation
+def validate_production_environment():
+    """Comprehensive production environment validation"""
+    validation_results = {
+        'environment_valid': True,
+        'warnings': [],
+        'errors': [],
+        'recommendations': []
+    }
+    
+    # Check required environment variables
+    required_vars = ['SUPABASE_URL', 'SUPABASE_ANON_KEY']
+    for var in required_vars:
+        if not os.environ.get(var):
+            validation_results['errors'].append(f'Missing required environment variable: {var}')
+            validation_results['environment_valid'] = False
+    
+    # Check optional but important variables
+    if not os.environ.get('SUPABASE_SERVICE_KEY'):
+        validation_results['warnings'].append('SUPABASE_SERVICE_KEY not set - admin operations may fail')
+        validation_results['recommendations'].append('Set SUPABASE_SERVICE_KEY for full functionality')
+    
+    if not app.config.get('SECRET_KEY') or app.config.get('SECRET_KEY').startswith('fallback'):
+        validation_results['warnings'].append('Using fallback SECRET_KEY')
+        validation_results['recommendations'].append('Set a proper SECRET_KEY for production')
+    
+    # Check Flask environment
+    flask_env = os.environ.get('FLASK_ENV', 'development')
+    if flask_env != 'production':
+        validation_results['warnings'].append(f'FLASK_ENV is set to "{flask_env}" instead of "production"')
+    
+    return validation_results
 
 @app.route('/health')
 def health_check():

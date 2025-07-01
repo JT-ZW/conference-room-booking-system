@@ -782,6 +782,7 @@ class ActivityTypes:
     DELETE_BOOKING = 'delete_booking'
     CANCEL_BOOKING = 'cancel_booking'
     CHANGE_BOOKING_STATUS = 'change_booking_status'
+    VIEW_BOOKING = 'view_booking'
     
     # Rooms
     CREATE_ROOM = 'create_room'
@@ -789,11 +790,11 @@ class ActivityTypes:
     DELETE_ROOM = 'delete_room'
     VIEW_ROOM = 'view_room'
     
-    # Clients
+    # Clients (ENHANCED)
     CREATE_CLIENT = 'create_client'
     UPDATE_CLIENT = 'update_client'
     DELETE_CLIENT = 'delete_client'
-    VIEW_CLIENT = 'view_client'
+    VIEW_CLIENT = 'view_client'  # Added this missing constant
     
     # Add-ons
     CREATE_ADDON = 'create_addon'
@@ -1066,6 +1067,40 @@ class AccommodationForm(FlaskForm):
 # ===============================
 # Helper Functions
 # ===============================
+
+def get_clients_with_booking_counts():
+    """Get all clients with their booking counts efficiently"""
+    try:
+        print("🔍 DEBUG: Fetching clients with booking counts...")
+        
+        # Get all clients
+        clients_response = supabase_admin.table('clients').select('*').execute()
+        clients = clients_response.data if clients_response.data else []
+        
+        if not clients:
+            return []
+        
+        # Get booking counts efficiently
+        bookings_response = supabase_admin.table('bookings').select('client_id').neq('status', 'cancelled').execute()
+        bookings = bookings_response.data if bookings_response.data else []
+        
+        # Count bookings per client
+        booking_counts = {}
+        for booking in bookings:
+            client_id = booking.get('client_id')
+            if client_id:
+                booking_counts[client_id] = booking_counts.get(client_id, 0) + 1
+        
+        # Add booking counts to clients
+        for client in clients:
+            client['booking_count'] = booking_counts.get(client['id'], 0)
+        
+        print(f"✅ DEBUG: Enhanced {len(clients)} clients with booking counts")
+        return clients
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to get clients with booking counts: {e}")
+        return []
 
 def is_room_available_supabase(room_id, start_time, end_time, exclude_booking_id=None):
     """Check if a room is available using Supabase admin client"""
@@ -2012,27 +2047,140 @@ def delete_room(id):
 @app.route('/clients')
 @login_required
 def clients():
-    """List all clients using enhanced Supabase data access with better error handling"""
+    """List all clients with booking counts and search functionality - ENHANCED VERSION"""
     try:
-        print("🔍 DEBUG: Loading clients page...")
+        print("🔍 DEBUG: Loading enhanced clients page with booking counts...")
         
-        # Use enhanced function to get all clients from database
+        # Get search and sort parameters
+        search_query = request.args.get('search', '').strip()
+        sort_by = request.args.get('sort', 'company')
+        
+        print(f"📊 DEBUG: Search query: '{search_query}', Sort by: '{sort_by}'")
+        
+        # Step 1: Get all clients using enhanced function
         clients_data = get_all_clients_from_db()
         
-        if clients_data:
-            print(f"✅ DEBUG: Loaded {len(clients_data)} clients for display")
-            # Sort clients by company name or contact person
-            clients_data.sort(key=lambda x: (x.get('company_name') or x.get('contact_person', '')).lower())
-        else:
+        if not clients_data:
             print("⚠️ DEBUG: No clients found in database")
             flash('No clients found in the database. You can add the first client using the "Add Client" button.', 'info')
+            return render_template('clients/index.html', title='Clients', clients=[], search_query=search_query, sort_by=sort_by)
         
-        return render_template('clients/index.html', title='Clients', clients=clients_data)
+        print(f"✅ DEBUG: Found {len(clients_data)} clients in database")
+        
+        # Step 2: Get booking counts for each client efficiently
+        try:
+            # Get all bookings with client_id
+            bookings_response = supabase_admin.table('bookings').select('client_id, id, status').execute()
+            bookings_data = bookings_response.data if bookings_response.data else []
+            
+            print(f"✅ DEBUG: Found {len(bookings_data)} total bookings")
+            
+            # Create a dictionary to count bookings per client
+            client_booking_counts = {}
+            for booking in bookings_data:
+                client_id = booking.get('client_id')
+                if client_id and booking.get('status') != 'cancelled':  # Don't count cancelled bookings
+                    client_booking_counts[client_id] = client_booking_counts.get(client_id, 0) + 1
+            
+            print(f"📊 DEBUG: Booking counts calculated for {len(client_booking_counts)} clients")
+            
+        except Exception as booking_error:
+            print(f"❌ ERROR: Failed to fetch booking counts: {booking_error}")
+            client_booking_counts = {}
+        
+        # Step 3: Add booking counts to client data
+        for client in clients_data:
+            client_id = client.get('id')
+            client['booking_count'] = client_booking_counts.get(client_id, 0)
+            
+            # Add display name for easier sorting/searching
+            client['display_name'] = client.get('company_name') or client.get('contact_person', 'Unknown')
+        
+        # Step 4: Apply search filter if provided
+        if search_query:
+            filtered_clients = []
+            search_lower = search_query.lower()
+            
+            for client in clients_data:
+                # Search in company name, contact person, and email
+                searchable_fields = [
+                    client.get('company_name', ''),
+                    client.get('contact_person', ''),
+                    client.get('email', '')
+                ]
+                
+                if any(search_lower in str(field).lower() for field in searchable_fields if field):
+                    filtered_clients.append(client)
+            
+            clients_data = filtered_clients
+            print(f"🔍 DEBUG: Search filtered results: {len(clients_data)} clients")
+        
+        # Step 5: Apply sorting
+        try:
+            if sort_by == 'company':
+                clients_data.sort(key=lambda x: (x.get('company_name') or x.get('contact_person', '')).lower())
+            elif sort_by == 'contact':
+                clients_data.sort(key=lambda x: x.get('contact_person', '').lower())
+            elif sort_by == 'recent':
+                # Sort by most recent (assuming newer IDs are more recent)
+                clients_data.sort(key=lambda x: x.get('id', 0), reverse=True)
+            elif sort_by == 'bookings':
+                clients_data.sort(key=lambda x: x.get('booking_count', 0), reverse=True)
+            
+            print(f"✅ DEBUG: Clients sorted by {sort_by}")
+            
+        except Exception as sort_error:
+            print(f"⚠️ WARNING: Error sorting clients: {sort_error}")
+            # Use default sorting
+            clients_data.sort(key=lambda x: (x.get('company_name') or x.get('contact_person', '')).lower())
+        
+        # Step 6: Log activity
+        try:
+            log_user_activity(
+                ActivityTypes.PAGE_VIEW,
+                f"Viewed clients list (search: '{search_query}', sort: '{sort_by}', results: {len(clients_data)})",
+                resource_type='page',
+                metadata={
+                    'page': 'clients_list',
+                    'search_query': search_query,
+                    'sort_by': sort_by,
+                    'results_count': len(clients_data),
+                    'total_clients': len(clients_data)
+                }
+            )
+        except Exception as log_error:
+            print(f"Failed to log clients page view: {log_error}")
+        
+        print(f"📊 DEBUG: Final client statistics:")
+        print(f"  - Total clients displayed: {len(clients_data)}")
+        print(f"  - Clients with bookings: {len([c for c in clients_data if c.get('booking_count', 0) > 0])}")
+        print(f"  - Search query: '{search_query}'")
+        print(f"  - Sort method: {sort_by}")
+        
+        return render_template('clients/index.html', 
+                              title='Clients', 
+                              clients=clients_data,
+                              search_query=search_query,
+                              sort_by=sort_by)
         
     except Exception as e:
         print(f"❌ ERROR: Failed to load clients page: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Log the error
+        try:
+            log_user_activity(
+                ActivityTypes.ERROR_OCCURRED,
+                f"Clients page error: {str(e)}",
+                status='failed',
+                metadata={'error': str(e), 'error_type': type(e).__name__}
+            )
+        except Exception as log_error:
+            print(f"Failed to log clients error: {log_error}")
+        
         flash('Error loading clients. Please try again.', 'danger')
-        return render_template('clients/index.html', title='Clients', clients=[])
+        return render_template('clients/index.html', title='Clients', clients=[], search_query='', sort_by='company')
 
 @app.route('/clients/new', methods=['GET', 'POST'])
 @login_required
@@ -2164,7 +2312,7 @@ def delete_client(id):
 @app.route('/clients/<int:id>')
 @login_required
 def view_client(id):
-    """View client details and booking history with enhanced data access"""
+    """View client details and booking history with enhanced data access - FIXED VERSION"""
     try:
         print(f"🔍 DEBUG: Loading client details for ID {id}")
         
@@ -2178,35 +2326,99 @@ def view_client(id):
         # Get client bookings using enhanced function
         bookings_data = get_client_bookings_from_db(id)
         
+        print(f"✅ DEBUG: Found {len(bookings_data)} bookings for client")
+        
         # Calculate client statistics
         total_bookings = len(bookings_data)
         total_spent = sum(float(booking.get('total_price', 0)) for booking in bookings_data)
         avg_booking_value = total_spent / total_bookings if total_bookings > 0 else 0
         
-        # Get recent booking dates
-        recent_bookings = sorted(bookings_data, key=lambda x: x.get('start_time', ''), reverse=True)[:5]
+        # Separate upcoming and past bookings
+        now = datetime.now(UTC)
+        upcoming_bookings = []
+        past_bookings = []
+        
+        for booking in bookings_data:
+            try:
+                # Handle both string and datetime objects
+                if isinstance(booking.get('end_time'), str):
+                    end_time = datetime.fromisoformat(booking['end_time'].replace('Z', '+00:00')).replace(tzinfo=None)
+                else:
+                    end_time = booking.get('end_time')
+                
+                if end_time and end_time > now:
+                    upcoming_bookings.append(booking)
+                else:
+                    past_bookings.append(booking)
+            except Exception as date_error:
+                print(f"⚠️ WARNING: Error parsing date for booking {booking.get('id')}: {date_error}")
+                # Add to past bookings as fallback
+                past_bookings.append(booking)
         
         # Add statistics to client data for template
         client_stats = {
             'total_bookings': total_bookings,
             'total_spent': round(total_spent, 2),
             'avg_booking_value': round(avg_booking_value, 2),
-            'recent_bookings': recent_bookings
+            'upcoming_bookings': len(upcoming_bookings),
+            'past_bookings': len(past_bookings),
+            'recent_bookings': sorted(bookings_data, key=lambda x: x.get('start_time', ''), reverse=True)[:5]
         }
         
+        # Get client name for logging
         client_name = client.get('company_name') or client.get('contact_person', 'Unknown Client')
+        
+        # Log client view activity
+        try:
+            log_user_activity(
+                ActivityTypes.VIEW_CLIENT,
+                f"Viewed client details for '{client_name}'",
+                resource_type='client',
+                resource_id=id,
+                metadata={
+                    'client_name': client_name,
+                    'total_bookings': total_bookings,
+                    'upcoming_bookings': len(upcoming_bookings),
+                    'past_bookings': len(past_bookings)
+                }
+            )
+        except Exception as log_error:
+            print(f"Failed to log client view: {log_error}")
+        
+        print(f"📊 DEBUG: Client statistics calculated:")
+        print(f"  - Total bookings: {total_bookings}")
+        print(f"  - Total spent: ${total_spent:.2f}")
+        print(f"  - Upcoming: {len(upcoming_bookings)}")
+        print(f"  - Past: {len(past_bookings)}")
         
         return render_template('clients/view.html', 
                               title=f'Client: {client_name}', 
                               client=client, 
                               bookings=bookings_data,
-                              stats=client_stats)
+                              stats=client_stats,
+                              now=now)
                               
     except Exception as e:
         print(f"❌ ERROR: Failed to load client details for ID {id}: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        # Log the error
+        try:
+            log_user_activity(
+                ActivityTypes.ERROR_OCCURRED,
+                f"Error viewing client ID {id}: {str(e)}",
+                resource_type='client',
+                resource_id=id,
+                status='failed',
+                metadata={'error': str(e)}
+            )
+        except Exception as log_error:
+            print(f"Failed to log client view error: {log_error}")
+        
         flash('Error loading client details', 'danger')
         return redirect(url_for('clients'))
-
+    
 # API endpoint for client data verification
 @app.route('/api/clients/verify/<int:id>')
 @login_required
@@ -5595,7 +5807,134 @@ def debug_test_queries():
             'error': str(e),
             'timestamp': datetime.now(UTC).isoformat()
         }), 500
+
+@app.route('/api/clients/booking-counts')
+@login_required
+def api_client_booking_counts():
+    """API endpoint to get booking counts for all clients"""
+    try:
+        clients = get_clients_with_booking_counts()
         
+        booking_counts = {}
+        for client in clients:
+            booking_counts[client['id']] = client.get('booking_count', 0)
+        
+        return jsonify({
+            'success': True,
+            'booking_counts': booking_counts,
+            'total_clients': len(clients)
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        }), 500
+
+@app.route('/api/clients/<int:id>/stats')
+@login_required
+def api_client_stats(id):
+    """API endpoint to get detailed statistics for a specific client"""
+    try:
+        # Get client
+        client = get_client_by_id_from_db(id)
+        if not client:
+            return jsonify({'success': False, 'error': 'Client not found'}), 404
+        
+        # Get bookings
+        bookings = get_client_bookings_from_db(id)
+        
+        # Calculate stats
+        total_bookings = len(bookings)
+        total_spent = sum(float(booking.get('total_price', 0)) for booking in bookings)
+        avg_booking_value = total_spent / total_bookings if total_bookings > 0 else 0
+        
+        # Count by status
+        status_counts = {}
+        for booking in bookings:
+            status = booking.get('status', 'unknown')
+            status_counts[status] = status_counts.get(status, 0) + 1
+        
+        return jsonify({
+            'success': True,
+            'client_id': id,
+            'client_name': client.get('company_name') or client.get('contact_person'),
+            'stats': {
+                'total_bookings': total_bookings,
+                'total_spent': round(total_spent, 2),
+                'avg_booking_value': round(avg_booking_value, 2),
+                'status_breakdown': status_counts
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/debug/clients-sync')
+@login_required
+def debug_clients_sync():
+    """Debug endpoint to check client-booking data synchronization"""
+    try:
+        debug_info = {
+            'timestamp': datetime.now(UTC).isoformat(),
+            'clients_analysis': {},
+            'booking_analysis': {},
+            'sync_issues': []
+        }
+        
+        # Analyze clients
+        clients = get_all_clients_from_db()
+        debug_info['clients_analysis'] = {
+            'total_clients': len(clients),
+            'clients_with_company_name': len([c for c in clients if c.get('company_name')]),
+            'clients_with_phone': len([c for c in clients if c.get('phone')]),
+            'sample_clients': clients[:3] if clients else []
+        }
+        
+        # Analyze bookings
+        bookings_response = supabase_admin.table('bookings').select('*').execute()
+        bookings = bookings_response.data if bookings_response.data else []
+        
+        client_ids_with_bookings = set()
+        orphaned_bookings = []
+        
+        for booking in bookings:
+            client_id = booking.get('client_id')
+            if client_id:
+                client_ids_with_bookings.add(client_id)
+                # Check if client exists
+                if not any(c['id'] == client_id for c in clients):
+                    orphaned_bookings.append(booking['id'])
+        
+        debug_info['booking_analysis'] = {
+            'total_bookings': len(bookings),
+            'unique_clients_with_bookings': len(client_ids_with_bookings),
+            'orphaned_bookings': len(orphaned_bookings),
+            'status_breakdown': {}
+        }
+        
+        # Status breakdown
+        for booking in bookings:
+            status = booking.get('status', 'unknown')
+            debug_info['booking_analysis']['status_breakdown'][status] = \
+                debug_info['booking_analysis']['status_breakdown'].get(status, 0) + 1
+        
+        # Check for sync issues
+        if orphaned_bookings:
+            debug_info['sync_issues'].append(f"Found {len(orphaned_bookings)} orphaned bookings")
+        
+        clients_without_bookings = len(clients) - len(client_ids_with_bookings)
+        if clients_without_bookings > 0:
+            debug_info['sync_issues'].append(f"{clients_without_bookings} clients have no bookings")
+        
+        return jsonify(debug_info)
+        
+    except Exception as e:
+        return jsonify({
+            'error': str(e),
+            'timestamp': datetime.now(UTC).isoformat()
+        }), 500
+
 # ===============================
 # PRODUCTION DEBUG HELPER FUNCTIONS
 # ===============================

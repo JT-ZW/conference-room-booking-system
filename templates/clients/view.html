@@ -3,109 +3,432 @@ client.contact_person }} | Rainbow Towers Conference Booking{% endblock %} {%
 block extra_css %}
 <style>
   .client-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 0.5rem;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
     border-left: 4px solid #4e73df;
-    padding-left: 1rem;
   }
 
   .booking-item {
     border-left: 4px solid;
-    transition: transform 0.2s;
+    transition: all 0.3s ease;
+    border-radius: 0.375rem;
+    margin-bottom: 0.5rem;
   }
 
   .booking-item:hover {
     transform: translateX(5px);
+    box-shadow: 0 0.25rem 0.5rem rgba(0, 0, 0, 0.1);
   }
 
   .booking-tentative {
     border-color: #f6c23e;
+    background-color: #fef9e7;
   }
+
   .booking-confirmed {
     border-color: #1cc88a;
+    background-color: #e8f5e8;
   }
+
   .booking-cancelled {
     border-color: #e74a3b;
+    background-color: #fbeaea;
+  }
+
+  .stat-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    transition: transform 0.2s ease;
+    border-radius: 0.5rem;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+  }
+
+  .client-info-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  }
+
+  .booking-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+  }
+
+  .client-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 2rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+  }
+
+  .filter-btn {
+    transition: all 0.2s ease;
+    border-radius: 20px;
+    padding: 0.375rem 1rem;
+    font-size: 0.875rem;
+    border: 1px solid #dee2e6;
+  }
+
+  .filter-btn.active {
+    transform: scale(1.05);
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.2);
+    background-color: #007bff;
+    border-color: #007bff;
+    color: white;
+  }
+
+  .empty-state {
+    padding: 3rem 1rem;
+    text-align: center;
+    color: #6c757d;
+  }
+
+  .timeline-item {
+    border-left: 2px solid #dee2e6;
+    padding-left: 1rem;
+    margin-bottom: 1rem;
+    position: relative;
+  }
+
+  .timeline-item::before {
+    content: "";
+    position: absolute;
+    left: -6px;
+    top: 0.5rem;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background-color: #007bff;
+  }
+
+  .revenue-trend {
+    font-size: 0.875rem;
+    margin-top: 0.5rem;
+  }
+
+  .booking-quick-actions {
+    display: none;
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    z-index: 10;
+  }
+
+  .booking-item:hover .booking-quick-actions {
+    display: block;
+  }
+
+  .refresh-spin {
+    animation: spin 1s linear infinite;
+  }
+
+  @keyframes spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .contact-info {
+    background: rgba(255, 255, 255, 0.8);
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .stat-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .client-header .btn {
+    border-color: rgba(255, 255, 255, 0.3);
+    color: white;
+  }
+
+  .client-header .btn:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: white;
+  }
+
+  .booking-status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 0.5rem;
+  }
+
+  .status-tentative {
+    background-color: #f6c23e;
+  }
+  .status-confirmed {
+    background-color: #1cc88a;
+  }
+  .status-cancelled {
+    background-color: #e74a3b;
   }
 </style>
 {% endblock %} {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h1 class="client-header">
-    {{ client.company_name or client.contact_person }}
-  </h1>
-  <div>
-    <a href="{{ url_for('clients') }}" class="btn btn-outline-secondary">
-      <i class="fas fa-arrow-left me-1"></i>Back to Clients
-    </a>
-    <a
-      href="{{ url_for('edit_client', id=client.id) }}"
-      class="btn btn-warning ms-2"
-    >
-      <i class="fas fa-edit me-1"></i>Edit Client
-    </a>
-    <a
-      href="{{ url_for('new_booking') }}?client={{ client.id }}"
-      class="btn btn-success ms-2"
-    >
-      <i class="fas fa-plus me-1"></i>New Booking
-    </a>
+<!-- Client Header -->
+<div class="client-header">
+  <div class="d-flex justify-content-between align-items-center">
+    <div class="d-flex align-items-center">
+      <div class="client-avatar me-3">
+        {{ (client.company_name or client.contact_person)[0]|upper if
+        (client.company_name or client.contact_person) else '?' }}
+      </div>
+      <div>
+        <h1 class="mb-1">
+          {{ client.company_name or client.contact_person or 'Unknown Client' }}
+        </h1>
+        {% if client.company_name and client.contact_person %}
+        <p class="mb-1 opacity-75">
+          <i class="fas fa-user me-1"></i>{{ client.contact_person }}
+        </p>
+        {% endif %}
+        <div class="d-flex align-items-center flex-wrap">
+          <small class="opacity-75 me-3">
+            <i class="fas fa-clock me-1"></i>
+            Client since {{ client.created_at.strftime('%B %Y') if
+            client.created_at else 'Unknown' }}
+          </small>
+          {% if stats and stats.total_bookings > 0 %}
+          <small class="opacity-75">
+            <i class="fas fa-chart-line me-1"></i>
+            {{ stats.total_bookings }} booking{{ 's' if stats.total_bookings !=
+            1 else '' }} • ${{ stats.total_spent }} total value
+          </small>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+    <div class="text-end">
+      <div class="btn-group">
+        <a href="{{ url_for('clients') }}" class="btn btn-outline-light">
+          <i class="fas fa-arrow-left me-1"></i>Back to Clients
+        </a>
+        <a
+          href="{{ url_for('edit_client', id=client.id) }}"
+          class="btn btn-outline-light"
+        >
+          <i class="fas fa-edit me-1"></i>Edit
+        </a>
+        <a
+          href="{{ url_for('new_booking') }}?client={{ client.id }}"
+          class="btn btn-light"
+        >
+          <i class="fas fa-plus me-1"></i>New Booking
+        </a>
+      </div>
+    </div>
   </div>
 </div>
+
+<!-- Statistics Cards -->
+{% if stats %}
+<div class="row mb-4">
+  <div class="col-md-3 mb-3">
+    <div class="card stat-card text-center h-100">
+      <div class="card-body">
+        <i class="fas fa-calendar-check stat-icon text-primary"></i>
+        <h3 class="mb-1">{{ stats.total_bookings }}</h3>
+        <p class="text-muted mb-0">Total Bookings</p>
+        <small class="text-muted">
+          {{ stats.upcoming_bookings }} upcoming
+        </small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card stat-card text-center h-100">
+      <div class="card-body">
+        <i class="fas fa-dollar-sign stat-icon text-success"></i>
+        <h3 class="mb-1">${{ stats.total_spent|default(0) }}</h3>
+        <p class="text-muted mb-0">Total Spent</p>
+        <small class="text-muted"> Lifetime value </small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card stat-card text-center h-100">
+      <div class="card-body">
+        <i class="fas fa-chart-line stat-icon text-warning"></i>
+        <h3 class="mb-1">${{ stats.avg_booking_value|default(0) }}</h3>
+        <p class="text-muted mb-0">Avg. Booking</p>
+        <small class="text-muted"> Per event value </small>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card stat-card text-center h-100">
+      <div class="card-body">
+        <i class="fas fa-arrow-up stat-icon text-info"></i>
+        <h3 class="mb-1">{{ stats.upcoming_bookings|default(0) }}</h3>
+        <p class="text-muted mb-0">Upcoming</p>
+        <small class="text-muted"> Future events </small>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
 
 <div class="row">
   <!-- Client Details -->
   <div class="col-lg-4 mb-4">
-    <div class="card shadow-sm border-0 h-100">
-      <div class="card-header bg-white">
+    <div class="card shadow-sm border-0 h-100 client-info-card">
+      <div class="card-header bg-transparent border-0">
         <h5 class="mb-0 text-primary">
-          <i class="fas fa-info-circle me-2"></i>Client Details
+          <i class="fas fa-info-circle me-2"></i>Client Information
         </h5>
       </div>
       <div class="card-body">
         {% if client.company_name %}
-        <div class="mb-3">
-          <h6 class="text-muted mb-1">Company</h6>
+        <div class="contact-info">
+          <h6 class="text-muted mb-1">
+            <i class="fas fa-building me-1"></i>Company
+          </h6>
           <p class="mb-0 fw-bold">{{ client.company_name }}</p>
         </div>
         {% endif %}
 
-        <div class="mb-3">
-          <h6 class="text-muted mb-1">Contact Person</h6>
-          <p class="mb-0">{{ client.contact_person }}</p>
+        <div class="contact-info">
+          <h6 class="text-muted mb-1">
+            <i class="fas fa-user me-1"></i>Contact Person
+          </h6>
+          <p class="mb-0">{{ client.contact_person or 'Not provided' }}</p>
         </div>
 
-        <div class="mb-3">
-          <h6 class="text-muted mb-1">Email</h6>
+        <div class="contact-info">
+          <h6 class="text-muted mb-1">
+            <i class="fas fa-envelope me-1"></i>Email
+          </h6>
           <p class="mb-0">
-            <a href="mailto:{{ client.email }}">{{ client.email }}</a>
+            <a href="mailto:{{ client.email }}" class="text-decoration-none">
+              {{ client.email }}
+            </a>
+            <button
+              class="btn btn-sm btn-outline-secondary ms-1"
+              onclick="copyToClipboard('{{ client.email }}')"
+              title="Copy email"
+            >
+              <i class="fas fa-copy"></i>
+            </button>
           </p>
         </div>
 
         {% if client.phone %}
-        <div class="mb-3">
-          <h6 class="text-muted mb-1">Phone</h6>
-          <p class="mb-0">{{ client.phone }}</p>
+        <div class="contact-info">
+          <h6 class="text-muted mb-1">
+            <i class="fas fa-phone me-1"></i>Phone
+          </h6>
+          <p class="mb-0">
+            <a href="tel:{{ client.phone }}" class="text-decoration-none">
+              {{ client.phone }}
+            </a>
+            <button
+              class="btn btn-sm btn-outline-secondary ms-1"
+              onclick="copyToClipboard('{{ client.phone }}')"
+              title="Copy phone"
+            >
+              <i class="fas fa-copy"></i>
+            </button>
+          </p>
         </div>
         {% endif %} {% if client.address %}
-        <div class="mb-3">
-          <h6 class="text-muted mb-1">Address</h6>
-          <p class="mb-0">{{ client.address|nl2br }}</p>
+        <div class="contact-info">
+          <h6 class="text-muted mb-1">
+            <i class="fas fa-map-marker-alt me-1"></i>Address
+          </h6>
+          <p class="mb-0">{{ client.address|nl2br|safe }}</p>
         </div>
         {% endif %} {% if client.notes %}
-        <div class="mb-0">
-          <h6 class="text-muted mb-1">Notes</h6>
-          <p class="mb-0">{{ client.notes|nl2br }}</p>
+        <div class="contact-info">
+          <h6 class="text-muted mb-1">
+            <i class="fas fa-sticky-note me-1"></i>Notes
+          </h6>
+          <p class="mb-0">{{ client.notes|nl2br|safe }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Client Activity Summary -->
+        {% if stats %}
+        <div class="mt-4 pt-3 border-top">
+          <h6 class="text-muted mb-3">
+            <i class="fas fa-chart-bar me-1"></i>Activity Summary
+          </h6>
+          <div class="row text-center mb-3">
+            <div class="col-6">
+              <div class="border rounded p-2">
+                <div class="fw-bold text-primary">
+                  {{ stats.upcoming_bookings|default(0) }}
+                </div>
+                <small class="text-muted">Upcoming</small>
+              </div>
+            </div>
+            <div class="col-6">
+              <div class="border rounded p-2">
+                <div class="fw-bold text-secondary">
+                  {{ stats.past_bookings|default(0) }}
+                </div>
+                <small class="text-muted">Completed</small>
+              </div>
+            </div>
+          </div>
+
+          {% if stats.total_spent and stats.total_spent > 0 %}
+          <div class="revenue-trend p-2 bg-light rounded">
+            <div class="d-flex justify-content-between align-items-center">
+              <div>
+                <i class="fas fa-trending-up text-success me-1"></i>
+                <strong>Revenue Impact</strong>
+              </div>
+              <div class="text-end">
+                <div class="text-success fw-bold">${{ stats.total_spent }}</div>
+                <small class="text-muted">Total value</small>
+              </div>
+            </div>
+            <div class="mt-2">
+              <small class="text-muted">
+                Average booking: ${{ stats.avg_booking_value|default(0) }} {% if
+                stats.total_bookings > 1 %} • {{ "%.1f"|format(stats.total_spent
+                / stats.total_bookings) }} per event {% endif %}
+              </small>
+            </div>
+          </div>
+          {% endif %}
         </div>
         {% endif %}
       </div>
-      <div class="card-footer bg-white">
-        <div class="d-flex justify-content-between">
-          <span class="text-muted small">
-            <i class="fas fa-clock me-1"></i>Client since {{
-            client.created_at.strftime('%b %Y') }}
-          </span>
-          <span class="badge bg-primary">
-            {{ bookings|length }} Booking{% if bookings|length != 1 %}s{% endif
-            %}
-          </span>
+
+      <div class="card-footer bg-transparent">
+        <div class="d-grid gap-2">
+          <a
+            href="{{ url_for('edit_client', id=client.id) }}"
+            class="btn btn-outline-warning btn-sm"
+          >
+            <i class="fas fa-edit me-1"></i>Edit Client Information
+          </a>
+          <a
+            href="{{ url_for('new_booking') }}?client={{ client.id }}"
+            class="btn btn-success btn-sm"
+          >
+            <i class="fas fa-calendar-plus me-1"></i>Schedule New Booking
+          </a>
         </div>
       </div>
     </div>
@@ -118,62 +441,191 @@ block extra_css %}
         class="card-header bg-white d-flex justify-content-between align-items-center"
       >
         <h5 class="mb-0 text-primary">
-          <i class="fas fa-calendar-alt me-2"></i>Bookings History
+          <i class="fas fa-calendar-alt me-2"></i>
+          Booking History
+          <span class="badge bg-primary ms-2"
+            >{{ bookings|length if bookings else 0 }}</span
+          >
         </h5>
-        <div class="btn-group">
+        <div class="d-flex align-items-center">
+          <div class="btn-group me-2" role="group">
+            <button
+              class="btn btn-sm btn-outline-secondary filter-btn active"
+              id="allBookingsBtn"
+              onclick="filterBookings('all')"
+            >
+              All
+              <span class="badge bg-secondary ms-1"
+                >{{ bookings|length if bookings else 0 }}</span
+              >
+            </button>
+            <button
+              class="btn btn-sm btn-outline-secondary filter-btn"
+              id="upcomingBookingsBtn"
+              onclick="filterBookings('upcoming')"
+            >
+              Upcoming
+              <span class="badge bg-info ms-1" id="upcomingCount">0</span>
+            </button>
+            <button
+              class="btn btn-sm btn-outline-secondary filter-btn"
+              id="pastBookingsBtn"
+              onclick="filterBookings('past')"
+            >
+              Past <span class="badge bg-secondary ms-1" id="pastCount">0</span>
+            </button>
+          </div>
           <button
-            class="btn btn-sm btn-outline-secondary active"
-            id="allBookingsBtn"
+            type="button"
+            class="btn btn-sm btn-outline-info"
+            onclick="refreshBookingData()"
+            title="Refresh bookings"
           >
-            All
-          </button>
-          <button
-            class="btn btn-sm btn-outline-secondary"
-            id="upcomingBookingsBtn"
-          >
-            Upcoming
-          </button>
-          <button class="btn btn-sm btn-outline-secondary" id="pastBookingsBtn">
-            Past
+            <i class="fas fa-sync-alt" id="bookingRefreshIcon"></i>
           </button>
         </div>
       </div>
-      <div class="card-body p-0">
+
+      <div class="card-body p-0" style="max-height: 600px; overflow-y: auto">
         {% if bookings %}
         <div class="list-group list-group-flush" id="bookingsList">
-          {% for booking in bookings %}
-          <a
-            href="{{ url_for('view_booking', id=booking.id) }}"
-            class="list-group-item list-group-item-action booking-item booking-{{ booking.status }} {% if booking.end_time < now %}booking-past{% else %}booking-upcoming{% endif %}"
+          {% for booking in bookings %} {% set is_upcoming = booking.end_time >
+          now if booking.end_time and now else false %}
+          <div
+            class="list-group-item list-group-item-action booking-item booking-{{ booking.status }} 
+                      {% if is_upcoming %}booking-upcoming{% else %}booking-past{% endif %}"
+            data-booking-status="{{ booking.status }}"
+            data-booking-time="{{ 'upcoming' if is_upcoming else 'past' }}"
+            style="position: relative"
           >
-            <div
-              class="d-flex w-100 justify-content-between align-items-center"
-            >
-              <div>
-                <h5 class="mb-1">{{ booking.title }}</h5>
-                <p class="mb-1 text-muted">
-                  <i class="fas fa-door-open me-1"></i>{{ booking.room.name }}
-                </p>
-              </div>
-              <div class="text-end">
-                <span
-                  class="badge bg-{% if booking.status == 'tentative' %}warning{% elif booking.status == 'confirmed' %}success{% else %}danger{% endif %}"
+            <!-- Quick Actions (shown on hover) -->
+            <div class="booking-quick-actions">
+              <div class="btn-group btn-group-sm">
+                <a
+                  href="{{ url_for('view_booking', id=booking.id) }}"
+                  class="btn btn-sm btn-primary"
+                  title="View booking"
                 >
-                  {{ booking.status|capitalize }}
-                </span>
-                <div class="small text-muted mt-1">
-                  {{ booking.start_time.strftime('%d %b %Y') }}<br />
-                  {{ booking.start_time.strftime('%H:%M') }} - {{
-                  booking.end_time.strftime('%H:%M') }}
+                  <i class="fas fa-eye"></i>
+                </a>
+                {% if booking.status != 'cancelled' %}
+                <a
+                  href="{{ url_for('edit_booking', id=booking.id) }}"
+                  class="btn btn-sm btn-warning"
+                  title="Edit booking"
+                >
+                  <i class="fas fa-edit"></i>
+                </a>
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="d-flex w-100 justify-content-between align-items-start">
+              <div class="flex-grow-1">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-2"
+                >
+                  <h5 class="mb-1">
+                    <span
+                      class="booking-status-indicator status-{{ booking.status }}"
+                    ></span>
+                    <a
+                      href="{{ url_for('view_booking', id=booking.id) }}"
+                      class="text-decoration-none text-dark"
+                    >
+                      {{ booking.title or 'Untitled Event' }}
+                    </a>
+                  </h5>
+                  <span
+                    class="badge booking-badge bg-{% if booking.status == 'tentative' %}warning{% elif booking.status == 'confirmed' %}success{% else %}danger{% endif %}"
+                  >
+                    {{ booking.status|capitalize }}
+                  </span>
+                </div>
+
+                <div class="row">
+                  <div class="col-md-6">
+                    <p class="mb-1 text-muted">
+                      <i class="fas fa-door-open me-1"></i>
+                      {% if booking.room and booking.room.name %} {{
+                      booking.room.name }} {% else %} Room information
+                      unavailable {% endif %}
+                    </p>
+                    <p class="mb-1 text-muted">
+                      <i class="fas fa-calendar me-1"></i>
+                      {{ booking.start_time.strftime('%d %B %Y') if
+                      booking.start_time else 'Date TBD' }}
+                    </p>
+                  </div>
+                  <div class="col-md-6 text-md-end">
+                    <p class="mb-1 text-muted">
+                      <i class="fas fa-clock me-1"></i>
+                      {{ booking.start_time.strftime('%H:%M') if
+                      booking.start_time else '--:--' }} - {{
+                      booking.end_time.strftime('%H:%M') if booking.end_time
+                      else '--:--' }}
+                    </p>
+                    {% if booking.total_price %}
+                    <p class="mb-1 text-success fw-bold">
+                      <i class="fas fa-dollar-sign me-1"></i>
+                      ${{ booking.total_price }}
+                    </p>
+                    {% endif %}
+                  </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center">
+                  <div>
+                    {% if booking.attendees %}
+                    <small class="text-muted me-3">
+                      <i class="fas fa-users me-1"></i>{{ booking.attendees }}
+                      attendee(s)
+                    </small>
+                    {% endif %} {% if booking.notes %}
+                    <small class="text-muted">
+                      <i class="fas fa-sticky-note me-1"></i>{{
+                      booking.notes|truncate(50) }}
+                    </small>
+                    {% endif %}
+                  </div>
+
+                  <div class="btn-group btn-group-sm">
+                    <a
+                      href="{{ url_for('view_booking', id=booking.id) }}"
+                      class="btn btn-outline-primary"
+                    >
+                      <i class="fas fa-eye me-1"></i>View
+                    </a>
+                    {% if booking.status == 'tentative' %}
+                    <a
+                      href="{{ url_for('generate_quotation', id=booking.id) }}"
+                      class="btn btn-outline-info"
+                    >
+                      <i class="fas fa-file-invoice me-1"></i>Quote
+                    </a>
+                    {% elif booking.status == 'confirmed' %}
+                    <a
+                      href="{{ url_for('generate_invoice', id=booking.id) }}"
+                      class="btn btn-outline-success"
+                    >
+                      <i class="fas fa-receipt me-1"></i>Invoice
+                    </a>
+                    {% endif %}
+                  </div>
                 </div>
               </div>
             </div>
-          </a>
+          </div>
           {% endfor %}
         </div>
         {% else %}
-        <div class="p-5 text-center">
-          <p class="text-muted mb-3">No bookings found for this client.</p>
+        <div class="empty-state" id="noBookingsState">
+          <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+          <h5 class="text-muted">No bookings found</h5>
+          <p class="text-muted mb-3">
+            This client hasn't made any bookings yet.<br />
+            Get started by creating their first booking.
+          </p>
           <a
             href="{{ url_for('new_booking') }}?client={{ client.id }}"
             class="btn btn-primary"
@@ -182,69 +634,349 @@ block extra_css %}
           </a>
         </div>
         {% endif %}
+
+        <!-- Empty state for filtered results -->
+        <div class="empty-state d-none" id="noFilteredBookingsState">
+          <i class="fas fa-filter fa-3x text-muted mb-3"></i>
+          <h5 class="text-muted">No bookings match your filter</h5>
+          <p class="text-muted mb-3">
+            Try selecting a different filter option.
+          </p>
+        </div>
       </div>
+
       {% if bookings %}
       <div class="card-footer bg-white text-center">
-        <a
-          href="{{ url_for('new_booking') }}?client={{ client.id }}"
-          class="btn btn-primary"
-        >
-          <i class="fas fa-plus me-1"></i>Create New Booking
-        </a>
+        <div class="d-flex justify-content-center gap-2">
+          <a
+            href="{{ url_for('new_booking') }}?client={{ client.id }}"
+            class="btn btn-primary"
+          >
+            <i class="fas fa-plus me-1"></i>Create New Booking
+          </a>
+          {% if stats and stats.total_bookings > 0 %}
+          <button
+            type="button"
+            class="btn btn-outline-secondary"
+            onclick="exportClientBookings()"
+          >
+            <i class="fas fa-download me-1"></i>Export History
+          </button>
+          {% endif %}
+        </div>
       </div>
       {% endif %}
     </div>
   </div>
 </div>
-{% endblock %} {% block extra_js %}
+
+<!-- Recent Activity Timeline (if there are bookings) -->
+{% if bookings and stats and stats.recent_bookings %}
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card shadow-sm border-0">
+      <div class="card-header bg-white">
+        <h6 class="mb-0 text-primary">
+          <i class="fas fa-history me-2"></i>Recent Activity Timeline
+        </h6>
+      </div>
+      <div class="card-body">
+        {% for booking in stats.recent_bookings[:5] %}
+        <div class="timeline-item">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <strong>{{ booking.title or 'Booking' }}</strong>
+              <span
+                class="badge bg-{{ 'success' if booking.status == 'confirmed' else 'warning' if booking.status == 'tentative' else 'danger' }} ms-2"
+              >
+                {{ booking.status|capitalize }}
+              </span>
+            </div>
+            <small class="text-muted">
+              {{ booking.start_time.strftime('%d %b %Y') if booking.start_time
+              else 'Date TBD' }}
+            </small>
+          </div>
+          <small class="text-muted">
+            {% if booking.room and booking.room.name %}{{ booking.room.name }}{%
+            else %}Room TBD{% endif %} {% if booking.total_price %} • ${{
+            booking.total_price }}{% endif %}
+          </small>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %} {% endblock %} {% block extra_js %}
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    const allBtn = document.getElementById("allBookingsBtn");
-    const upcomingBtn = document.getElementById("upcomingBookingsBtn");
-    const pastBtn = document.getElementById("pastBookingsBtn");
+    console.log("📊 Enhanced client view page loaded successfully");
 
-    const bookingItems = document.querySelectorAll(".booking-item");
-
-    // Show all bookings
-    allBtn.addEventListener("click", function () {
-      allBtn.classList.add("active");
-      upcomingBtn.classList.remove("active");
-      pastBtn.classList.remove("active");
-
-      bookingItems.forEach((item) => {
-        item.style.display = "block";
-      });
+    // Initialize tooltips
+    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 
-    // Show only upcoming bookings
-    upcomingBtn.addEventListener("click", function () {
-      allBtn.classList.remove("active");
-      upcomingBtn.classList.add("active");
-      pastBtn.classList.remove("active");
+    // Calculate and update filter counts
+    updateFilterCounts();
 
-      bookingItems.forEach((item) => {
-        if (item.classList.contains("booking-upcoming")) {
-          item.style.display = "block";
-        } else {
-          item.style.display = "none";
-        }
-      });
-    });
+    // Log client information
+    const clientData = {
+      clientId: {{ client.id if client else 'null' }},
+      totalBookings: {{ bookings|length if bookings else 0 }},
+      companyName: "{{ client.company_name or 'None' }}",
+      contactPerson: "{{ client.contact_person or 'None' }}"
+    };
 
-    // Show only past bookings
-    pastBtn.addEventListener("click", function () {
-      allBtn.classList.remove("active");
-      upcomingBtn.classList.remove("active");
-      pastBtn.classList.add("active");
+    console.log("📋 Client Information:", clientData);
 
-      bookingItems.forEach((item) => {
-        if (item.classList.contains("booking-past")) {
-          item.style.display = "block";
-        } else {
-          item.style.display = "none";
-        }
-      });
-    });
+    {% if stats %}
+    const clientStats = {
+      totalSpent: {{ stats.total_spent|default(0) }},
+      avgBookingValue: {{ stats.avg_booking_value|default(0) }},
+      upcomingBookings: {{ stats.upcoming_bookings|default(0) }},
+      pastBookings: {{ stats.past_bookings|default(0) }}
+    };
+    console.log("📈 Client Statistics:", clientStats);
+    {% endif %}
+
+    // Initialize keyboard shortcuts
+    setupKeyboardShortcuts();
   });
+
+  function filterBookings(filter) {
+    console.log(`🔍 Filtering bookings by: ${filter}`);
+
+    const allBookings = document.querySelectorAll('.booking-item');
+    const noFilteredState = document.getElementById('noFilteredBookingsState');
+    const noBookingsState = document.getElementById('noBookingsState');
+
+    // Update button states
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.classList.remove('active');
+    });
+    document.getElementById(`${filter}BookingsBtn`).classList.add('active');
+
+    let visibleCount = 0;
+
+    allBookings.forEach(booking => {
+      let shouldShow = false;
+
+      if (filter === 'all') {
+        shouldShow = true;
+      } else if (filter === 'upcoming') {
+        shouldShow = booking.dataset.bookingTime === 'upcoming' &&
+                     booking.dataset.bookingStatus !== 'cancelled';
+      } else if (filter === 'past') {
+        shouldShow = booking.dataset.bookingTime === 'past' ||
+                     booking.dataset.bookingStatus === 'cancelled';
+      }
+
+      if (shouldShow) {
+        booking.style.display = 'block';
+        visibleCount++;
+      } else {
+        booking.style.display = 'none';
+      }
+    });
+
+    // Show/hide empty states
+    if (noBookingsState) {
+      noBookingsState.style.display = 'none';
+    }
+
+    if (noFilteredState) {
+      if (visibleCount === 0 && allBookings.length > 0) {
+        noFilteredState.classList.remove('d-none');
+      } else {
+        noFilteredState.classList.add('d-none');
+      }
+    }
+
+    console.log(`📊 Filter results: ${visibleCount} bookings visible`);
+  }
+
+  function updateFilterCounts() {
+    const upcomingBookings = document.querySelectorAll('[data-booking-time="upcoming"]:not([data-booking-status="cancelled"])').length;
+    const pastBookings = document.querySelectorAll('[data-booking-time="past"]').length;
+    const cancelledBookings = document.querySelectorAll('[data-booking-status="cancelled"]').length;
+
+    // Update count badges
+    const upcomingCountEl = document.getElementById('upcomingCount');
+    if (upcomingCountEl) {
+      upcomingCountEl.textContent = upcomingBookings;
+    }
+
+    const pastCountEl = document.getElementById('pastCount');
+    if (pastCountEl) {
+      pastCountEl.textContent = pastBookings + cancelledBookings;
+    }
+
+    console.log("📊 Booking counts updated:");
+    console.log(`  - Upcoming: ${upcomingBookings}`);
+    console.log(`  - Past: ${pastBookings + cancelledBookings}`);
+  }
+
+  function refreshBookingData() {
+    console.log("🔄 Refreshing booking data...");
+
+    const refreshIcon = document.getElementById('bookingRefreshIcon');
+    if (refreshIcon) {
+      refreshIcon.classList.add('refresh-spin');
+    }
+
+    // Show loading state
+    const bookingsList = document.getElementById('bookingsList');
+    if (bookingsList) {
+      const originalContent = bookingsList.innerHTML;
+      bookingsList.innerHTML = `
+        <div class="list-group-item text-center py-4">
+          <i class="fas fa-spinner fa-spin fa-2x text-primary mb-2"></i>
+          <div>Refreshing booking data...</div>
+        </div>
+      `;
+
+      // Reload page after short delay
+      setTimeout(function() {
+        window.location.reload();
+      }, 1500);
+    } else {
+      // Fallback: immediate reload
+      window.location.reload();
+    }
+  }
+
+  function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+      // Show temporary feedback
+      const toast = document.createElement('div');
+      toast.className = 'position-fixed top-0 end-0 p-3';
+      toast.style.zIndex = '9999';
+      toast.innerHTML = `
+        <div class="toast show" role="alert">
+          <div class="toast-body">
+            <i class="fas fa-check text-success me-1"></i>
+            Copied to clipboard: ${text}
+          </div>
+        </div>
+      `;
+      document.body.appendChild(toast);
+
+      setTimeout(function() {
+        document.body.removeChild(toast);
+      }, 2000);
+
+      console.log(`📋 Copied to clipboard: ${text}`);
+    }).catch(function(err) {
+      console.error('Failed to copy: ', err);
+      alert('Failed to copy to clipboard');
+    });
+  }
+
+  function exportClientBookings() {
+    console.log("📤 Exporting client booking history...");
+
+    const clientName = "{{ client.company_name or client.contact_person }}";
+    const bookings = [];
+
+    // Add header
+    bookings.push(['Date', 'Title', 'Room', 'Status', 'Amount', 'Attendees']);
+
+    // Add booking data
+    const bookingItems = document.querySelectorAll('.booking-item');
+    bookingItems.forEach(item => {
+      const title = item.querySelector('a').textContent.trim();
+      const status = item.querySelector('.badge').textContent.trim();
+      const dateMatch = item.textContent.match(/\d{2} \w+ \d{4}/);
+      const date = dateMatch ? dateMatch[0] : 'Unknown';
+      const roomMatch = item.textContent.match(/Room: ([^•]+)/);
+      const room = roomMatch ? roomMatch[1].trim() : 'Unknown';
+      const amountMatch = item.textContent.match(/\$[\d,.]+/);
+      const amount = amountMatch ? amountMatch[0] : '$0';
+      const attendeesMatch = item.textContent.match(/(\d+) attendee/);
+      const attendees = attendeesMatch ? attendeesMatch[1] : '0';
+
+      bookings.push([date, title, room, status, amount, attendees]);
+    });
+
+    // Create and download CSV
+    const csvContent = bookings.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${clientName.replace(/[^a-zA-Z0-9]/g, '_')}_bookings_${new Date().toISOString().split('T')[0]}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+
+    console.log("✅ Client booking history exported successfully");
+  }
+
+  function setupKeyboardShortcuts() {
+    document.addEventListener('keydown', function(e) {
+      // Ctrl/Cmd + E to edit client
+      if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
+        e.preventDefault();
+        window.location.href = "{{ url_for('edit_client', id=client.id) }}";
+      }
+
+      // Ctrl/Cmd + N to create new booking
+      if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+        e.preventDefault();
+        window.location.href = "{{ url_for('new_booking') }}?client={{ client.id }}";
+      }
+
+      // Ctrl/Cmd + B to go back to clients
+      if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
+        e.preventDefault();
+        window.location.href = "{{ url_for('clients') }}";
+      }
+
+      // Numbers 1-3 to filter bookings
+      if (e.key >= '1' && e.key <= '3' && !e.ctrlKey && !e.metaKey) {
+        e.preventDefault();
+        const filters = ['all', 'upcoming', 'past'];
+        filterBookings(filters[parseInt(e.key) - 1]);
+      }
+    });
+
+    console.log("⌨️ Keyboard shortcuts:");
+    console.log("  - Ctrl+E: Edit client");
+    console.log("  - Ctrl+N: New booking");
+    console.log("  - Ctrl+B: Back to clients");
+    console.log("  - 1/2/3: Filter bookings");
+  }
+
+  // Enhanced error handling
+  window.addEventListener('error', function(e) {
+    if (e.message.includes('url_for')) {
+      console.warn('Template routing error:', e.message);
+    }
+  });
+
+  // Auto-check for booking updates every 2 minutes
+  setInterval(function() {
+    // Check if we should refresh booking data
+    const clientId = {{ client.id if client else 'null' }};
+    const currentBookingCount = {{ bookings|length if bookings else 0 }};
+
+    if (clientId) {
+      fetch(`/api/clients/${clientId}/stats`)
+        .then(response => response.json())
+        .then(data => {
+          if (data.success && data.stats.total_bookings !== currentBookingCount) {
+            console.log("📊 Booking count changed, refreshing...");
+            window.location.reload();
+          }
+        })
+        .catch(error => {
+          console.error("Error checking for updates:", error);
+        });
+    }
+  }, 120000); // Check every 2 minutes
 </script>
 {% endblock %}

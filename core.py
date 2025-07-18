@@ -162,10 +162,10 @@ def supabase_delete(table_name, filters):
 def authenticate_user(email, password):
     """Authenticate user with Supabase"""
     try:
-        response = supabase.auth.sign_in({
-            "email": email,
-            "password": password
-        })
+        response = supabase.auth.sign_in(
+            email=email,
+            password=password
+        )
         
         if response.user and response.session:
             # Clear and set up session

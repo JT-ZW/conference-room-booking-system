@@ -1,15 +1,14 @@
-Flask==2.3.3
-Flask-SQLAlchemy==3.0.5
+Flask==3.0.0
+Flask-SQLAlchemy==3.1.1
 Flask-Migrate==4.0.5
 Flask-Login==0.6.3
-Flask-WTF==1.1.1
-WTForms==3.0.1
-Werkzeug==2.3.7
+Flask-WTF==1.2.1
+WTForms==3.1.1
+Werkzeug==3.0.1
 gunicorn==21.2.0
 python-dotenv==1.0.0
-supabase==1.2.0
+supabase==2.3.0
 requests==2.31.0
-email-validator==2.1.0
-pytz==2023.3
-pdfkit==1.0.0  # Changed from WeasyPrint
-Pillow==10.0.0
+email-validator==2.1.0.post1
+pytz==2024.1
+reportlab==4.0.7

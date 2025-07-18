@@ -15,7 +15,11 @@ from httpx import TimeoutException
 import time
 from functools import wraps
 import pytz
-import pdfkit
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.units import inch
 import tempfile
 import os
 
@@ -458,24 +462,148 @@ def generate_quotation(id):
 def check_pdf_dependencies():
     """Check if PDF generation dependencies are available"""
     try:
-        path = get_wkhtmltopdf_path()
-        if not os.path.exists(path):
-            print(f"⚠️ Warning: wkhtmltopdf not found at {path}")
-            return False
+        # ReportLab should be available if installed
+        from reportlab.lib.pagesizes import A4
         return True
-    except Exception as e:
-        print(f"⚠️ Warning: PDF dependency check failed: {e}")
+    except ImportError as e:
+        print(f"⚠️ Warning: ReportLab not available: {e}")
         return False
+
+def create_quotation_pdf(booking, output_path, current_time, valid_until):
+    """Create a professional quotation PDF using ReportLab"""
+    doc = SimpleDocTemplate(output_path, pagesize=A4)
+    styles = getSampleStyleSheet()
+    story = []
+    
+    # Custom styles
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        spaceAfter=30,
+        textColor=colors.HexColor('#2E8B57')
+    )
+    
+    header_style = ParagraphStyle(
+        'CustomHeader',
+        parent=styles['Heading2'],
+        fontSize=16,
+        spaceAfter=12,
+        textColor=colors.HexColor('#1a1a1a')
+    )
+    
+    # Title
+    story.append(Paragraph("RAINBOW TOWERS CONFERENCE BOOKING", title_style))
+    story.append(Paragraph("QUOTATION", styles['Heading1']))
+    story.append(Spacer(1, 20))
+    
+    # Quotation details
+    quotation_number = f"Q{booking['id']:04d}-{current_time.strftime('%Y%m')}"
+    story.append(Paragraph(f"Quotation Number: <b>{quotation_number}</b>", styles['Normal']))
+    story.append(Paragraph(f"Date: <b>{current_time.strftime('%d %B %Y')}</b>", styles['Normal']))
+    story.append(Paragraph(f"Valid Until: <b>{valid_until.strftime('%d %B %Y')}</b>", styles['Normal']))
+    story.append(Spacer(1, 20))
+    
+    # Client Information
+    story.append(Paragraph("CLIENT INFORMATION", header_style))
+    client_name = booking.get('client_name', 'Unknown Client')
+    contact_person = booking.get('contact_person', 'N/A')
+    story.append(Paragraph(f"Client: <b>{client_name}</b>", styles['Normal']))
+    story.append(Paragraph(f"Contact Person: <b>{contact_person}</b>", styles['Normal']))
+    story.append(Spacer(1, 20))
+    
+    # Booking Details
+    story.append(Paragraph("BOOKING DETAILS", header_style))
+    
+    # Create booking details table
+    booking_data = [
+        ['Event Title:', booking.get('title', 'Conference Booking')],
+        ['Room:', booking.get('room_name', 'Conference Room')],
+        ['Date:', booking.get('start_time', 'TBD')[:10] if booking.get('start_time') else 'TBD'],
+        ['Time:', f"{booking.get('start_time', 'TBD')[11:16] if booking.get('start_time') else 'TBD'} - {booking.get('end_time', 'TBD')[11:16] if booking.get('end_time') else 'TBD'}"],
+        ['Attendees:', str(booking.get('attendees', 'TBD'))],
+        ['Duration:', f"{booking.get('duration_hours', 0)} hours" if booking.get('duration_hours') else 'TBD'],
+    ]
+    
+    booking_table = Table(booking_data, colWidths=[2*inch, 4*inch])
+    booking_table.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('FONTNAME', (0,0), (0,-1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 11),
+        ('ROWBACKGROUNDS', (0,0), (-1,-1), [colors.white, colors.HexColor('#f8f9fa')]),
+        ('GRID', (0,0), (-1,-1), 1, colors.HexColor('#dee2e6')),
+    ]))
+    
+    story.append(booking_table)
+    story.append(Spacer(1, 20))
+    
+    # Pricing
+    story.append(Paragraph("PRICING", header_style))
+    
+    pricing_data = [
+        ['Item', 'Quantity', 'Rate', 'Amount'],
+        ['Room Rental', '1', f"${booking.get('room_price', 0):.2f}", f"${booking.get('room_price', 0):.2f}"],
+    ]
+    
+    # Add addons if any
+    if booking.get('total_addons_price', 0) > 0:
+        pricing_data.append(['Add-ons/Services', '1', f"${booking.get('total_addons_price', 0):.2f}", f"${booking.get('total_addons_price', 0):.2f}"])
+    
+    # Add totals
+    subtotal = booking.get('subtotal', 0)
+    tax_amount = booking.get('tax_amount', 0)
+    total_price = booking.get('total_price', 0)
+    
+    pricing_data.extend([
+        ['', '', 'Subtotal:', f"${subtotal:.2f}"],
+        ['', '', 'Tax:', f"${tax_amount:.2f}"],
+        ['', '', 'TOTAL:', f"${total_price:.2f}"],
+    ])
+    
+    pricing_table = Table(pricing_data, colWidths=[2.5*inch, 1*inch, 1.5*inch, 1.5*inch])
+    pricing_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#2E8B57')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,0), 12),
+        ('BOTTOMPADDING', (0,0), (-1,0), 12),
+        ('BACKGROUND', (0,-3), (-1,-1), colors.HexColor('#f8f9fa')),
+        ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,-1), (-1,-1), 12),
+        ('GRID', (0,0), (-1,-1), 1, colors.HexColor('#dee2e6')),
+    ]))
+    
+    story.append(pricing_table)
+    story.append(Spacer(1, 30))
+    
+    # Terms and conditions
+    story.append(Paragraph("TERMS & CONDITIONS", header_style))
+    terms = [
+        "1. This quotation is valid for 30 days from the date of issue.",
+        "2. Payment is required to confirm the booking.",
+        "3. Cancellation policy applies as per our standard terms.",
+        "4. All prices are in USD and inclusive of applicable taxes.",
+        "5. Additional services may incur extra charges."
+    ]
+    
+    for term in terms:
+        story.append(Paragraph(term, styles['Normal']))
+    
+    story.append(Spacer(1, 20))
+    story.append(Paragraph("Thank you for choosing Rainbow Towers Conference Center!", styles['Normal']))
+    
+    # Build the PDF
+    doc.build(story)
 
 @bookings_bp.route('/bookings/<int:id>/quotation/download')
 @login_required
 def download_quotation(id):
-    """Generate and download quotation PDF using pdfkit with improved error handling"""
+    """Generate and download quotation PDF using ReportLab"""
     if not check_pdf_dependencies():
         flash('❌ PDF generation is not available. Please contact system administrator.', 'danger')
         return redirect(url_for('bookings.view_booking', id=id))
     
-    temp_file_path = None
     try:
         booking = get_booking_with_details(id)
         if not booking:
@@ -487,44 +615,13 @@ def download_quotation(id):
         current_time = datetime.now(tz)
         valid_until = current_time + timedelta(days=30)
 
-        # Prepare template data with enhanced booking info
-        template_data = {
-            'booking': booking,
-            'current_date': current_time,
-            'valid_until': valid_until,
-            'quotation_number': f"Q{booking['id']:04d}-{current_time.strftime('%Y%m')}"
-        }
+        # Create temporary file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+        temp_file_path = temp_file.name
+        temp_file.close()
 
-        # Render HTML template
-        html_content = render_template('bookings/quotation.html', **template_data)
-
-        # PDF configuration with enhanced options
-        pdf_options = {
-            'page-size': 'A4',
-            'margin-top': '20mm',
-            'margin-right': '20mm',
-            'margin-bottom': '20mm',
-            'margin-left': '20mm',
-            'encoding': 'UTF-8',
-            'no-outline': None,
-            'enable-local-file-access': None,
-            'print-media-type': None,
-            'disable-smart-shrinking': None
-        }
-
-        # Path to wkhtmltopdf executable
-        config = pdfkit.configuration(wkhtmltopdf=get_wkhtmltopdf_path())
-
-        # Create temp directory if it doesn't exist
-        temp_dir = os.path.join(os.getcwd(), 'temp')
-        os.makedirs(temp_dir, exist_ok=True)
-
-        # Generate unique filename
-        filename = f'quotation_{booking["id"]}_{int(current_time.timestamp())}.pdf'
-        temp_file_path = os.path.join(temp_dir, filename)
-
-        # Generate PDF with error handling
-        pdfkit.from_string(html_content, temp_file_path, options=pdf_options, configuration=config)
+        # Generate PDF using ReportLab
+        create_quotation_pdf(booking, temp_file_path, current_time, valid_until)
         
         # Verify file was created
         if not os.path.exists(temp_file_path):
@@ -548,15 +645,15 @@ def download_quotation(id):
 
     except Exception as e:
         error_msg = handle_pdf_generation_error(e)
-        print(f"❌ ERROR: PDF generation failed: {error_msg}")
+        print(f"❌ PDF Generation Error: {error_msg}")
         flash(f'❌ {error_msg}', 'danger')
         return redirect(url_for('bookings.view_booking', id=id))
     
     finally:
         # Clean up temporary file
-        if temp_file_path and os.path.exists(temp_file_path):
+        if 'temp_file_path' in locals() and os.path.exists(temp_file_path):
             try:
-                os.remove(temp_file_path)
+                os.unlink(temp_file_path)
             except Exception as cleanup_error:
                 print(f"⚠️ Warning: Failed to cleanup temp file {temp_file_path}: {cleanup_error}")
 
@@ -943,21 +1040,16 @@ def print_details(id):
 def handle_pdf_generation_error(e):
     """Handle PDF generation errors gracefully"""
     error_message = str(e).lower()
-    if 'wkhtmltopdf' in error_message:
-        return "PDF generation failed: wkhtmltopdf not found. Please ensure it's installed correctly."
+    if 'reportlab' in error_message or 'import' in error_message:
+        return "PDF generation failed: ReportLab library not available. Please contact system administrator."
     elif 'permission' in error_message:
         return "PDF generation failed: Permission denied when creating temporary files."
-    elif 'disk' in error_message:
+    elif 'disk' in error_message or 'space' in error_message:
         return "PDF generation failed: Not enough disk space."
+    elif 'memory' in error_message:
+        return "PDF generation failed: Insufficient memory available."
     else:
         return f"PDF generation failed: {str(e)}"
-
-def get_wkhtmltopdf_path():
-    """Get wkhtmltopdf path based on environment"""
-    import platform
-    if platform.system() == 'Windows':
-        return r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'
-    return '/usr/bin/wkhtmltopdf'  # Linux path
 
 @bookings_bp.route('/api/bookings/<int:booking_id>/status', methods=['POST'])
 @login_required

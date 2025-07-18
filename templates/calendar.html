@@ -1,10 +1,10 @@
-{% extends "layout.html" %} 
-
-{% block title %}Conference Booking Calendar | Rainbow Towers{% endblock %} 
-
-{% block extra_css %}
+{% extends "layout.html" %} {% block title %}Conference Booking Calendar |
+Rainbow Towers{% endblock %} {% block extra_css %}
 <!-- FullCalendar CSS -->
-<link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet" />
+<link
+  href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css"
+  rel="stylesheet"
+/>
 
 <style>
   :root {
@@ -34,7 +34,7 @@
     --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
     --airport-blue: #003d82;
     --airport-yellow: #fbbf24;
-    --cat-timezone: 'Africa/Harare';
+    --cat-timezone: "Africa/Harare";
   }
 
   body {
@@ -54,7 +54,11 @@
 
   /* Header */
   .calendar-header {
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--primary-color) 0%,
+      var(--primary-light) 100%
+    );
     color: var(--white);
     padding: 2rem;
     position: relative;
@@ -117,10 +121,18 @@
     font-weight: 700;
   }
 
-  .stat-tentative .stat-number { color: var(--warning-color); }
-  .stat-confirmed .stat-number { color: var(--success-color); }
-  .stat-total .stat-number { color: var(--primary-color); }
-  .stat-revenue .stat-number { color: var(--gray-700); }
+  .stat-tentative .stat-number {
+    color: var(--warning-color);
+  }
+  .stat-confirmed .stat-number {
+    color: var(--success-color);
+  }
+  .stat-total .stat-number {
+    color: var(--primary-color);
+  }
+  .stat-revenue .stat-number {
+    color: var(--gray-700);
+  }
 
   /* Main Toolbar */
   .main-toolbar {
@@ -463,7 +475,11 @@
   }
 
   .schedule-table th {
-    background: linear-gradient(135deg, var(--gray-800) 0%, var(--gray-700) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--gray-800) 0%,
+      var(--gray-700) 100%
+    );
     color: var(--white);
     padding: 1.5rem 1rem;
     text-align: center;
@@ -479,7 +495,11 @@
   .schedule-table th:first-child {
     text-align: left;
     min-width: 180px;
-    background: linear-gradient(135deg, var(--primary-color) 0%, var(--primary-light) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--primary-color) 0%,
+      var(--primary-light) 100%
+    );
   }
 
   .schedule-table th.today {
@@ -510,7 +530,11 @@
   }
 
   .room-cell {
-    background: linear-gradient(135deg, var(--gray-100) 0%, var(--gray-50) 100%);
+    background: linear-gradient(
+      135deg,
+      var(--gray-100) 0%,
+      var(--gray-50) 100%
+    );
     padding: 1.5rem;
     font-weight: 900;
     color: var(--gray-800);
@@ -681,8 +705,12 @@
   }
 
   @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
   }
 
   /* FullCalendar */
@@ -730,12 +758,14 @@
       gap: 1rem;
     }
 
-    .board-header, .event-row {
+    .board-header,
+    .event-row {
       grid-template-columns: 2fr 1fr 1fr;
       gap: 0.5rem;
     }
 
-    .event-cost, .event-status {
+    .event-cost,
+    .event-status {
       display: none;
     }
   }
@@ -770,19 +800,20 @@
       font-size: 2rem;
     }
 
-    .board-header, .event-row {
+    .board-header,
+    .event-row {
       grid-template-columns: 2fr 1fr;
       gap: 0.5rem;
     }
 
-    .event-pax, .event-cost, .event-status {
+    .event-pax,
+    .event-cost,
+    .event-status {
       display: none;
     }
   }
 </style>
-{% endblock %} 
-
-{% block content %}
+{% endblock %} {% block content %}
 <!-- Main Calendar Container -->
 <div class="calendar-container">
   <!-- Header -->
@@ -793,13 +824,22 @@
           <h1 class="h2 mb-2">
             <i class="fas fa-calendar-alt me-3"></i>Conference Booking Calendar
           </h1>
-          <p class="mb-0 opacity-90">Real-time venue scheduling & management system</p>
+          <p class="mb-0 opacity-90">
+            Real-time venue scheduling & management system
+          </p>
         </div>
         <div class="d-flex gap-3">
-          <a href="{{ url_for('bookings.new_booking') }}" class="action-btn success">
+          <a
+            href="{{ url_for('bookings.new_booking') }}"
+            class="action-btn success"
+          >
             <i class="fas fa-plus"></i>New Booking
           </a>
-          <button onclick="refreshCalendar()" class="action-btn primary" id="refreshBtn">
+          <button
+            onclick="refreshCalendar()"
+            class="action-btn primary"
+            id="refreshBtn"
+          >
             <i class="fas fa-sync-alt"></i>Refresh
           </button>
         </div>
@@ -849,11 +889,9 @@
         <label class="control-label">Room:</label>
         <select class="control-select" id="roomFilter">
           <option value="all">All Rooms</option>
-          {% if rooms %} 
-            {% for room in rooms %}
-              <option value="{{ room.id }}">{{ room.name }}</option>
-            {% endfor %} 
-          {% endif %}
+          {% if rooms %} {% for room in rooms %}
+          <option value="{{ room.id }}">{{ room.name }}</option>
+          {% endfor %} {% endif %}
         </select>
       </div>
 
@@ -886,7 +924,10 @@
       <i class="fas fa-exclamation-triangle me-2"></i>
       <div>
         <strong>Data Loading Issue</strong>
-        <p class="mb-0 mt-1" id="calendarErrorMessage">Unable to load calendar events. Please check your connection and refresh.</p>
+        <p class="mb-0 mt-1" id="calendarErrorMessage">
+          Unable to load calendar events. Please check your connection and
+          refresh.
+        </p>
       </div>
     </div>
   </div>
@@ -959,14 +1000,25 @@
 </div>
 
 <!-- Event Details Modal -->
-<div class="modal fade" id="eventModal" tabindex="-1" aria-labelledby="eventModalLabel" aria-hidden="true">
+<div
+  class="modal fade"
+  id="eventModal"
+  tabindex="-1"
+  aria-labelledby="eventModalLabel"
+  aria-hidden="true"
+>
   <div class="modal-dialog modal-lg">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title" id="eventModalLabel">
           <i class="fas fa-calendar-check me-2"></i>Booking Details
         </h5>
-        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
       </div>
       <div class="modal-body">
         <div class="row">
@@ -990,11 +1042,13 @@
               <div class="col-sm-6">
                 <p class="mb-2">
                   <i class="fas fa-building me-2 text-primary"></i>
-                  <strong>Organization:</strong> <span id="eventClient">Client</span>
+                  <strong>Organization:</strong>
+                  <span id="eventClient">Client</span>
                 </p>
                 <p class="mb-2">
                   <i class="fas fa-users me-2 text-primary"></i>
-                  <strong>PAX:</strong> <span id="eventAttendees">Attendees</span>
+                  <strong>PAX:</strong>
+                  <span id="eventAttendees">Attendees</span>
                 </p>
                 <p class="mb-2">
                   <i class="fas fa-dollar-sign me-2 text-primary"></i>
@@ -1015,7 +1069,9 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Close
+        </button>
         <a id="editBookingLink" href="#" class="btn btn-warning">
           <i class="fas fa-edit me-1"></i>Edit
         </a>
@@ -1026,702 +1082,700 @@
     </div>
   </div>
 </div>
-{% endblock %} 
-
-{% block extra_js %}
+{% endblock %} {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
 
 <script>
-// Global Calendar Manager
-class CalendarManager {
-  constructor() {
-    this.currentWeekStart = this.setToMonday(new Date());
-    this.allEvents = [];
-    this.filteredEvents = [];
-    this.fullCalendar = null;
-    this.currentView = 'today';
-    this.CAT_TIMEZONE = 'Africa/Harare';
-    this.rooms = [
-      {% if rooms %}
-        {% for room in rooms %}
-          { id: {{ room.id }}, name: "{{ room.name }}", capacity: {{ room.capacity or 0 }} },
-        {% endfor %}
-      {% endif %}
-    ];
-    
-    this.init();
-  }
+  // Global Calendar Manager
+  class CalendarManager {
+    constructor() {
+      this.currentWeekStart = this.setToMonday(new Date());
+      this.allEvents = [];
+      this.filteredEvents = [];
+      this.fullCalendar = null;
+      this.currentView = 'today';
+      this.CAT_TIMEZONE = 'Africa/Harare';
+      this.rooms = [
+        {% if rooms %}
+          {% for room in rooms %}
+            { id: {{ room.id }}, name: "{{ room.name }}", capacity: {{ room.capacity or 0 }} },
+          {% endfor %}
+        {% endif %}
+      ];
 
-  // Initialize calendar system
-  init() {
-    console.log('🗓️ Initializing Calendar Manager for CAT timezone');
-    this.setupEventHandlers();
-    this.updateDateTime();
-    this.loadEvents();
-    
-    // Update time every second
-    setInterval(() => this.updateDateTime(), 1000);
-  }
-
-  // Set date to Monday of current week
-  setToMonday(date) {
-    const day = date.getDay();
-    const diff = date.getDate() - day + (day === 0 ? -6 : 1);
-    return new Date(date.setDate(diff));
-  }
-
-  // Parse datetime in CAT timezone
-  parseCATDateTime(dateString) {
-    if (!dateString) return null;
-    
-    try {
-      // Remove timezone info and treat as CAT time
-      const cleanDateString = dateString.replace(/[Z]$/, '').replace(/\+\d{2}:\d{2}$/, '');
-      const date = new Date(cleanDateString);
-      
-      // Adjust for CAT timezone (UTC+2)
-      // Note: This is a simplified approach. For production, consider using a proper timezone library
-      return date;
-    } catch (error) {
-      console.error('❌ Error parsing date:', dateString, error);
-      return new Date();
+      this.init();
     }
-  }
 
-  // Format time for CAT timezone
-  formatCATTime(dateString) {
-    if (!dateString) return 'Time TBD';
-    
-    try {
-      const eventDate = this.parseCATDateTime(dateString);
-      return eventDate.toLocaleTimeString('en-US', {
+    // Initialize calendar system
+    init() {
+      console.log('🗓️ Initializing Calendar Manager for CAT timezone');
+      this.setupEventHandlers();
+      this.updateDateTime();
+      this.loadEvents();
+
+      // Update time every second
+      setInterval(() => this.updateDateTime(), 1000);
+    }
+
+    // Set date to Monday of current week
+    setToMonday(date) {
+      const day = date.getDay();
+      const diff = date.getDate() - day + (day === 0 ? -6 : 1);
+      return new Date(date.setDate(diff));
+    }
+
+    // Parse datetime in CAT timezone
+    parseCATDateTime(dateString) {
+      if (!dateString) return null;
+
+      try {
+        // Remove timezone info and treat as CAT time
+        const cleanDateString = dateString.replace(/[Z]$/, '').replace(/\+\d{2}:\d{2}$/, '');
+        const date = new Date(cleanDateString);
+
+        // Adjust for CAT timezone (UTC+2)
+        // Note: This is a simplified approach. For production, consider using a proper timezone library
+        return date;
+      } catch (error) {
+        console.error('❌ Error parsing date:', dateString, error);
+        return new Date();
+      }
+    }
+
+    // Format time for CAT timezone
+    formatCATTime(dateString) {
+      if (!dateString) return 'Time TBD';
+
+      try {
+        const eventDate = this.parseCATDateTime(dateString);
+        return eventDate.toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+          timeZone: this.CAT_TIMEZONE
+        });
+      } catch (error) {
+        console.error('❌ Error formatting time:', dateString, error);
+        return 'Invalid Time';
+      }
+    }
+
+    // Get attendees from event data
+    getEventAttendees(event) {
+      const props = event.extendedProps || {};
+      const attendeesValue = props.attendees || props.pax || props.guests ||
+                            event.attendees || event.pax || event.guests || 0;
+      return parseInt(attendeesValue) || 0;
+    }
+
+    // Get total price from event data
+    getEventTotal(event) {
+      const props = event.extendedProps || {};
+      const totalValue = props.total || props.total_price || props.totalPrice ||
+                        props.price || event.total || event.total_price || 0;
+      return parseFloat(totalValue) || 0;
+    }
+
+    // Calculate cost per person
+    calculateCostPerPerson(event) {
+      const total = this.getEventTotal(event);
+      const attendees = this.getEventAttendees(event);
+
+      if (attendees <= 0) return 0;
+      return total / attendees;
+    }
+
+    // Format cost per person
+    formatCostPerPerson(event) {
+      const costPerPerson = this.calculateCostPerPerson(event);
+      return costPerPerson > 0 ? `$${costPerPerson.toFixed(0)}` : '$0';
+    }
+
+    // Get client name from event
+    getClientName(event) {
+      const props = event.extendedProps || {};
+      return props.client || props.client_name || props.organization || 'Unknown Organization';
+    }
+
+    // Get room name from event
+    getRoomName(event) {
+      const props = event.extendedProps || {};
+      return props.room || props.room_name || props.venue || 'Unknown Venue';
+    }
+
+    // Update current date and time display
+    updateDateTime() {
+      const now = new Date();
+
+      // Update current time (CAT)
+      const timeOptions = {
         hour: '2-digit',
         minute: '2-digit',
-        hour12: false,
+        second: '2-digit',
+        hour12: true,
         timeZone: this.CAT_TIMEZONE
-      });
-    } catch (error) {
-      console.error('❌ Error formatting time:', dateString, error);
-      return 'Invalid Time';
-    }
-  }
+      };
 
-  // Get attendees from event data
-  getEventAttendees(event) {
-    const props = event.extendedProps || {};
-    const attendeesValue = props.attendees || props.pax || props.guests || 
-                          event.attendees || event.pax || event.guests || 0;
-    return parseInt(attendeesValue) || 0;
-  }
-
-  // Get total price from event data
-  getEventTotal(event) {
-    const props = event.extendedProps || {};
-    const totalValue = props.total || props.total_price || props.totalPrice ||
-                      props.price || event.total || event.total_price || 0;
-    return parseFloat(totalValue) || 0;
-  }
-
-  // Calculate cost per person
-  calculateCostPerPerson(event) {
-    const total = this.getEventTotal(event);
-    const attendees = this.getEventAttendees(event);
-    
-    if (attendees <= 0) return 0;
-    return total / attendees;
-  }
-
-  // Format cost per person
-  formatCostPerPerson(event) {
-    const costPerPerson = this.calculateCostPerPerson(event);
-    return costPerPerson > 0 ? `$${costPerPerson.toFixed(0)}` : '$0';
-  }
-
-  // Get client name from event
-  getClientName(event) {
-    const props = event.extendedProps || {};
-    return props.client || props.client_name || props.organization || 'Unknown Organization';
-  }
-
-  // Get room name from event
-  getRoomName(event) {
-    const props = event.extendedProps || {};
-    return props.room || props.room_name || props.venue || 'Unknown Venue';
-  }
-
-  // Update current date and time display
-  updateDateTime() {
-    const now = new Date();
-    
-    // Update current time (CAT)
-    const timeOptions = {
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true,
-      timeZone: this.CAT_TIMEZONE
-    };
-    
-    const currentTimeEl = document.getElementById('currentDateTime');
-    if (currentTimeEl) {
-      currentTimeEl.textContent = now.toLocaleTimeString('en-US', timeOptions) + ' CAT';
-    }
-
-    // Update today's date
-    const dateOptions = {
-      weekday: 'long',
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      timeZone: this.CAT_TIMEZONE
-    };
-    
-    const todayDateEl = document.getElementById('todayDate');
-    if (todayDateEl) {
-      todayDateEl.textContent = now.toLocaleDateString('en-US', dateOptions);
-    }
-  }
-
-  // Load events from server
-  async loadEvents() {
-    try {
-      console.log('🔄 Loading events from server...');
-      this.showLoading();
-      
-      const response = await fetch('{{ url_for("dashboard.get_events") }}');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log(`✅ Loaded ${data.length} events`);
-      
-      // Log sample event for debugging
-      if (data.length > 0) {
-        console.log('🔍 Sample event:', data[0]);
-        console.log('🔍 Extended props:', data[0].extendedProps);
-      }
-      
-      this.allEvents = data;
-      this.applyFilters();
-      this.hideError();
-      
-    } catch (error) {
-      console.error('❌ Error loading events:', error);
-      this.showError('Failed to load calendar events. Please refresh the page.');
-    } finally {
-      this.hideLoading();
-    }
-  }
-
-  // Apply filters to events
-  applyFilters() {
-    const roomFilter = document.getElementById('roomFilter')?.value || 'all';
-    const statusFilter = document.getElementById('statusFilter')?.value || 'all';
-
-    this.filteredEvents = this.allEvents.filter(event => {
-      const props = event.extendedProps || {};
-      
-      // Room filter
-      if (roomFilter !== 'all' && props.roomId != roomFilter) {
-        return false;
+      const currentTimeEl = document.getElementById('currentDateTime');
+      if (currentTimeEl) {
+        currentTimeEl.textContent = now.toLocaleTimeString('en-US', timeOptions) + ' CAT';
       }
 
-      // Status filter
-      if (statusFilter !== 'all' && (props.status || 'tentative') !== statusFilter) {
-        return false;
+      // Update today's date
+      const dateOptions = {
+        weekday: 'long',
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        timeZone: this.CAT_TIMEZONE
+      };
+
+      const todayDateEl = document.getElementById('todayDate');
+      if (todayDateEl) {
+        todayDateEl.textContent = now.toLocaleDateString('en-US', dateOptions);
       }
-
-      return true;
-    });
-
-    console.log(`📊 Filtered to ${this.filteredEvents.length} events`);
-    this.updateCurrentView();
-    this.updateStatistics();
-  }
-
-  // Update current view based on active view
-  updateCurrentView() {
-    switch (this.currentView) {
-      case 'today':
-        this.updateTodayView();
-        break;
-      case 'weekly':
-        this.updateWeeklyView();
-        break;
-      case 'monthly':
-        this.updateMonthlyView();
-        break;
     }
-  }
 
-  // Update today's events view
-  updateTodayView() {
-    const today = new Date();
-    const todayString = today.toISOString().split('T')[0];
+    // Load events from server
+    async loadEvents() {
+      try {
+        console.log('🔄 Loading events from server...');
+        this.showLoading();
 
-    const todaysEvents = this.filteredEvents.filter(event => {
-      const eventDate = this.parseCATDateTime(event.start);
-      const eventDateString = eventDate.toISOString().split('T')[0];
-      return eventDateString === todayString;
-    });
+        const response = await fetch('{{ url_for("api.api_get_calendar_events") }}');
 
-    console.log(`📅 Found ${todaysEvents.length} events for today`);
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-    const container = document.getElementById('todayEventsList');
-    if (!container) return;
+        const data = await response.json();
+        console.log(`✅ Loaded ${data.length} events`);
 
-    if (todaysEvents.length === 0) {
-      container.innerHTML = `
-        <div class="no-events">
-          <i class="fas fa-calendar-check"></i>
-          <div>No events scheduled for today</div>
-        </div>
-      `;
-    } else {
-      // Sort events by start time
-      todaysEvents.sort((a, b) => {
-        const timeA = this.parseCATDateTime(a.start);
-        const timeB = this.parseCATDateTime(b.start);
-        return timeA - timeB;
-      });
+        // Log sample event for debugging
+        if (data.length > 0) {
+          console.log('🔍 Sample event:', data[0]);
+          console.log('🔍 Extended props:', data[0].extendedProps);
+        }
 
-      container.innerHTML = todaysEvents.map(event => {
+        this.allEvents = data;
+        this.applyFilters();
+        this.hideError();
+
+      } catch (error) {
+        console.error('❌ Error loading events:', error);
+        this.showError('Failed to load calendar events. Please refresh the page.');
+      } finally {
+        this.hideLoading();
+      }
+    }
+
+    // Apply filters to events
+    applyFilters() {
+      const roomFilter = document.getElementById('roomFilter')?.value || 'all';
+      const statusFilter = document.getElementById('statusFilter')?.value || 'all';
+
+      this.filteredEvents = this.allEvents.filter(event => {
         const props = event.extendedProps || {};
-        const status = props.status || 'tentative';
-        const timeStr = this.formatCATTime(event.start);
-        const attendees = this.getEventAttendees(event);
-        const costPerPerson = this.formatCostPerPerson(event);
-        const organization = this.getClientName(event);
-        const room = this.getRoomName(event);
-        const paxDisplay = attendees > 0 ? `${attendees}PAX` : 'No PAX';
 
-        return `
-          <div class="event-row" onclick="calendarManager.showEventDetails(${event.id})">
-            <div class="event-info">
-              <div class="event-org">${organization}</div>
-              <div class="event-room">${room}</div>
-            </div>
-            <div class="event-time">${timeStr}</div>
-            <div class="event-pax">${paxDisplay}</div>
-            <div class="event-cost">${costPerPerson}</div>
-            <div class="event-status status-${status}">${status.toUpperCase()}</div>
+        // Room filter
+        if (roomFilter !== 'all' && props.roomId != roomFilter) {
+          return false;
+        }
+
+        // Status filter
+        if (statusFilter !== 'all' && (props.status || 'tentative') !== statusFilter) {
+          return false;
+        }
+
+        return true;
+      });
+
+      console.log(`📊 Filtered to ${this.filteredEvents.length} events`);
+      this.updateCurrentView();
+      this.updateStatistics();
+    }
+
+    // Update current view based on active view
+    updateCurrentView() {
+      switch (this.currentView) {
+        case 'today':
+          this.updateTodayView();
+          break;
+        case 'weekly':
+          this.updateWeeklyView();
+          break;
+        case 'monthly':
+          this.updateMonthlyView();
+          break;
+      }
+    }
+
+    // Update today's events view
+    updateTodayView() {
+      const today = new Date();
+      const todayString = today.toISOString().split('T')[0];
+
+      const todaysEvents = this.filteredEvents.filter(event => {
+        const eventDate = this.parseCATDateTime(event.start);
+        const eventDateString = eventDate.toISOString().split('T')[0];
+        return eventDateString === todayString;
+      });
+
+      console.log(`📅 Found ${todaysEvents.length} events for today`);
+
+      const container = document.getElementById('todayEventsList');
+      if (!container) return;
+
+      if (todaysEvents.length === 0) {
+        container.innerHTML = `
+          <div class="no-events">
+            <i class="fas fa-calendar-check"></i>
+            <div>No events scheduled for today</div>
           </div>
         `;
-      }).join('');
-    }
-  }
-
-  // Update weekly view
-  updateWeeklyView() {
-    this.updateWeekTitle();
-    this.generateScheduleTable();
-    this.populateScheduleTable();
-  }
-
-  // Update weekly table headers
-  updateWeekTitle() {
-    const weekTitle = document.getElementById('weekTitle');
-    if (!weekTitle) return;
-
-    const endDate = new Date(this.currentWeekStart);
-    endDate.setDate(endDate.getDate() + 6);
-
-    const options = { day: 'numeric', month: 'short', year: 'numeric', timeZone: this.CAT_TIMEZONE };
-    const startStr = this.currentWeekStart.toLocaleDateString('en-US', options);
-    const endStr = endDate.toLocaleDateString('en-US', options);
-
-    weekTitle.textContent = `${startStr} - ${endStr}`;
-  }
-
-  // Generate schedule table structure
-  generateScheduleTable() {
-    const tbody = document.getElementById('scheduleTableBody');
-    if (!tbody) return;
-
-    this.updateTableHeaders();
-
-    tbody.innerHTML = '';
-    this.rooms.forEach(room => {
-      const row = document.createElement('tr');
-
-      // Room cell
-      const roomCell = document.createElement('td');
-      roomCell.className = 'room-cell';
-      roomCell.innerHTML = `
-        <div class="room-name">${room.name}</div>
-        <div class="room-capacity">Capacity: ${room.capacity}</div>
-      `;
-      row.appendChild(roomCell);
-
-      // Day cells (7 days)
-      for (let i = 0; i < 7; i++) {
-        const dayCell = document.createElement('td');
-        const date = new Date(this.currentWeekStart);
-        date.setDate(date.getDate() + i);
-
-        dayCell.className = 'day-cell';
-        dayCell.dataset.roomId = room.id;
-        dayCell.dataset.date = date.toISOString().split('T')[0];
-
-        if (this.isToday(date)) dayCell.classList.add('today');
-        if (date.getDay() === 0 || date.getDay() === 6) dayCell.classList.add('weekend');
-
-        dayCell.innerHTML = '<div class="empty-cell">Available</div>';
-        row.appendChild(dayCell);
-      }
-
-      tbody.appendChild(row);
-    });
-  }
-
-  // Update table headers with current week dates
-  updateTableHeaders() {
-    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-
-    days.forEach((day, index) => {
-      const header = document.querySelector(`.${day}`);
-      if (header) {
-        const date = new Date(this.currentWeekStart);
-        date.setDate(date.getDate() + index);
-
-        const dayName = day.charAt(0).toUpperCase() + day.slice(1);
-        const dateStr = date.getDate().toString().padStart(2, '0') + '/' +
-                       (date.getMonth() + 1).toString().padStart(2, '0');
-
-        header.innerHTML = `
-          <div>${dayName}</div>
-          <div style="font-size: 0.8rem; font-weight: 600; opacity: 0.9;">${dateStr}</div>
-        `;
-
-        if (this.isToday(date)) {
-          header.classList.add('today');
-        } else {
-          header.classList.remove('today');
-        }
-      }
-    });
-  }
-
-  // Populate schedule table with events
-  populateScheduleTable() {
-    // Clear all day cells
-    document.querySelectorAll('.day-cell').forEach(cell => {
-      cell.innerHTML = '<div class="empty-cell">Available</div>';
-    });
-
-    // Group events by room and date
-    const eventsByRoomAndDate = {};
-
-    this.filteredEvents.forEach(event => {
-      const eventDate = this.parseCATDateTime(event.start);
-      const eventDateString = eventDate.toISOString().split('T')[0];
-      const roomId = event.extendedProps?.roomId;
-
-      if (!roomId) return;
-
-      const key = `${roomId}-${eventDateString}`;
-      if (!eventsByRoomAndDate[key]) {
-        eventsByRoomAndDate[key] = [];
-      }
-      eventsByRoomAndDate[key].push(event);
-    });
-
-    // Populate table cells
-    Object.keys(eventsByRoomAndDate).forEach(key => {
-      const [roomId, date] = key.split('-');
-      const cell = document.querySelector(`[data-room-id="${roomId}"][data-date="${date}"]`);
-
-      if (cell) {
-        const events = eventsByRoomAndDate[key];
-        events.sort((a, b) => {
+      } else {
+        // Sort events by start time
+        todaysEvents.sort((a, b) => {
           const timeA = this.parseCATDateTime(a.start);
           const timeB = this.parseCATDateTime(b.start);
           return timeA - timeB;
         });
-        cell.innerHTML = events.map(event => this.createEventBlock(event)).join('');
+
+        container.innerHTML = todaysEvents.map(event => {
+          const props = event.extendedProps || {};
+          const status = props.status || 'tentative';
+          const timeStr = this.formatCATTime(event.start);
+          const attendees = this.getEventAttendees(event);
+          const costPerPerson = this.formatCostPerPerson(event);
+          const organization = this.getClientName(event);
+          const room = this.getRoomName(event);
+          const paxDisplay = attendees > 0 ? `${attendees}PAX` : 'No PAX';
+
+          return `
+            <div class="event-row" onclick="calendarManager.showEventDetails(${event.id})">
+              <div class="event-info">
+                <div class="event-org">${organization}</div>
+                <div class="event-room">${room}</div>
+              </div>
+              <div class="event-time">${timeStr}</div>
+              <div class="event-pax">${paxDisplay}</div>
+              <div class="event-cost">${costPerPerson}</div>
+              <div class="event-status status-${status}">${status.toUpperCase()}</div>
+            </div>
+          `;
+        }).join('');
       }
-    });
-  }
-
-  // Create event block HTML
-  createEventBlock(event) {
-    const props = event.extendedProps || {};
-    const status = props.status || 'tentative';
-    const timeStr = this.formatCATTime(event.start);
-    const attendees = this.getEventAttendees(event);
-    const costPerPerson = this.formatCostPerPerson(event);
-    const organization = this.getClientName(event);
-    const paxDisplay = attendees > 0 ? `${attendees}PAX` : 'No PAX';
-
-    return `
-      <div class="event-block ${status}" onclick="calendarManager.showEventDetails(${event.id})">
-        <div class="event-organization">${organization}</div>
-        <div class="event-details">
-          <div class="event-detail">
-            <i class="fas fa-users"></i>
-            <span class="event-pax">${paxDisplay}</span>
-          </div>
-          <div class="event-detail">
-            <i class="fas fa-clock"></i>
-            <span class="event-time">${timeStr}</span>
-          </div>
-          <div class="event-detail">
-            <i class="fas fa-dollar-sign"></i>
-            <span class="event-cost">${costPerPerson}</span>
-          </div>
-        </div>
-      </div>
-    `;
-  }
-
-  // Update monthly view (FullCalendar)
-  updateMonthlyView() {
-    if (!this.fullCalendar) {
-      this.initializeFullCalendar();
     }
-    
-    if (this.fullCalendar && !this.fullCalendar.isRendered) {
-      this.fullCalendar.render();
+
+    // Update weekly view
+    updateWeeklyView() {
+      this.updateWeekTitle();
+      this.generateScheduleTable();
+      this.populateScheduleTable();
     }
-  }
 
-  // Initialize FullCalendar
-  initializeFullCalendar() {
-    const calendarEl = document.getElementById('calendar');
-    if (!calendarEl) return;
+    // Update weekly table headers
+    updateWeekTitle() {
+      const weekTitle = document.getElementById('weekTitle');
+      if (!weekTitle) return;
 
-    this.fullCalendar = new FullCalendar.Calendar(calendarEl, {
-      initialView: 'dayGridMonth',
-      timeZone: this.CAT_TIMEZONE,
-      headerToolbar: {
-        left: 'prev,next today',
-        center: 'title',
-        right: 'dayGridMonth,timeGridWeek,timeGridDay'
-      },
-      events: this.allEvents,
-      eventClick: (info) => {
-        this.showEventDetails(info.event.id);
-      },
-      eventClassNames: (arg) => {
-        const status = arg.event.extendedProps?.status || 'tentative';
-        return [`event-${status}`];
-      },
-      height: 'auto'
-    });
-  }
+      const endDate = new Date(this.currentWeekStart);
+      endDate.setDate(endDate.getDate() + 6);
 
-  // Show event details modal
-  showEventDetails(eventId) {
-    const event = this.allEvents.find(e => e.id == eventId);
-    if (!event) return;
+      const options = { day: 'numeric', month: 'short', year: 'numeric', timeZone: this.CAT_TIMEZONE };
+      const startStr = this.currentWeekStart.toLocaleDateString('en-US', options);
+      const endStr = endDate.toLocaleDateString('en-US', options);
 
-    try {
-      const modal = new bootstrap.Modal(document.getElementById('eventModal'));
-      const props = event.extendedProps || {};
+      weekTitle.textContent = `${startStr} - ${endStr}`;
+    }
 
-      // Set event details
-      document.getElementById('eventTitle').textContent = event.title || 'Untitled Event';
+    // Generate schedule table structure
+    generateScheduleTable() {
+      const tbody = document.getElementById('scheduleTableBody');
+      if (!tbody) return;
 
-      // Status badge
-      const statusEl = document.getElementById('eventStatus');
-      const status = props.status || 'tentative';
-      statusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
-      statusEl.className = `badge fs-6 ${
-        status === 'tentative' ? 'bg-warning' :
-        status === 'confirmed' ? 'bg-success' : 'bg-danger'
-      }`;
+      this.updateTableHeaders();
 
-      // Format date and time in CAT
-      const startDateTime = this.parseCATDateTime(event.start);
-      const endDateTime = this.parseCATDateTime(event.end || event.start);
+      tbody.innerHTML = '';
+      this.rooms.forEach(room => {
+        const row = document.createElement('tr');
 
-      document.getElementById('eventDate').textContent = startDateTime.toLocaleDateString('en-US', {
-        weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-        timeZone: this.CAT_TIMEZONE
+        // Room cell
+        const roomCell = document.createElement('td');
+        roomCell.className = 'room-cell';
+        roomCell.innerHTML = `
+          <div class="room-name">${room.name}</div>
+          <div class="room-capacity">Capacity: ${room.capacity}</div>
+        `;
+        row.appendChild(roomCell);
+
+        // Day cells (7 days)
+        for (let i = 0; i < 7; i++) {
+          const dayCell = document.createElement('td');
+          const date = new Date(this.currentWeekStart);
+          date.setDate(date.getDate() + i);
+
+          dayCell.className = 'day-cell';
+          dayCell.dataset.roomId = room.id;
+          dayCell.dataset.date = date.toISOString().split('T')[0];
+
+          if (this.isToday(date)) dayCell.classList.add('today');
+          if (date.getDay() === 0 || date.getDay() === 6) dayCell.classList.add('weekend');
+
+          dayCell.innerHTML = '<div class="empty-cell">Available</div>';
+          row.appendChild(dayCell);
+        }
+
+        tbody.appendChild(row);
+      });
+    }
+
+    // Update table headers with current week dates
+    updateTableHeaders() {
+      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+      days.forEach((day, index) => {
+        const header = document.querySelector(`.${day}`);
+        if (header) {
+          const date = new Date(this.currentWeekStart);
+          date.setDate(date.getDate() + index);
+
+          const dayName = day.charAt(0).toUpperCase() + day.slice(1);
+          const dateStr = date.getDate().toString().padStart(2, '0') + '/' +
+                         (date.getMonth() + 1).toString().padStart(2, '0');
+
+          header.innerHTML = `
+            <div>${dayName}</div>
+            <div style="font-size: 0.8rem; font-weight: 600; opacity: 0.9;">${dateStr}</div>
+          `;
+
+          if (this.isToday(date)) {
+            header.classList.add('today');
+          } else {
+            header.classList.remove('today');
+          }
+        }
+      });
+    }
+
+    // Populate schedule table with events
+    populateScheduleTable() {
+      // Clear all day cells
+      document.querySelectorAll('.day-cell').forEach(cell => {
+        cell.innerHTML = '<div class="empty-cell">Available</div>';
       });
 
-      const startTimeStr = startDateTime.toLocaleTimeString('en-US', { 
-        hour: '2-digit', minute: '2-digit', timeZone: this.CAT_TIMEZONE 
-      });
-      const endTimeStr = endDateTime.toLocaleTimeString('en-US', { 
-        hour: '2-digit', minute: '2-digit', timeZone: this.CAT_TIMEZONE 
-      });
-      document.getElementById('eventTime').textContent = `${startTimeStr} - ${endTimeStr} CAT`;
+      // Group events by room and date
+      const eventsByRoomAndDate = {};
 
-      // Other details
-      document.getElementById('eventRoom').textContent = this.getRoomName(event);
-      document.getElementById('eventClient').textContent = this.getClientName(event);
-
-      const attendees = this.getEventAttendees(event);
-      const total = this.getEventTotal(event);
-
-      document.getElementById('eventAttendees').textContent = attendees > 0 ? attendees : 'Not specified';
-      document.getElementById('eventTotal').textContent = total > 0 ? `$${total.toFixed(2)}` : 'Not specified';
-
-      // Notes
-      const notesEl = document.getElementById('eventNotes');
-      if (props.notes) {
-        notesEl.textContent = props.notes;
-        notesEl.classList.remove('text-muted');
-      } else {
-        notesEl.textContent = 'No notes available';
-        notesEl.classList.add('text-muted');
-      }
-
-      // Action links
-      document.getElementById('viewBookingLink').href = `/bookings/${event.id}`;
-      document.getElementById('editBookingLink').href = `/bookings/${event.id}/edit`;
-
-      modal.show();
-    } catch (error) {
-      console.error('❌ Error showing event details:', error);
-    }
-  }
-
-  // Update statistics
-  updateStatistics() {
-    let tentative = 0, confirmed = 0, total = 0, revenue = 0;
-
-    let eventsToCount = this.filteredEvents;
-
-    // If today view, only count today's events
-    if (this.currentView === 'today') {
-      const today = new Date().toISOString().split('T')[0];
-      eventsToCount = this.filteredEvents.filter(event => {
+      this.filteredEvents.forEach(event => {
         const eventDate = this.parseCATDateTime(event.start);
         const eventDateString = eventDate.toISOString().split('T')[0];
-        return eventDateString === today;
+        const roomId = event.extendedProps?.roomId;
+
+        if (!roomId) return;
+
+        const key = `${roomId}-${eventDateString}`;
+        if (!eventsByRoomAndDate[key]) {
+          eventsByRoomAndDate[key] = [];
+        }
+        eventsByRoomAndDate[key].push(event);
+      });
+
+      // Populate table cells
+      Object.keys(eventsByRoomAndDate).forEach(key => {
+        const [roomId, date] = key.split('-');
+        const cell = document.querySelector(`[data-room-id="${roomId}"][data-date="${date}"]`);
+
+        if (cell) {
+          const events = eventsByRoomAndDate[key];
+          events.sort((a, b) => {
+            const timeA = this.parseCATDateTime(a.start);
+            const timeB = this.parseCATDateTime(b.start);
+            return timeA - timeB;
+          });
+          cell.innerHTML = events.map(event => this.createEventBlock(event)).join('');
+        }
       });
     }
 
-    eventsToCount.forEach(event => {
-      total++;
-      const status = event.extendedProps?.status || 'tentative';
-      if (status === 'tentative') tentative++;
-      else if (status === 'confirmed') confirmed++;
+    // Create event block HTML
+    createEventBlock(event) {
+      const props = event.extendedProps || {};
+      const status = props.status || 'tentative';
+      const timeStr = this.formatCATTime(event.start);
+      const attendees = this.getEventAttendees(event);
+      const costPerPerson = this.formatCostPerPerson(event);
+      const organization = this.getClientName(event);
+      const paxDisplay = attendees > 0 ? `${attendees}PAX` : 'No PAX';
 
-      const eventTotal = this.getEventTotal(event);
-      revenue += eventTotal;
-    });
-
-    document.getElementById('tentativeCount').textContent = tentative;
-    document.getElementById('confirmedCount').textContent = confirmed;
-    document.getElementById('totalCount').textContent = total;
-    document.getElementById('revenueCount').textContent = `$${revenue.toFixed(0)}`;
-  }
-
-  // Switch between views
-  switchView(view) {
-    this.currentView = view;
-
-    // Hide all view containers
-    document.querySelectorAll('.view-container').forEach(container => {
-      container.classList.remove('active');
-    });
-
-    // Show/hide week navigation
-    const weekNav = document.getElementById('weekNavigation');
-
-    if (view === 'today') {
-      document.getElementById('todayView').classList.add('active');
-      weekNav.style.display = 'none';
-    } else if (view === 'weekly') {
-      document.getElementById('weeklyView').classList.add('active');
-      weekNav.style.display = 'flex';
-    } else if (view === 'monthly') {
-      document.getElementById('monthlyView').classList.add('active');
-      weekNav.style.display = 'none';
+      return `
+        <div class="event-block ${status}" onclick="calendarManager.showEventDetails(${event.id})">
+          <div class="event-organization">${organization}</div>
+          <div class="event-details">
+            <div class="event-detail">
+              <i class="fas fa-users"></i>
+              <span class="event-pax">${paxDisplay}</span>
+            </div>
+            <div class="event-detail">
+              <i class="fas fa-clock"></i>
+              <span class="event-time">${timeStr}</span>
+            </div>
+            <div class="event-detail">
+              <i class="fas fa-dollar-sign"></i>
+              <span class="event-cost">${costPerPerson}</span>
+            </div>
+          </div>
+        </div>
+      `;
     }
 
-    this.updateCurrentView();
-    this.updateStatistics();
-  }
+    // Update monthly view (FullCalendar)
+    updateMonthlyView() {
+      if (!this.fullCalendar) {
+        this.initializeFullCalendar();
+      }
 
-  // Setup event handlers
-  setupEventHandlers() {
-    // View toggle buttons
-    document.querySelectorAll('.view-btn').forEach(btn => {
-      btn.addEventListener('click', () => {
-        const view = btn.dataset.view;
-        this.switchView(view);
+      if (this.fullCalendar && !this.fullCalendar.isRendered) {
+        this.fullCalendar.render();
+      }
+    }
 
-        document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
+    // Initialize FullCalendar
+    initializeFullCalendar() {
+      const calendarEl = document.getElementById('calendar');
+      if (!calendarEl) return;
+
+      this.fullCalendar = new FullCalendar.Calendar(calendarEl, {
+        initialView: 'dayGridMonth',
+        timeZone: this.CAT_TIMEZONE,
+        headerToolbar: {
+          left: 'prev,next today',
+          center: 'title',
+          right: 'dayGridMonth,timeGridWeek,timeGridDay'
+        },
+        events: this.allEvents,
+        eventClick: (info) => {
+          this.showEventDetails(info.event.id);
+        },
+        eventClassNames: (arg) => {
+          const status = arg.event.extendedProps?.status || 'tentative';
+          return [`event-${status}`];
+        },
+        height: 'auto'
       });
-    });
+    }
 
-    // Filter handlers
-    document.getElementById('roomFilter')?.addEventListener('change', () => this.applyFilters());
-    document.getElementById('statusFilter')?.addEventListener('change', () => this.applyFilters());
+    // Show event details modal
+    showEventDetails(eventId) {
+      const event = this.allEvents.find(e => e.id == eventId);
+      if (!event) return;
 
-    // Week navigation
-    document.getElementById('prevWeekBtn')?.addEventListener('click', () => {
-      this.currentWeekStart.setDate(this.currentWeekStart.getDate() - 7);
-      this.updateWeeklyView();
-    });
+      try {
+        const modal = new bootstrap.Modal(document.getElementById('eventModal'));
+        const props = event.extendedProps || {};
 
-    document.getElementById('nextWeekBtn')?.addEventListener('click', () => {
-      this.currentWeekStart.setDate(this.currentWeekStart.getDate() + 7);
-      this.updateWeeklyView();
-    });
-  }
+        // Set event details
+        document.getElementById('eventTitle').textContent = event.title || 'Untitled Event';
 
-  // Utility methods
-  isToday(date) {
-    const today = new Date();
-    return date.toDateString() === today.toDateString();
-  }
+        // Status badge
+        const statusEl = document.getElementById('eventStatus');
+        const status = props.status || 'tentative';
+        statusEl.textContent = status.charAt(0).toUpperCase() + status.slice(1);
+        statusEl.className = `badge fs-6 ${
+          status === 'tentative' ? 'bg-warning' :
+          status === 'confirmed' ? 'bg-success' : 'bg-danger'
+        }`;
 
-  showLoading() {
-    document.getElementById('scheduleLoading')?.classList.remove('hidden');
-  }
+        // Format date and time in CAT
+        const startDateTime = this.parseCATDateTime(event.start);
+        const endDateTime = this.parseCATDateTime(event.end || event.start);
 
-  hideLoading() {
-    document.getElementById('scheduleLoading')?.classList.add('hidden');
-  }
+        document.getElementById('eventDate').textContent = startDateTime.toLocaleDateString('en-US', {
+          weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+          timeZone: this.CAT_TIMEZONE
+        });
 
-  showError(message) {
-    const errorAlert = document.getElementById('calendarErrorAlert');
-    const errorMessage = document.getElementById('calendarErrorMessage');
-    if (errorAlert && errorMessage) {
-      errorMessage.textContent = message;
-      errorAlert.style.display = 'block';
+        const startTimeStr = startDateTime.toLocaleTimeString('en-US', {
+          hour: '2-digit', minute: '2-digit', timeZone: this.CAT_TIMEZONE
+        });
+        const endTimeStr = endDateTime.toLocaleTimeString('en-US', {
+          hour: '2-digit', minute: '2-digit', timeZone: this.CAT_TIMEZONE
+        });
+        document.getElementById('eventTime').textContent = `${startTimeStr} - ${endTimeStr} CAT`;
+
+        // Other details
+        document.getElementById('eventRoom').textContent = this.getRoomName(event);
+        document.getElementById('eventClient').textContent = this.getClientName(event);
+
+        const attendees = this.getEventAttendees(event);
+        const total = this.getEventTotal(event);
+
+        document.getElementById('eventAttendees').textContent = attendees > 0 ? attendees : 'Not specified';
+        document.getElementById('eventTotal').textContent = total > 0 ? `$${total.toFixed(2)}` : 'Not specified';
+
+        // Notes
+        const notesEl = document.getElementById('eventNotes');
+        if (props.notes) {
+          notesEl.textContent = props.notes;
+          notesEl.classList.remove('text-muted');
+        } else {
+          notesEl.textContent = 'No notes available';
+          notesEl.classList.add('text-muted');
+        }
+
+        // Action links
+        document.getElementById('viewBookingLink').href = `/bookings/${event.id}`;
+        document.getElementById('editBookingLink').href = `/bookings/${event.id}/edit`;
+
+        modal.show();
+      } catch (error) {
+        console.error('❌ Error showing event details:', error);
+      }
+    }
+
+    // Update statistics
+    updateStatistics() {
+      let tentative = 0, confirmed = 0, total = 0, revenue = 0;
+
+      let eventsToCount = this.filteredEvents;
+
+      // If today view, only count today's events
+      if (this.currentView === 'today') {
+        const today = new Date().toISOString().split('T')[0];
+        eventsToCount = this.filteredEvents.filter(event => {
+          const eventDate = this.parseCATDateTime(event.start);
+          const eventDateString = eventDate.toISOString().split('T')[0];
+          return eventDateString === today;
+        });
+      }
+
+      eventsToCount.forEach(event => {
+        total++;
+        const status = event.extendedProps?.status || 'tentative';
+        if (status === 'tentative') tentative++;
+        else if (status === 'confirmed') confirmed++;
+
+        const eventTotal = this.getEventTotal(event);
+        revenue += eventTotal;
+      });
+
+      document.getElementById('tentativeCount').textContent = tentative;
+      document.getElementById('confirmedCount').textContent = confirmed;
+      document.getElementById('totalCount').textContent = total;
+      document.getElementById('revenueCount').textContent = `$${revenue.toFixed(0)}`;
+    }
+
+    // Switch between views
+    switchView(view) {
+      this.currentView = view;
+
+      // Hide all view containers
+      document.querySelectorAll('.view-container').forEach(container => {
+        container.classList.remove('active');
+      });
+
+      // Show/hide week navigation
+      const weekNav = document.getElementById('weekNavigation');
+
+      if (view === 'today') {
+        document.getElementById('todayView').classList.add('active');
+        weekNav.style.display = 'none';
+      } else if (view === 'weekly') {
+        document.getElementById('weeklyView').classList.add('active');
+        weekNav.style.display = 'flex';
+      } else if (view === 'monthly') {
+        document.getElementById('monthlyView').classList.add('active');
+        weekNav.style.display = 'none';
+      }
+
+      this.updateCurrentView();
+      this.updateStatistics();
+    }
+
+    // Setup event handlers
+    setupEventHandlers() {
+      // View toggle buttons
+      document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const view = btn.dataset.view;
+          this.switchView(view);
+
+          document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
+
+      // Filter handlers
+      document.getElementById('roomFilter')?.addEventListener('change', () => this.applyFilters());
+      document.getElementById('statusFilter')?.addEventListener('change', () => this.applyFilters());
+
+      // Week navigation
+      document.getElementById('prevWeekBtn')?.addEventListener('click', () => {
+        this.currentWeekStart.setDate(this.currentWeekStart.getDate() - 7);
+        this.updateWeeklyView();
+      });
+
+      document.getElementById('nextWeekBtn')?.addEventListener('click', () => {
+        this.currentWeekStart.setDate(this.currentWeekStart.getDate() + 7);
+        this.updateWeeklyView();
+      });
+    }
+
+    // Utility methods
+    isToday(date) {
+      const today = new Date();
+      return date.toDateString() === today.toDateString();
+    }
+
+    showLoading() {
+      document.getElementById('scheduleLoading')?.classList.remove('hidden');
+    }
+
+    hideLoading() {
+      document.getElementById('scheduleLoading')?.classList.add('hidden');
+    }
+
+    showError(message) {
+      const errorAlert = document.getElementById('calendarErrorAlert');
+      const errorMessage = document.getElementById('calendarErrorMessage');
+      if (errorAlert && errorMessage) {
+        errorMessage.textContent = message;
+        errorAlert.style.display = 'block';
+      }
+    }
+
+    hideError() {
+      const errorAlert = document.getElementById('calendarErrorAlert');
+      if (errorAlert) {
+        errorAlert.style.display = 'none';
+      }
     }
   }
 
-  hideError() {
-    const errorAlert = document.getElementById('calendarErrorAlert');
-    if (errorAlert) {
-      errorAlert.style.display = 'none';
-    }
+  // Global functions for external access
+  let calendarManager;
+
+  function refreshCalendar() {
+    const btn = document.getElementById('refreshBtn');
+    const icon = btn.querySelector('i');
+    const originalClass = icon.className;
+
+    icon.className = 'fas fa-sync-alt fa-spin';
+    btn.disabled = true;
+
+    calendarManager.loadEvents().finally(() => {
+      setTimeout(() => {
+        icon.className = originalClass;
+        btn.disabled = false;
+      }, 1000);
+    });
   }
-}
 
-// Global functions for external access
-let calendarManager;
-
-function refreshCalendar() {
-  const btn = document.getElementById('refreshBtn');
-  const icon = btn.querySelector('i');
-  const originalClass = icon.className;
-
-  icon.className = 'fas fa-sync-alt fa-spin';
-  btn.disabled = true;
-
-  calendarManager.loadEvents().finally(() => {
-    setTimeout(() => {
-      icon.className = originalClass;
-      btn.disabled = false;
-    }, 1000);
+  // Initialize when DOM is ready
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('🗓️ Initializing Enhanced Calendar System for CAT timezone');
+    calendarManager = new CalendarManager();
   });
-}
-
-// Initialize when DOM is ready
-document.addEventListener('DOMContentLoaded', function() {
-  console.log('🗓️ Initializing Enhanced Calendar System for CAT timezone');
-  calendarManager = new CalendarManager();
-});
 </script>
 {% endblock %}

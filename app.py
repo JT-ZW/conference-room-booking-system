@@ -32,6 +32,9 @@ import threading
 import pytz
 from collections import defaultdict
 
+# Import core functions (will be imported after core.py is available)
+# This will be moved after Supabase initialization to avoid circular imports
+
 # Load environment variables
 load_dotenv()
 
@@ -100,6 +103,53 @@ except Exception as e:
     supabase = None
     supabase_admin = None
 
+# Import core functions after Supabase initialization to avoid circular imports
+try:
+    from core import (
+        authenticate_user, create_user_supabase, 
+        supabase_select, supabase_insert, supabase_update, supabase_delete,
+        get_clients_with_booking_counts, get_client_by_id_from_db, 
+        get_client_bookings_from_db, create_client_in_db, 
+        update_client_in_db, delete_client_from_db,
+        ActivityTypes, User as CoreUser,
+        LoginForm, RegistrationForm, ClientForm
+    )
+    print("✅ Core functions imported successfully")
+    
+    # Use core User class instead of local one
+    User = CoreUser
+    
+except ImportError as core_import_error:
+    print(f"⚠️  Warning: Could not import core functions: {core_import_error}")
+    print("   App will not function properly without core.py")
+    
+    # Define minimal fallbacks for critical functions to prevent import errors
+    class ActivityTypes:
+        LOGIN_SUCCESS = 'login_success'
+        LOGIN_FAILED = 'login_failed'
+        LOGOUT = 'logout'
+        CREATE_BOOKING = 'create_booking'
+        UPDATE_BOOKING = 'update_booking'
+        DELETE_BOOKING = 'delete_booking'
+        VIEW_BOOKING = 'view_booking'
+        ERROR_OCCURRED = 'error_occurred'
+    
+    class User:
+        def __init__(self, user_data):
+            self.id = user_data.get('id')
+            self.email = user_data.get('email')
+            
+        def get_id(self):
+            return str(self.id)
+    
+    def authenticate_user(email, password):
+        print("ERROR: Core functions not available - authentication disabled")
+        return None
+    
+    def create_user_supabase(*args, **kwargs):
+        print("ERROR: Core functions not available - user creation disabled")
+        return False
+
 # Initialize extensions
 try:
     csrf = CSRFProtect(app)
@@ -113,6 +163,8 @@ except Exception as e:
     csrf = DummyCSRF()
 
 login_manager = LoginManager(app)
+login_manager.init_app(app)
+
 login_manager.login_view = 'auth.login'
 
 # Register blueprints with error handling
@@ -161,6 +213,10 @@ try:
     app.jinja_env.filters['safe_contains'] = template_filters.safe_contains_filter
     app.jinja_env.filters['truncate_safe'] = template_filters.truncate_safe_filter
     app.jinja_env.filters['default_if_none'] = template_filters.default_if_none_filter
+    app.jinja_env.filters['format_currency'] = template_filters.format_currency_filter
+    app.jinja_env.filters['format_percentage'] = template_filters.format_percentage_filter
+    app.jinja_env.filters['time_ago'] = template_filters.time_ago_filter
+    app.jinja_env.filters['days_until'] = template_filters.days_until_filter
     
     print("✅ Template filters registered successfully")
 except ImportError as e:
@@ -241,96 +297,13 @@ def utility_processor():
 # Activity Types
 # ===============================
 
-class ActivityTypes:
-    # Authentication
-    LOGIN_SUCCESS = 'login_success'
-    LOGIN_FAILED = 'login_failed'
-    LOGOUT = 'logout'
-    REGISTRATION = 'registration'
-    
-    # Bookings
-    CREATE_BOOKING = 'create_booking'
-    UPDATE_BOOKING = 'update_booking'
-    DELETE_BOOKING = 'delete_booking'
-    CANCEL_BOOKING = 'cancel_booking'
-    CHANGE_BOOKING_STATUS = 'change_booking_status'
-    VIEW_BOOKING = 'view_booking'
-    
-    # Rooms
-    CREATE_ROOM = 'create_room'
-    UPDATE_ROOM = 'update_room'
-    DELETE_ROOM = 'delete_room'
-    VIEW_ROOM = 'view_room'
-    
-    # Clients
-    CREATE_CLIENT = 'create_client'
-    UPDATE_CLIENT = 'update_client'
-    DELETE_CLIENT = 'delete_client'
-    VIEW_CLIENT = 'view_client'
-    
-    # Add-ons
-    CREATE_ADDON = 'create_addon'
-    UPDATE_ADDON = 'update_addon'
-    DELETE_ADDON = 'delete_addon'
-    CREATE_ADDON_CATEGORY = 'create_addon_category'
-    
-    # Reports
-    GENERATE_REPORT = 'generate_report'
-    EXPORT_DATA = 'export_data'
-    
-    # System
-    PAGE_VIEW = 'page_view'
-    API_CALL = 'api_call'
-    ERROR_OCCURRED = 'error_occurred'
+# ActivityTypes class is imported from core.py above
 
 # ===============================
 # User Model for Supabase
 # ===============================
 
-class User(UserMixin):
-    """User class that works with Supabase Auth"""
-    
-    def __init__(self, user_data):
-        self.id = user_data.get('id')
-        self.email = user_data.get('email')
-        self.user_metadata = user_data.get('user_metadata', {})
-        self.app_metadata = user_data.get('app_metadata', {})
-        
-        # Get profile data from your users table
-        self.profile = self.get_profile()
-    
-    def get_profile(self):
-        """Get user profile from Supabase users table using admin client"""
-        try:
-            if supabase_admin:
-                response = supabase_admin.table('users').select('*').eq('id', self.id).execute()
-                return response.data[0] if response.data else {}
-        except:
-            pass
-        return {}
-    
-    @property
-    def first_name(self):
-        return self.profile.get('first_name', '')
-    
-    @property
-    def last_name(self):
-        return self.profile.get('last_name', '')
-    
-    @property
-    def role(self):
-        return self.profile.get('role', 'staff')
-    
-    @property
-    def username(self):
-        return self.profile.get('username', self.email.split('@')[0] if self.email else 'user')
-    
-    @property
-    def is_active(self):
-        return self.profile.get('is_active', True)
-    
-    def get_id(self):
-        return str(self.id)
+# User class is imported from core.py above
 
 # ===============================
 # Authentication Functions
@@ -349,462 +322,19 @@ def load_user(user_id):
         print(f"Error loading user: {e}")
         return None
 
-def authenticate_user(email, password):
-    """Authenticate user with Supabase and set up session properly"""
-    try:
-        print(f"DEBUG: Attempting to authenticate user: {email}")
-        
-        if not supabase:
-            print("ERROR: Supabase client not initialized")
-            return None
-        
-        response = supabase.auth.sign_in_with_password({
-            "email": email,
-            "password": password
-        })
-        
-        if response.user and response.session:
-            print(f"DEBUG: Supabase authentication successful")
-            
-            # Clear any existing session data first
-            session.clear()
-            
-            # IMPORTANT: Set session as permanent first
-            session.permanent = True
-            
-            # Store session data
-            session_data = {
-                'access_token': response.session.access_token,
-                'refresh_token': response.session.refresh_token,
-                'user_id': response.user.id
-            }
-            
-            # Set session data
-            session['supabase_session'] = session_data
-            session['created_at'] = datetime.now(UTC).isoformat()
-            session['user_id'] = response.user.id
-            session['user_email'] = response.user.email
-            
-            # Force session save
-            session.modified = True
-            
-            print(f"DEBUG: Session created successfully")
-            return User(response.user.__dict__)
-        else:
-            print("DEBUG: Authentication failed - no user or session")
-            return None
-            
-    except Exception as e:
-        print(f"DEBUG: Authentication error: {e}")
-        return None
-
-def create_user_supabase(email, password, first_name, last_name, role='staff'):
-    """Create new user in Supabase with enhanced error handling"""
-    try:
-        print(f"DEBUG: Creating user - {email}, {first_name} {last_name}, role: {role}")
-        
-        if not supabase_admin:
-            raise Exception("Admin client not available")
-        
-        # Create user in Supabase Auth
-        auth_response = supabase_admin.auth.admin.create_user({
-            "email": email,
-            "password": password,
-            "email_confirm": True,  # Auto-confirm for internal users
-            "user_metadata": {
-                "first_name": first_name,
-                "last_name": last_name,
-                "role": role
-            }
-        })
-        
-        if auth_response.user:
-            print(f"DEBUG: Auth user created successfully with ID: {auth_response.user.id}")
-            
-            # Create profile in users table using admin client
-            profile_data = {
-                'id': auth_response.user.id,
-                'email': email,
-                'first_name': first_name,
-                'last_name': last_name,
-                'username': email.split('@')[0],
-                'role': role,
-                'is_active': True,
-                'created_at': datetime.now(UTC).isoformat()
-            }
-            
-            # Use admin client to bypass RLS
-            profile_response = supabase_admin.table('users').insert(profile_data).execute()
-            
-            if profile_response.data:
-                print(f"DEBUG: User profile created successfully")
-                return True
-            else:
-                print(f"ERROR: Failed to create user profile")
-                # Clean up auth user if profile creation failed
-                try:
-                    supabase_admin.auth.admin.delete_user(auth_response.user.id)
-                except:
-                    pass
-                return False
-        else:
-            print("ERROR: Failed to create auth user")
-            return False
-            
-    except Exception as e:
-        print(f"User creation error: {e}")
-        
-        # Check for specific error types to provide better user feedback
-        error_message = str(e).lower()
-        if 'already registered' in error_message or 'already exists' in error_message:
-            raise Exception("Email already registered")
-        elif 'password' in error_message:
-            raise Exception("Password does not meet requirements")
-        elif 'email' in error_message and 'invalid' in error_message:
-            raise Exception("Invalid email format")
-        else:
-            raise Exception("Registration failed due to server error")
-
 # ===============================
-# Database Helper Functions
+# Database Helper Functions and Client Functions
 # ===============================
 
-def supabase_select(table_name, columns="*", filters=None, order_by=None, limit=None):
-    """Enhanced select function with better error handling and RLS bypass"""
-    try:
-        if not supabase_admin:
-            raise Exception("Supabase admin client not initialized")
-        
-        print(f"🔍 DEBUG: Querying table '{table_name}' with admin client")
-        
-        # Use admin client to bypass RLS
-        query = supabase_admin.table(table_name).select(columns)
-        
-        if filters:
-            for filter_item in filters:
-                if len(filter_item) == 3:
-                    column, operator, value = filter_item
-                    if operator == 'eq':
-                        query = query.eq(column, value)
-                    elif operator == 'neq':
-                        query = query.neq(column, value)
-                    elif operator == 'gte':
-                        query = query.gte(column, value)
-                    elif operator == 'lte':
-                        query = query.lte(column, value)
-                    elif operator == 'gt':
-                        query = query.gt(column, value)
-                    elif operator == 'lt':
-                        query = query.lt(column, value)
-        
-        if order_by:
-            query = query.order(order_by)
-            
-        if limit:
-            query = query.limit(limit)
-        
-        response = query.execute()
-        
-        if hasattr(response, 'data') and response.data is not None:
-            print(f"✅ DEBUG: Successfully retrieved {len(response.data)} rows from '{table_name}'")
-            return response.data
-        else:
-            print(f"⚠️ DEBUG: Empty response from table '{table_name}'")
-            return []
-            
-    except Exception as e:
-        print(f"❌ ERROR: Failed to query table '{table_name}': {e}")
-        return []
-
-def supabase_insert(table_name, data):
-    """Insert data into Supabase table using admin client with enhanced error handling"""
-    try:
-        print(f"DEBUG: Inserting into table '{table_name}'")
-        
-        if not supabase_admin:
-            raise Exception("Admin client not available")
-        
-        response = supabase_admin.table(table_name).insert(data).execute()
-        
-        if response.data:
-            print(f"DEBUG: Insert successful, created {len(response.data)} row(s)")
-            return response.data[0] if response.data else None
-        else:
-            print("DEBUG: Insert returned no data")
-            return None
-            
-    except Exception as e:
-        print(f"Insert error in supabase_insert: {e}")
-        return None
-
-def supabase_update(table_name, data, filters):
-    """Update data in Supabase table using admin client with correct syntax"""
-    try:
-        print(f"DEBUG: Updating table '{table_name}'")
-        
-        if not supabase_admin:
-            raise Exception("Admin client not available")
-        
-        query = supabase_admin.table(table_name).update(data)
-        
-        # Apply filters
-        for filter_item in filters:
-            if len(filter_item) == 3:
-                column, operator, value = filter_item
-                if operator == 'eq':
-                    query = query.eq(column, value)
-                elif operator == 'neq':
-                    query = query.neq(column, value)
-        
-        response = query.execute()
-        
-        if response.data is not None:
-            print(f"DEBUG: Update successful")
-            return response.data
-        else:
-            return [{'success': True}]
-                
-    except Exception as e:
-        print(f"Update error in supabase_update: {e}")
-        return []
-
-def supabase_delete(table_name, filters):
-    """Delete data from Supabase table using admin client"""
-    try:
-        if not supabase_admin:
-            raise Exception("Admin client not available")
-        
-        query = supabase_admin.table(table_name)
-        
-        for filter_item in filters:
-            if len(filter_item) == 3:
-                column, operator, value = filter_item
-                if operator == 'eq':
-                    query = query.eq(column, value)
-        
-        response = query.delete().execute()
-        return True
-    except Exception as e:
-        print(f"Delete error: {e}")
-        return False
-
-# ===============================
-# Client Functions
-# ===============================
-
-def get_clients_with_booking_counts():
-    """Get all clients with their booking counts efficiently"""
-    try:
-        print("🔍 DEBUG: Fetching clients with booking counts...")
-        
-        if not supabase_admin:
-            print("❌ ERROR: Admin client not available")
-            return []
-        
-        # Get all clients
-        clients_response = supabase_admin.table('clients').select('*').execute()
-        clients = clients_response.data if clients_response.data else []
-        
-        if not clients:
-            print("⚠️ DEBUG: No clients found in database")
-            return []
-        
-        # Get all bookings to count efficiently
-        bookings_response = supabase_admin.table('bookings').select('client_id, status').execute()
-        bookings = bookings_response.data if bookings_response.data else []
-        
-        # Count bookings per client (excluding cancelled ones)
-        booking_counts = {}
-        for booking in bookings:
-            client_id = booking.get('client_id')
-            status = booking.get('status', '')
-            
-            if client_id and status != 'cancelled':
-                booking_counts[client_id] = booking_counts.get(client_id, 0) + 1
-        
-        # Add booking counts to clients
-        for client in clients:
-            client_id = client.get('id')
-            client['booking_count'] = booking_counts.get(client_id, 0)
-            
-            # Ensure all required fields exist with defaults
-            client['company_name'] = client.get('company_name') or None
-            client['contact_person'] = client.get('contact_person') or 'Unknown'
-            client['email'] = client.get('email') or 'unknown@example.com'
-            client['phone'] = client.get('phone') or None
-            client['address'] = client.get('address') or None
-            client['notes'] = client.get('notes') or None
-            
-            # Add computed fields for template compatibility
-            client['display_name'] = client.get('company_name') or client.get('contact_person', 'Unknown Client')
-        
-        print(f"✅ DEBUG: Enhanced {len(clients)} clients with booking counts")
-        return clients
-        
-    except Exception as e:
-        print(f"❌ ERROR: get_clients_with_booking_counts failed: {e}")
-        return []
-
-def get_client_by_id_from_db(client_id):
-    """Get specific client by ID from Supabase database"""
-    try:
-        print(f"🔍 DEBUG: Fetching client ID {client_id} from database...")
-        
-        if not supabase_admin:
-            return None
-        
-        response = supabase_admin.table('clients').select('*').eq('id', client_id).execute()
-        
-        if response.data:
-            print(f"✅ DEBUG: Found client: {response.data[0].get('company_name') or response.data[0].get('contact_person')}")
-            return response.data[0]
-        else:
-            print(f"⚠️ DEBUG: Client ID {client_id} not found in database")
-            return None
-            
-    except Exception as e:
-        print(f"❌ ERROR: Failed to fetch client ID {client_id}: {e}")
-        return None
-
-def get_client_bookings_from_db(client_id):
-    """Get all bookings for a specific client with room details"""
-    try:
-        print(f"🔍 DEBUG: Fetching bookings for client ID {client_id}...")
-        
-        if not supabase_admin:
-            return []
-        
-        response = supabase_admin.table('bookings').select("""
-            *,
-            room:rooms(id, name, capacity)
-        """).eq('client_id', client_id).order('start_time', desc=True).execute()
-        
-        if response.data:
-            print(f"✅ DEBUG: Found {len(response.data)} bookings for client")
-            # Convert datetime strings for template compatibility
-            return convert_datetime_strings(response.data)
-        else:
-            print("ℹ️ DEBUG: No bookings found for this client")
-            return []
-            
-    except Exception as e:
-        print(f"❌ ERROR: Failed to fetch client bookings: {e}")
-        return []
-
-def create_client_in_db(client_data):
-    """Create a new client in Supabase database"""
-    try:
-        print(f"🔍 DEBUG: Creating new client: {client_data.get('company_name') or client_data.get('contact_person')}")
-        
-        # Ensure all required fields are present
-        required_fields = ['contact_person', 'email']
-        for field in required_fields:
-            if not client_data.get(field):
-                raise ValueError(f"Missing required field: {field}")
-        
-        response = supabase_insert('clients', client_data)
-        
-        if response:
-            print(f"✅ DEBUG: Successfully created client with ID: {response['id']}")
-            return response
-        else:
-            print("❌ DEBUG: Failed to create client - no data returned")
-            return None
-            
-    except Exception as e:
-        print(f"❌ ERROR: Failed to create client: {e}")
-        return None
-
-def update_client_in_db(client_id, client_data):
-    """Update an existing client in Supabase database"""
-    try:
-        print(f"🔍 DEBUG: Updating client ID {client_id}")
-        
-        response = supabase_update('clients', client_data, [('id', 'eq', client_id)])
-        
-        if response:
-            print(f"✅ DEBUG: Successfully updated client ID {client_id}")
-            return response[0] if response else {'success': True}
-        else:
-            print(f"⚠️ DEBUG: Update failed for client ID {client_id}")
-            return None
-            
-    except Exception as e:
-        print(f"❌ ERROR: Failed to update client ID {client_id}: {e}")
-        return None
-
-def delete_client_from_db(client_id):
-    """Delete a client from Supabase database (after checking for bookings)"""
-    try:
-        print(f"🔍 DEBUG: Attempting to delete client ID {client_id}")
-        
-        if not supabase_admin:
-            return False, "Database not available"
-        
-        # First check if client has any bookings
-        bookings_check = supabase_admin.table('bookings').select('id').eq('client_id', client_id).execute()
-        
-        if bookings_check.data:
-            print(f"❌ DEBUG: Cannot delete client - has {len(bookings_check.data)} bookings")
-            return False, "Cannot delete client with existing bookings"
-        
-        # If no bookings, proceed with deletion
-        response = supabase_admin.table('clients').delete().eq('id', client_id).execute()
-        
-        print(f"✅ DEBUG: Successfully deleted client ID {client_id}")
-        return True, "Client deleted successfully"
-        
-    except Exception as e:
-        print(f"❌ ERROR: Failed to delete client ID {client_id}: {e}")
-        return False, f"Error deleting client: {str(e)}"
+# All database and business logic functions are imported from core.py above
+# This eliminates code duplication and ensures consistency across the application
 
 # ===============================
 # Forms
 # ===============================
 
-class LoginForm(FlaskForm):
-    """User login form"""
-    username = StringField('Email', validators=[DataRequired()])
-    password = PasswordField('Password', validators=[DataRequired()])
-    remember_me = BooleanField('Remember Me')
-
-class RegistrationForm(FlaskForm):
-    """User registration form"""
-    first_name = StringField('First Name', validators=[DataRequired(), Length(min=2, max=50)])
-    last_name = StringField('Last Name', validators=[DataRequired(), Length(min=2, max=50)])
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    password = PasswordField('Password', validators=[
-        DataRequired(), 
-        Length(min=8, message='Password must be at least 8 characters long')
-    ])
-    confirm_password = PasswordField('Confirm Password', validators=[
-        DataRequired(), 
-        EqualTo('password', message='Passwords must match')
-    ])
-    role = SelectField('Role', choices=[
-        ('staff', 'Staff Member'),
-        ('manager', 'Manager'),
-        ('admin', 'Administrator')
-    ], default='staff')
-    
-    def validate_email(self, field):
-        """Check if email already exists"""
-        try:
-            if supabase_admin:
-                existing_users = supabase_admin.table('users').select('email').eq('email', field.data.lower()).execute()
-                if existing_users.data:
-                    raise ValidationError('Email address already registered. Please use a different email or try logging in.')
-        except Exception as e:
-            print(f"Warning: Could not check email uniqueness: {e}")
-
-class ClientForm(FlaskForm):
-    """Form for adding/editing clients"""
-    company_name = StringField('Company Name')
-    contact_person = StringField('Contact Person', validators=[DataRequired()])
-    email = StringField('Email', validators=[DataRequired(), Email()])
-    phone = StringField('Phone Number')
-    address = TextAreaField('Address')
-    notes = TextAreaField('Notes')
+# Forms are imported from core.py above (LoginForm, RegistrationForm, ClientForm, etc.)
+# This eliminates code duplication and ensures consistency across the application
 
 # ===============================
 # Request Handlers
@@ -883,11 +413,10 @@ def health_check():
 
 @app.route('/')
 def index():
-    """Main index route"""
+    """Redirect to appropriate page based on auth status"""
     if current_user.is_authenticated:
-        return redirect(url_for('dashboard.dashboard'))
-    else:
-        return redirect(url_for('auth.login'))
+        return redirect(url_for('dashboard.index'))  # Changed from dashboard.dashboard
+    return redirect(url_for('auth.login'))
 
 # ===============================
 # CLI Commands

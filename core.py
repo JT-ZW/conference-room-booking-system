@@ -15,6 +15,20 @@ else:
     supabase_admin = supabase
 
 # ===============================
+# UTILITY FUNCTIONS
+# ===============================
+
+def safe_str(value):
+    """Safely convert value to string, handling None"""
+    if value is None:
+        return ''
+    return str(value).strip()
+
+def safe_str_lower(value):
+    """Safely convert value to lowercase string, handling None"""
+    return safe_str(value).lower()
+
+# ===============================
 # USER MODEL
 # ===============================
 
@@ -1064,7 +1078,6 @@ def handle_booking_creation(form_data, rooms_for_template):
     """Handle the creation of a new booking"""
     try:
         from flask import render_template
-        from forms import BookingForm
         
         # Extract and validate form data
         booking_data = extract_booking_form_data(form_data)
@@ -1138,7 +1151,6 @@ def handle_booking_update(booking_id, form_data, existing_booking, rooms_for_tem
     """Handle updating an existing booking"""
     try:
         from flask import render_template
-        from forms import BookingForm
         
         # Extract and validate form data
         booking_data = extract_booking_form_data(form_data)
@@ -1392,3 +1404,520 @@ def get_booking_with_details(booking_id):
     except Exception as e:
         print(f"❌ ERROR: Failed to fetch booking details: {e}")
         return None
+
+# ===============================
+# DASHBOARD FUNCTIONS
+# ===============================
+
+def get_dashboard_stats():
+    """Get comprehensive dashboard statistics"""
+    try:
+        from datetime import datetime, UTC, timedelta
+        
+        stats = {
+            'total_bookings': 0,
+            'total_clients': 0,
+            'total_rooms': 0,
+            'available_rooms': 0,
+            'confirmed_bookings': 0,
+            'tentative_bookings': 0,
+            'cancelled_bookings': 0,
+            'total_revenue': 0,
+            'revenue_this_month': 0,
+            'average_booking_value': 0,
+            'upcoming_bookings': 0,
+            'todays_bookings': 0,
+            'occupancy_rate': 0,
+            'revenue_growth': 0
+        }
+        
+        # Get all bookings
+        bookings_response = supabase_admin.table('bookings').select('*').execute()
+        all_bookings = bookings_response.data if bookings_response.data else []
+        
+        # Get total rooms
+        rooms_response = supabase_admin.table('rooms').select('*').execute()
+        all_rooms = rooms_response.data if rooms_response.data else []
+        stats['total_rooms'] = len(all_rooms)
+        stats['available_rooms'] = len([r for r in all_rooms if r.get('is_available', True)])
+        
+        # Get total clients
+        clients_response = supabase_admin.table('clients').select('id').execute()
+        stats['total_clients'] = len(clients_response.data) if clients_response.data else 0
+        
+        # Process bookings by status
+        non_cancelled_bookings = [b for b in all_bookings if b.get('status') != 'cancelled']
+        stats['total_bookings'] = len(non_cancelled_bookings)
+        stats['confirmed_bookings'] = len([b for b in all_bookings if b.get('status') == 'confirmed'])
+        stats['tentative_bookings'] = len([b for b in all_bookings if b.get('status') == 'tentative'])
+        stats['cancelled_bookings'] = len([b for b in all_bookings if b.get('status') == 'cancelled'])
+        
+        # Calculate revenue metrics
+        total_revenue = 0
+        revenue_this_month = 0
+        now = datetime.now(UTC)
+        current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+        
+        for booking in non_cancelled_bookings:
+            booking_revenue = safe_float_conversion(booking.get('total_price', 0))
+            total_revenue += booking_revenue
+            
+            # Check if booking is this month
+            if booking.get('start_time'):
+                try:
+                    booking_date = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00'))
+                    # Ensure both dates are timezone-aware for comparison
+                    if booking_date >= current_month_start:
+                        revenue_this_month += booking_revenue
+                except Exception:
+                    pass
+        
+        stats['total_revenue'] = total_revenue
+        stats['revenue_this_month'] = revenue_this_month
+        stats['average_booking_value'] = total_revenue / len(non_cancelled_bookings) if non_cancelled_bookings else 0
+        
+        # Calculate upcoming bookings (next 30 days)
+        next_month = now + timedelta(days=30)
+        upcoming_count = 0
+        todays_count = 0
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_end = today_start + timedelta(days=1)
+        
+        for booking in non_cancelled_bookings:
+            if booking.get('start_time'):
+                try:
+                    booking_date = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00'))
+                    
+                    # Count upcoming bookings
+                    if now <= booking_date <= next_month:
+                        upcoming_count += 1
+                    
+                    # Count today's bookings
+                    if today_start <= booking_date < today_end:
+                        todays_count += 1
+                        
+                except Exception:
+                    pass
+        
+        stats['upcoming_bookings'] = upcoming_count
+        stats['todays_bookings'] = todays_count
+        
+        # Calculate occupancy rate (percentage of rooms with bookings in the last 30 days)
+        if stats['total_rooms'] > 0:
+            # Look at the last 30 days for a more meaningful occupancy rate
+            period_start = now - timedelta(days=30)
+            period_end = now
+            
+            occupied_rooms = set()
+            total_bookings_in_period = 0
+            
+            for booking in non_cancelled_bookings:
+                if booking.get('start_time') and booking.get('room_id'):
+                    try:
+                        booking_date = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00'))
+                        # Include bookings from the last 30 days
+                        if period_start <= booking_date <= period_end:
+                            occupied_rooms.add(booking['room_id'])
+                            total_bookings_in_period += 1
+                    except Exception as e:
+                        print(f"⚠️ Error parsing booking date: {e}")
+                        pass
+            
+            # Calculate as percentage of rooms that had at least one booking in the period
+            stats['occupancy_rate'] = (len(occupied_rooms) / stats['total_rooms']) * 100
+            print(f"🏨 Occupancy calculation: {len(occupied_rooms)} rooms used out of {stats['total_rooms']} total rooms in last 30 days ({total_bookings_in_period} bookings) = {stats['occupancy_rate']:.1f}%")
+        else:
+            print("⚠️ No rooms found for occupancy calculation")
+            stats['occupancy_rate'] = 0
+        
+        # Calculate revenue growth (this month vs last month)
+        last_month_start = (current_month_start - timedelta(days=1)).replace(day=1)
+        last_month_revenue = 0
+        
+        for booking in non_cancelled_bookings:
+            if booking.get('start_time'):
+                try:
+                    booking_date = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00'))
+                    if last_month_start <= booking_date < current_month_start:
+                        last_month_revenue += safe_float_conversion(booking.get('total_price', 0))
+                except Exception:
+                    pass
+        
+        if last_month_revenue > 0:
+            stats['revenue_growth'] = ((revenue_this_month - last_month_revenue) / last_month_revenue) * 100
+        else:
+            stats['revenue_growth'] = 100 if revenue_this_month > 0 else 0
+        
+        print(f"✅ Dashboard stats calculated: {stats['total_bookings']} bookings, ${stats['total_revenue']:.2f} total revenue, {stats['occupancy_rate']:.1f}% occupancy")
+        return stats
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to get dashboard stats: {e}")
+        return {
+            'total_bookings': 0,
+            'total_clients': 0,
+            'total_rooms': 0,
+            'available_rooms': 0,
+            'confirmed_bookings': 0,
+            'tentative_bookings': 0,
+            'cancelled_bookings': 0,
+            'total_revenue': 0,
+            'revenue_this_month': 0,
+            'average_booking_value': 0,
+            'upcoming_bookings': 0,
+            'todays_bookings': 0,
+            'occupancy_rate': 0,
+            'revenue_growth': 0
+        }
+
+def get_recent_bookings(limit=10):
+    """Get recent bookings for dashboard with enhanced formatting"""
+    try:
+        response = supabase_admin.table('bookings').select("""
+            *,
+            room:rooms(id, name),
+            client:clients(id, contact_person, company_name)
+        """).order('created_at', desc=True).limit(limit).execute()
+        
+        if response.data:
+            # Convert datetime strings for template compatibility
+            bookings = convert_datetime_strings(response.data)
+            
+            # Enhance booking data for display
+            for booking in bookings:
+                # Ensure client name is available
+                if booking.get('client'):
+                    client = booking['client']
+                    booking['client_name'] = client.get('company_name') or client.get('contact_person', 'Unknown Client')
+                    booking['client_display_name'] = booking['client_name']
+                else:
+                    booking['client_name'] = booking.get('client_name', 'Unknown Client')
+                    booking['client_display_name'] = booking['client_name']
+                
+                # Ensure room name is available
+                if booking.get('room'):
+                    booking['room_name'] = booking['room'].get('name', 'Unknown Room')
+                else:
+                    booking['room_name'] = 'Unknown Room'
+                
+                # Format status for display
+                status = booking.get('status', 'tentative')
+                booking['status_display'] = status.replace('_', ' ').title()
+                
+                # Safe total price
+                booking['total_price'] = safe_float_conversion(booking.get('total_price', 0))
+                
+                # Add time ago calculation
+                if booking.get('created_at'):
+                    from datetime import datetime, UTC
+                    created_at = booking['created_at']
+                    if isinstance(created_at, str):
+                        try:
+                            created_dt = datetime.fromisoformat(created_at.replace('Z', '+00:00')).replace(tzinfo=None)
+                            now = datetime.now(UTC).replace(tzinfo=None)
+                            diff = now - created_dt
+                            
+                            if diff.days > 0:
+                                if diff.days == 1:
+                                    booking['time_ago'] = "1 day ago"
+                                elif diff.days < 7:
+                                    booking['time_ago'] = f"{diff.days} days ago"
+                                elif diff.days < 30:
+                                    weeks = diff.days // 7
+                                    booking['time_ago'] = f"{weeks} week{'s' if weeks > 1 else ''} ago"
+                                else:
+                                    months = diff.days // 30
+                                    booking['time_ago'] = f"{months} month{'s' if months > 1 else ''} ago"
+                            else:
+                                hours = diff.seconds // 3600
+                                if hours > 0:
+                                    booking['time_ago'] = f"{hours} hour{'s' if hours > 1 else ''} ago"
+                                else:
+                                    minutes = diff.seconds // 60
+                                    if minutes > 0:
+                                        booking['time_ago'] = f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+                                    else:
+                                        booking['time_ago'] = "Just now"
+                        except Exception:
+                            booking['time_ago'] = "Recently"
+                else:
+                    booking['time_ago'] = "Recently"
+                
+                # Add booking title if missing
+                if not booking.get('title'):
+                    booking['title'] = f"Meeting - {booking['client_name']}"
+            
+            return bookings
+        
+        return []
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to get recent bookings: {e}")
+        return []
+
+def get_upcoming_bookings(limit=10):
+    """Get upcoming bookings for dashboard with enhanced formatting"""
+    try:
+        from datetime import datetime, UTC, timedelta
+        
+        # Get bookings starting from now
+        now = datetime.now(UTC)
+        
+        response = supabase_admin.table('bookings').select("""
+            *,
+            room:rooms(id, name, capacity),
+            client:clients(id, contact_person, company_name)
+        """).gte('start_time', now.isoformat()).neq('status', 'cancelled').order('start_time', desc=False).limit(limit).execute()
+        
+        if response.data:
+            # Convert datetime strings for template compatibility
+            bookings = convert_datetime_strings(response.data)
+            
+            # Enhance booking data for display
+            for booking in bookings:
+                # Ensure client name is available
+                if booking.get('client'):
+                    client = booking['client']
+                    booking['client_name'] = client.get('company_name') or client.get('contact_person', 'Unknown Client')
+                    booking['client_display_name'] = booking['client_name']
+                else:
+                    booking['client_name'] = booking.get('client_name', 'Unknown Client')
+                    booking['client_display_name'] = booking['client_name']
+                
+                # Ensure room name and details are available
+                if booking.get('room'):
+                    room = booking['room']
+                    booking['room_name'] = room.get('name', 'Unknown Room')
+                    booking['room_capacity'] = room.get('capacity')
+                else:
+                    booking['room_name'] = 'Unknown Room'
+                    booking['room_capacity'] = None
+                
+                # Format status for display
+                status = booking.get('status', 'tentative')
+                booking['status_display'] = status.replace('_', ' ').title()
+                
+                # Safe total price
+                booking['total_price'] = safe_float_conversion(booking.get('total_price', 0))
+                
+                # Calculate time until booking and format display
+                if booking.get('start_time'):
+                    start_time = booking['start_time']
+                    if isinstance(start_time, str):
+                        start_time = datetime.fromisoformat(start_time.replace('Z', '+00:00')).replace(tzinfo=None)
+                    
+                    time_diff = start_time - now.replace(tzinfo=None)
+                    if time_diff.days > 0:
+                        if time_diff.days == 1:
+                            booking['days_until'] = "Tomorrow"
+                        else:
+                            booking['days_until'] = f"In {time_diff.days} days"
+                    elif time_diff.seconds > 3600:
+                        hours = time_diff.seconds // 3600
+                        booking['days_until'] = f"In {hours} hour{'s' if hours > 1 else ''}"
+                    else:
+                        minutes = time_diff.seconds // 60
+                        booking['days_until'] = f"In {minutes} minute{'s' if minutes > 1 else ''}"
+                    
+                    # Format start time for display
+                    booking['start_time'] = start_time.strftime('%H:%M')
+                    booking['start_date'] = start_time.strftime('%d %b')
+                
+                # Format end time if available
+                if booking.get('end_time'):
+                    end_time = booking['end_time']
+                    if isinstance(end_time, str):
+                        end_time = datetime.fromisoformat(end_time.replace('Z', '+00:00')).replace(tzinfo=None)
+                    booking['end_time'] = end_time.strftime('%H:%M')
+                
+                # Add booking title if missing
+                if not booking.get('title'):
+                    booking['title'] = f"Meeting - {booking['client_name']}"
+            
+            return bookings
+        
+        return []
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to get upcoming bookings: {e}")
+        return []
+
+def get_todays_bookings():
+    """Get today's bookings for dashboard with enhanced formatting"""
+    try:
+        from datetime import datetime, UTC, timedelta
+        
+        # Get start and end of today
+        now = datetime.now(UTC)
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        today_end = today_start + timedelta(days=1)
+        
+        response = supabase_admin.table('bookings').select("""
+            *,
+            room:rooms(id, name, capacity),
+            client:clients(id, contact_person, company_name)
+        """).gte('start_time', today_start.isoformat()).lt('start_time', today_end.isoformat()).neq('status', 'cancelled').order('start_time').execute()
+        
+        if response.data:
+            # Convert datetime strings for template compatibility
+            bookings = convert_datetime_strings(response.data)
+            
+            # Enhance booking data for display
+            for booking in bookings:
+                # Ensure client name is available
+                if booking.get('client'):
+                    client = booking['client']
+                    booking['client_name'] = client.get('company_name') or client.get('contact_person', 'Unknown Client')
+                    booking['client_display_name'] = booking['client_name']
+                else:
+                    booking['client_name'] = booking.get('client_name', 'Unknown Client')
+                    booking['client_display_name'] = booking['client_name']
+                
+                # Ensure room name is available
+                if booking.get('room'):
+                    room = booking['room']
+                    booking['room_name'] = room.get('name', 'Unknown Room')
+                    booking['room_capacity'] = room.get('capacity')
+                else:
+                    booking['room_name'] = 'Unknown Room'
+                    booking['room_capacity'] = None
+                
+                # Format status for display
+                status = booking.get('status', 'tentative')
+                booking['status_display'] = status.replace('_', ' ').title()
+                
+                # Safe total price
+                booking['total_price'] = safe_float_conversion(booking.get('total_price', 0))
+                
+                # Format time for display
+                start_time_formatted = 'TBD'
+                end_time_formatted = 'TBD'
+                time_range = 'Time TBD'
+                
+                if booking.get('start_time'):
+                    start_time = booking['start_time']
+                    if isinstance(start_time, str):
+                        start_time = datetime.fromisoformat(start_time.replace('Z', '+00:00')).replace(tzinfo=None)
+                    start_time_formatted = start_time.strftime('%H:%M')
+                
+                if booking.get('end_time'):
+                    end_time = booking['end_time']
+                    if isinstance(end_time, str):
+                        end_time = datetime.fromisoformat(end_time.replace('Z', '+00:00')).replace(tzinfo=None)
+                    end_time_formatted = end_time.strftime('%H:%M')
+                
+                # Create time range display
+                if start_time_formatted != 'TBD' and end_time_formatted != 'TBD':
+                    time_range = f"{start_time_formatted} - {end_time_formatted}"
+                elif start_time_formatted != 'TBD':
+                    time_range = f"From {start_time_formatted}"
+                
+                booking['start_time_formatted'] = start_time_formatted
+                booking['end_time_formatted'] = end_time_formatted
+                booking['time_range'] = time_range
+                
+                # Add booking title if missing
+                if not booking.get('title'):
+                    booking['title'] = f"Meeting - {booking['client_name']}"
+                
+                # Add status indicator for current time
+                if start_time_formatted != 'TBD':
+                    current_time = now.time()
+                    start_time_obj = datetime.strptime(start_time_formatted, '%H:%M').time()
+                    
+                    if current_time < start_time_obj:
+                        booking['status_indicator'] = 'upcoming'
+                    elif end_time_formatted != 'TBD':
+                        end_time_obj = datetime.strptime(end_time_formatted, '%H:%M').time()
+                        if current_time <= end_time_obj:
+                            booking['status_indicator'] = 'ongoing'
+                        else:
+                            booking['status_indicator'] = 'completed'
+                    else:
+                        booking['status_indicator'] = 'ongoing'
+                else:
+                    booking['status_indicator'] = 'scheduled'
+            
+            return bookings
+        
+        return []
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to get today's bookings: {e}")
+        return []
+
+def get_revenue_trends():
+    """Get revenue trends for dashboard charts"""
+    try:
+        from datetime import datetime, UTC, timedelta
+        import calendar
+        
+        # Get last 6 months of data
+        end_date = datetime.now(UTC)
+        start_date = end_date - timedelta(days=180)  # Approximately 6 months
+        
+        response = supabase_admin.table('bookings').select('*').gte('start_time', start_date.isoformat()).neq('status', 'cancelled').execute()
+        
+        if not response.data:
+            return {
+                'monthly_revenue': [],
+                'monthly_labels': [],
+                'total_revenue': 0,
+                'revenue_growth': 0
+            }
+        
+        # Group bookings by month
+        monthly_data = {}
+        total_revenue = 0
+        
+        for booking in response.data:
+            try:
+                start_time = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00')).replace(tzinfo=None)
+                month_key = start_time.strftime('%Y-%m')
+                month_name = start_time.strftime('%b %Y')
+                
+                revenue = safe_float_conversion(booking.get('total_price', 0))
+                total_revenue += revenue
+                
+                if month_key not in monthly_data:
+                    monthly_data[month_key] = {
+                        'revenue': 0,
+                        'label': month_name,
+                        'date': start_time
+                    }
+                
+                monthly_data[month_key]['revenue'] += revenue
+                
+            except Exception as e:
+                print(f"⚠️ WARNING: Error processing booking for revenue trends: {e}")
+                continue
+        
+        # Sort by date and prepare chart data
+        sorted_months = sorted(monthly_data.items(), key=lambda x: x[1]['date'])
+        
+        monthly_revenue = [month[1]['revenue'] for month in sorted_months]
+        monthly_labels = [month[1]['label'] for month in sorted_months]
+        
+        # Calculate growth rate (last month vs previous month)
+        revenue_growth = 0
+        if len(monthly_revenue) >= 2:
+            current_month = monthly_revenue[-1]
+            previous_month = monthly_revenue[-2]
+            if previous_month > 0:
+                revenue_growth = ((current_month - previous_month) / previous_month) * 100
+        
+        return {
+            'monthly_revenue': monthly_revenue,
+            'monthly_labels': monthly_labels,
+            'total_revenue': round(total_revenue, 2),
+            'revenue_growth': round(revenue_growth, 1)
+        }
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to get revenue trends: {e}")
+        return {
+            'monthly_revenue': [],
+            'monthly_labels': [],
+            'total_revenue': 0,
+            'revenue_growth': 0
+        }

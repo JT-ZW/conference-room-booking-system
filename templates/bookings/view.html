@@ -138,7 +138,7 @@ Details' }} | Rainbow Towers Conference Booking{% endblock %} {% block extra_css
       <i class="fas fa-edit me-1"></i>Edit
     </a>
     {% if request.args.get('created') == 'true' %}
-    <a href="{{ url_for('dashboard.dashboard') }}" class="btn btn-success ms-2">
+    <a href="{{ url_for('dashboard.index') }}" class="btn btn-success ms-2">
       <i class="fas fa-home me-1"></i>Go to Dashboard
     </a>
     {% endif %} {% if booking.status != 'cancelled' %}

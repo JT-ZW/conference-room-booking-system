@@ -103,14 +103,15 @@
   }
 
   .suggestion-item {
-    padding: 10px 15px;
+    padding: 12px 15px;
     cursor: pointer;
     border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s ease;
   }
 
   .suggestion-item:hover,
   .suggestion-item.active {
-    background-color: #f8f9fa;
+    background-color: #e3f2fd;
   }
 
   .suggestion-item:last-child {
@@ -120,16 +121,21 @@
   .suggestion-name {
     font-weight: 600;
     display: block;
+    color: #2c3e50;
   }
 
   .suggestion-company {
     font-size: 0.875rem;
     color: #6c757d;
+    margin-top: 2px;
+    display: block;
   }
 
   .suggestion-email {
     font-size: 0.75rem;
     color: #868e96;
+    margin-top: 2px;
+    display: block;
   }
 
   /* Pricing Items */
@@ -293,6 +299,16 @@
                        placeholder="Enter company name (optional)">
                 <div id="companySuggestions" class="suggestions-dropdown"></div>
               </div>
+            </div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Client Email</label>
+              <input type="email" class="form-control" id="client_email" name="client_email"
+                     value="{{ booking.client.email if booking and booking.client else '' }}"
+                     placeholder="Enter client email address">
+              <div class="invalid-feedback">Please enter a valid email address.</div>
             </div>
           </div>
         </div>
@@ -544,41 +560,58 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         clientSearchTimeout = setTimeout(() => {
+            console.log('🔍 Searching for clients with query:', query);
             fetch(`/api/clients/search?q=${encodeURIComponent(query)}`)
-                .then(response => response.json())
+                .then(response => {
+                    console.log('📡 Response status:', response.status);
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('📋 Client search results:', data);
                     displayClientSuggestions(data);
                 })
-                .catch(error => console.error('Error:', error));
+                .catch(error => {
+                    console.error('❌ Client search error:', error);
+                    clientSuggestions.style.display = 'none';
+                });
         }, 300);
     });
     
     function displayClientSuggestions(suggestions) {
-        if (suggestions.length === 0) {
+        if (!suggestions || suggestions.length === 0) {
             clientSuggestions.style.display = 'none';
             return;
         }
         
         let html = '';
         suggestions.forEach(client => {
+            const clientName = escapeHtml(client.name || client.contact_person || '');
+            const clientCompany = escapeHtml(client.company || client.company_name || '');
+            const clientEmail = escapeHtml(client.email || '');
+            
             html += `
-                <div class="suggestion-item" onclick="selectClient(${client.id}, '${escapeHtml(client.name)}', '${escapeHtml(client.company || '')}')">
-                    <span class="suggestion-name">${escapeHtml(client.name)}</span>
-                    ${client.company ? `<span class="suggestion-company">${escapeHtml(client.company)}</span>` : ''}
-                    <span class="suggestion-email">${escapeHtml(client.email)}</span>
+                <div class="suggestion-item" onclick="selectClient(${client.id}, '${clientName}', '${clientCompany}', '${clientEmail}')">
+                    <span class="suggestion-name">${clientName}</span>
+                    ${clientCompany ? `<span class="suggestion-company">${clientCompany}</span>` : ''}
+                    ${clientEmail ? `<span class="suggestion-email">${clientEmail}</span>` : ''}
                 </div>
             `;
         });
         
         clientSuggestions.innerHTML = html;
         clientSuggestions.style.display = 'block';
+        console.log('✅ Displayed', suggestions.length, 'client suggestions');
     }
     
-    window.selectClient = function(id, name, company) {
-        document.getElementById('client_name').value = name;
-        document.getElementById('client_id').value = id;
+    window.selectClient = function(id, name, company, email) {
+        console.log('👤 Selected client:', { id, name, company, email });
+        document.getElementById('client_name').value = name || '';
+        document.getElementById('client_id').value = id || '';
         if (company) {
             document.getElementById('company_name').value = company;
+        }
+        if (email) {
+            document.getElementById('client_email').value = email;
         }
         clientSuggestions.style.display = 'none';
     };
@@ -598,35 +631,46 @@ document.addEventListener('DOMContentLoaded', function() {
         }
         
         companySearchTimeout = setTimeout(() => {
+            console.log('🏢 Searching for companies with query:', query);
             fetch(`/api/companies/search?q=${encodeURIComponent(query)}`)
-                .then(response => response.json())
+                .then(response => {
+                    console.log('📡 Company response status:', response.status);
+                    return response.json();
+                })
                 .then(data => {
+                    console.log('🏢 Company search results:', data);
                     displayCompanySuggestions(data);
                 })
-                .catch(error => console.error('Error:', error));
+                .catch(error => {
+                    console.error('❌ Company search error:', error);
+                    companySuggestions.style.display = 'none';
+                });
         }, 300);
     });
     
     function displayCompanySuggestions(suggestions) {
-        if (suggestions.length === 0) {
+        if (!suggestions || suggestions.length === 0) {
             companySuggestions.style.display = 'none';
             return;
         }
         
         let html = '';
         suggestions.forEach(company => {
+            const companyName = escapeHtml(company.company_name || company.name || '');
             html += `
-                <div class="suggestion-item" onclick="selectCompany('${escapeHtml(company.name)}')">
-                    <span class="suggestion-name">${escapeHtml(company.name)}</span>
+                <div class="suggestion-item" onclick="selectCompany('${companyName}')">
+                    <span class="suggestion-name">${companyName}</span>
                 </div>
             `;
         });
         
         companySuggestions.innerHTML = html;
         companySuggestions.style.display = 'block';
+        console.log('✅ Displayed', suggestions.length, 'company suggestions');
     }
     
     window.selectCompany = function(name) {
+        console.log('🏢 Selected company:', name);
         document.getElementById('company_name').value = name;
         companySuggestions.style.display = 'none';
     };

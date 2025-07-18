@@ -1,8 +1,5 @@
-{% extends "layout.html" %}
-
-{% block title %}Booking Created Successfully | Rainbow Towers Conference Booking{% endblock %}
-
-{% block extra_css %}
+{% extends "layout.html" %} {% block title %}Booking Created Successfully |
+Rainbow Towers Conference Booking{% endblock %} {% block extra_css %}
 <style>
   .success-container {
     min-height: 80vh;
@@ -27,7 +24,7 @@
   }
 
   .success-card::before {
-    content: '';
+    content: "";
     position: absolute;
     top: 0;
     left: 0;
@@ -213,7 +210,8 @@
   }
 
   @keyframes float {
-    0%, 100% {
+    0%,
+    100% {
       transform: translateY(0px);
     }
     50% {
@@ -221,15 +219,13 @@
     }
   }
 </style>
-{% endblock %}
-
-{% block content %}
+{% endblock %} {% block content %}
 <div class="success-container">
   <div class="success-card">
     <div class="success-icon floating-animation">
       <i class="fas fa-check-circle"></i>
     </div>
-    
+
     <h1 class="success-title">Booking Created Successfully!</h1>
     <p class="success-subtitle">
       Your conference room booking has been created and is ready for management.
@@ -240,56 +236,48 @@
       <h5 class="text-primary mb-3">
         <i class="fas fa-clipboard-list me-2"></i>Booking Summary
       </h5>
-      
+
       <div class="booking-detail">
         <span class="booking-detail-label">Booking Reference:</span>
         <span class="booking-detail-value">
           <code>BK-{{ booking.id }}</code>
         </span>
       </div>
-      
+
       <div class="booking-detail">
         <span class="booking-detail-label">Event Title:</span>
-        <span class="booking-detail-value">{{ booking.title or 'Conference Room Booking' }}</span>
+        <span class="booking-detail-value"
+          >{{ booking.title or 'Conference Room Booking' }}</span
+        >
       </div>
-      
+
       <div class="booking-detail">
         <span class="booking-detail-label">Client:</span>
         <span class="booking-detail-value">
-          {% if booking.client %}
-            {{ booking.client.company_name or booking.client.contact_person or 'Client' }}
-          {% else %}
-            New Client
-          {% endif %}
+          {% if booking.client %} {{ booking.client.company_name or
+          booking.client.contact_person or 'Client' }} {% else %} New Client {%
+          endif %}
         </span>
       </div>
-      
+
       <div class="booking-detail">
         <span class="booking-detail-label">Room:</span>
         <span class="booking-detail-value">
-          {% if booking.room %}
-            {{ booking.room.name }}
-          {% else %}
-            Conference Room
-          {% endif %}
+          {% if booking.room %} {{ booking.room.name }} {% else %} Conference
+          Room {% endif %}
         </span>
       </div>
-      
+
       <div class="booking-detail">
         <span class="booking-detail-label">Date:</span>
         <span class="booking-detail-value">
-          {% if booking.start_time %}
-            {% if booking.start_time is string %}
-              {{ booking.start_time[:10] }}
-            {% else %}
-              {{ booking.start_time.strftime('%d %B %Y') }}
-            {% endif %}
-          {% else %}
-            To be determined
-          {% endif %}
+          {% if booking.start_time %} {% if booking.start_time is string %} {{
+          booking.start_time[:10] }} {% else %} {{
+          booking.start_time.strftime('%d %B %Y') }} {% endif %} {% else %} To
+          be determined {% endif %}
         </span>
       </div>
-      
+
       <div class="booking-detail">
         <span class="booking-detail-label">Status:</span>
         <span class="booking-detail-value">
@@ -298,41 +286,41 @@
           </span>
         </span>
       </div>
-      
+
       <div class="booking-detail">
         <span class="booking-detail-label">Total Amount:</span>
         <span class="booking-detail-value">
-          <strong class="text-primary fs-5">${{ "%.2f"|format(booking.total_price or 0) }}</strong>
+          <strong class="text-primary fs-5"
+            >${{ "%.2f"|format(booking.total_price or 0) }}</strong
+          >
         </span>
       </div>
     </div>
 
     <!-- Next Steps -->
     <div class="next-steps">
-      <h5 class="mb-3">
-        <i class="fas fa-route me-2"></i>What's Next?
-      </h5>
-      
+      <h5 class="mb-3"><i class="fas fa-route me-2"></i>What's Next?</h5>
+
       <div class="step-item">
         <div class="step-number">1</div>
         <div>
-          <strong>Generate Quotation</strong><br>
+          <strong>Generate Quotation</strong><br />
           <small>Create a professional quotation to send to your client</small>
         </div>
       </div>
-      
+
       <div class="step-item">
         <div class="step-number">2</div>
         <div>
-          <strong>Client Approval</strong><br>
+          <strong>Client Approval</strong><br />
           <small>Wait for client confirmation and any modifications</small>
         </div>
       </div>
-      
+
       <div class="step-item">
         <div class="step-number">3</div>
         <div>
-          <strong>Confirm Booking</strong><br>
+          <strong>Confirm Booking</strong><br />
           <small>Mark the booking as confirmed once approved</small>
         </div>
       </div>
@@ -341,28 +329,38 @@
     <!-- Countdown Timer -->
     <div class="countdown-timer">
       <i class="fas fa-clock me-2"></i>
-      <span id="countdown">Redirecting to booking details in <strong>10</strong> seconds...</span>
+      <span id="countdown"
+        >Redirecting to booking details in <strong>10</strong> seconds...</span
+      >
     </div>
 
     <!-- Action Buttons -->
     <div class="action-buttons">
-      <a href="{{ url_for('bookings.view_booking', id=booking.id) }}?created=true" 
-         class="btn btn-primary-enhanced btn-enhanced">
+      <a
+        href="{{ url_for('bookings.view_booking', id=booking.id) }}?created=true"
+        class="btn btn-primary-enhanced btn-enhanced"
+      >
         <i class="fas fa-eye me-2"></i>View Booking Details
       </a>
-      
-      <a href="{{ url_for('bookings.generate_invoice', id=booking.id) }}" 
-         class="btn btn-success-enhanced btn-enhanced">
+
+      <a
+        href="{{ url_for('bookings.generate_invoice', id=booking.id) }}"
+        class="btn btn-success-enhanced btn-enhanced"
+      >
         <i class="fas fa-file-alt me-2"></i>Generate Quotation
       </a>
-      
-      <a href="{{ url_for('bookings.edit_booking', id=booking.id) }}" 
-         class="btn btn-outline-enhanced btn-enhanced">
+
+      <a
+        href="{{ url_for('bookings.edit_booking', id=booking.id) }}"
+        class="btn btn-outline-enhanced btn-enhanced"
+      >
         <i class="fas fa-edit me-2"></i>Edit Booking
       </a>
-      
-      <a href="{{ url_for('dashboard.dashboard') }}" 
-         class="btn btn-outline-enhanced btn-enhanced">
+
+      <a
+        href="{{ url_for('dashboard.index') }}"
+        class="btn btn-outline-enhanced btn-enhanced"
+      >
         <i class="fas fa-home me-2"></i>Go to Dashboard
       </a>
     </div>
@@ -370,44 +368,44 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-  // Countdown timer for auto-redirect
-  let timeLeft = 10;
-  const countdownElement = document.getElementById('countdown');
-  
-  const timer = setInterval(() => {
-    timeLeft--;
-    countdownElement.innerHTML = `Redirecting to booking details in <strong>${timeLeft}</strong> seconds...`;
-    
-    if (timeLeft <= 0) {
-      clearInterval(timer);
-      window.location.href = "{{ url_for('bookings.view_booking', id=booking.id) }}?created=true";
+  document.addEventListener('DOMContentLoaded', function() {
+    // Countdown timer for auto-redirect
+    let timeLeft = 10;
+    const countdownElement = document.getElementById('countdown');
+
+    const timer = setInterval(() => {
+      timeLeft--;
+      countdownElement.innerHTML = `Redirecting to booking details in <strong>${timeLeft}</strong> seconds...`;
+
+      if (timeLeft <= 0) {
+        clearInterval(timer);
+        window.location.href = "{{ url_for('bookings.view_booking', id=booking.id) }}?created=true";
+      }
+    }, 1000);
+
+    // Cancel timer if user clicks any link
+    document.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        clearInterval(timer);
+      });
+    });
+
+    // Play success sound if available
+    try {
+      const audio = new Audio('/static/sounds/success.mp3');
+      audio.volume = 0.3;
+      audio.play().catch(e => console.log('Sound not available'));
+    } catch (e) {
+      console.log('Sound not available');
     }
-  }, 1000);
-  
-  // Cancel timer if user clicks any link
-  document.querySelectorAll('a').forEach(link => {
-    link.addEventListener('click', () => {
-      clearInterval(timer);
+
+    // Log successful booking creation
+    console.log('✅ Booking created successfully:', {
+      id: {{ booking.id }},
+      title: "{{ booking.title or 'Conference Room Booking' }}",
+      status: 'tentative',
+      total: {{ booking.total_price or 0 }}
     });
   });
-  
-  // Play success sound if available
-  try {
-    const audio = new Audio('/static/sounds/success.mp3');
-    audio.volume = 0.3;
-    audio.play().catch(e => console.log('Sound not available'));
-  } catch (e) {
-    console.log('Sound not available');
-  }
-  
-  // Log successful booking creation
-  console.log('✅ Booking created successfully:', {
-    id: {{ booking.id }},
-    title: "{{ booking.title or 'Conference Room Booking' }}",
-    status: 'tentative',
-    total: {{ booking.total_price or 0 }}
-  });
-});
 </script>
 {% endblock %}

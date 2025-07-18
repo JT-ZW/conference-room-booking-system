@@ -461,6 +461,31 @@ def api_dashboard_stats():
         print(f"❌ ERROR: Failed to get dashboard stats: {e}")
         return jsonify({'error': 'Failed to get statistics'}), 500
 
+@api_bp.route('/api/dashboard/refresh')
+@login_required
+def api_dashboard_refresh():
+    """Refresh dashboard data - returns updated statistics for AJAX refresh"""
+    try:
+        from core import get_dashboard_stats
+        
+        # Get comprehensive stats using the core function
+        stats = get_dashboard_stats()
+        
+        return jsonify({
+            'success': True,
+            'stats': stats,
+            'timestamp': datetime.now(UTC).isoformat(),
+            'message': 'Dashboard data refreshed successfully'
+        })
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to refresh dashboard: {e}")
+        return jsonify({
+            'success': False,
+            'error': 'Failed to refresh dashboard data',
+            'message': str(e)
+        }), 500
+
 @api_bp.route('/api/stats/revenue-trends')
 @login_required
 def api_revenue_trends():

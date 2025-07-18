@@ -328,7 +328,7 @@ Conference Booking{% endblock %} {% block extra_css %}
       </div>
       <div class="card-footer bg-white border-0 d-flex justify-content-between">
         <a
-          href="{{ url_for('dashboard.calendar') }}?room={{ room.id }}"
+          href="{{ url_for('bookings.calendar_view') }}?room={{ room.id }}"
           class="btn btn-sm btn-primary"
         >
           <i class="fas fa-calendar-alt me-1"></i>View Availability

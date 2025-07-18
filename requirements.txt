@@ -9,6 +9,7 @@ gunicorn==21.2.0
 python-dotenv==1.0.0
 supabase==1.2.0
 requests==2.31.0
-flask-wtf
 email-validator==2.1.0
-pytz 
+pytz==2023.3
+pdfkit==1.0.0  # Changed from WeasyPrint
+Pillow==10.0.0

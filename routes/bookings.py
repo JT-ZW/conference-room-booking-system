@@ -1,36 +1,27 @@
 from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file, session
 from flask_login import login_required, current_user
-from datetime import datetime, UTC, timedelta
+from datetime import datetime, UTC, timedelta, date
 import io
 from core import (
     BookingForm, handle_booking_creation, handle_booking_update,
     get_complete_booking_details, get_booking_with_details, supabase_admin, ActivityTypes,
-    calculate_booking_totals, supabase_select,
+    calculate_booking_totals, supabase_select, supabase_update,
     extract_booking_form_data, validate_booking_business_rules,
     find_or_create_client_enhanced, find_or_create_event_type,
     create_complete_booking, safe_log_user_activity,
-    format_booking_success_message
+    format_booking_success_message, safe_str, safe_str_lower
 )
 from httpx import TimeoutException
 import time
 from functools import wraps
 import pytz
 import pdfkit
+import tempfile
 import os
 
 bookings_bp = Blueprint('bookings', __name__)
 
 # Helper function for safe string conversion
-def safe_str(value):
-    """Safely convert value to string, handling None"""
-    if value is None:
-        return ''
-    return str(value).strip()
-
-def safe_str_lower(value):
-    """Safely convert value to lowercase string, handling None"""
-    return safe_str(value).lower()
-
 def retry_on_timeout(max_retries=3, delay=1):
     """Decorator to retry operations on timeout"""
     def decorator(func):
@@ -72,16 +63,53 @@ def save_booking_to_db(booking_data):
 @bookings_bp.route('/bookings')
 @login_required
 def bookings():
-    """Display all bookings with enhanced data fetching"""
+    """Display all bookings with enhanced data fetching and filtering"""
     try:
-        # Get all bookings with related data
-        response = supabase_admin.table('bookings').select("""
+        # Get filter parameters
+        status_filter = request.args.get('status', 'all')
+        date_filter = request.args.get('date', 'all')
+        room_filter = request.args.get('room', 'all')
+        
+        # Build query with filters
+        query = supabase_admin.table('bookings').select("""
             *,
             room:rooms(id, name, capacity),
             client:clients(id, contact_person, company_name, email)
-        """).order('start_time', desc=True).execute()
+        """)
         
+        # Apply status filter
+        if status_filter != 'all':
+            query = query.eq('status', status_filter)
+        
+        # Apply room filter
+        if room_filter != 'all' and room_filter.isdigit():
+            query = query.eq('room_id', int(room_filter))
+        
+        # Apply date filter
+        if date_filter == 'today':
+            today = datetime.now().date()
+            query = query.gte('start_time', today.isoformat()).lt('start_time', (today + timedelta(days=1)).isoformat())
+        elif date_filter == 'week':
+            today = datetime.now().date()
+            week_start = today - timedelta(days=today.weekday())
+            week_end = week_start + timedelta(days=7)
+            query = query.gte('start_time', week_start.isoformat()).lt('start_time', week_end.isoformat())
+        elif date_filter == 'month':
+            today = datetime.now().date()
+            month_start = today.replace(day=1)
+            if month_start.month == 12:
+                month_end = month_start.replace(year=month_start.year + 1, month=1)
+            else:
+                month_end = month_start.replace(month=month_start.month + 1)
+            query = query.gte('start_time', month_start.isoformat()).lt('start_time', month_end.isoformat())
+        
+        # Execute query with ordering
+        response = query.order('start_time', desc=True).execute()
         bookings_data = response.data if response.data else []
+        
+        # Get rooms for filter dropdown
+        rooms_response = supabase_admin.table('rooms').select('id, name').order('name').execute()
+        rooms = rooms_response.data if rooms_response.data else []
         
         # Enhance booking data for display
         for booking in bookings_data:
@@ -113,32 +141,59 @@ def bookings():
         # Log page view
         safe_log_user_activity(
             ActivityTypes.PAGE_VIEW,
-            f"Viewed bookings list page ({len(bookings_data)} bookings)",
+            f"Viewed bookings list page ({len(bookings_data)} bookings, filter: {status_filter})",
             resource_type='page'
         )
         
-        return render_template('bookings/index.html', title='Bookings', bookings=bookings_data)
+        return render_template('bookings/index.html', 
+                             title='Bookings', 
+                             bookings=bookings_data,
+                             rooms=rooms,
+                             current_filters={
+                                 'status': status_filter,
+                                 'date': date_filter,
+                                 'room': room_filter
+                             })
         
     except Exception as e:
         print(f"❌ ERROR: Failed to fetch bookings: {e}")
         flash('Error loading bookings', 'danger')
-        return render_template('bookings/index.html', title='Bookings', bookings=[])
+        return render_template('bookings/index.html', 
+                             title='Bookings', 
+                             bookings=[], 
+                             rooms=[],
+                             current_filters={'status': 'all', 'date': 'all', 'room': 'all'})
 
 @bookings_bp.route('/bookings/new', methods=['GET', 'POST'])
 @login_required
 def new_booking():
-    """Create a new booking"""
+    """Create a new booking with enhanced validation"""
     form = BookingForm()
     
     try:
-        # Get rooms for the form
-        rooms = supabase_admin.table('rooms').select('*').eq('status', 'available').order('name').execute().data or []
+        # Get available rooms for the form
+        rooms_response = supabase_admin.table('rooms').select('*').eq('status', 'available').order('name').execute()
+        rooms = rooms_response.data or []
+        
+        if not rooms:
+            flash('❌ No rooms available for booking. Please contact administrator.', 'warning')
+            return redirect(url_for('bookings.bookings'))
+        
+        # Set form choices
         form.room_id.choices = [(room['id'], f"{room['name']} (Capacity: {room.get('capacity', 'N/A')})") for room in rooms]
         
         if request.method == 'POST':
+            # Validate form data
+            if not form.validate_on_submit():
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        flash(f'❌ {field}: {error}', 'danger')
+                return render_template('bookings/form.html', title='New Booking', form=form, rooms=rooms)
+            
             # Extract and validate form data
             booking_data = extract_booking_form_data(request.form)
             if not booking_data:
+                flash('❌ Invalid booking data provided', 'danger')
                 return render_template('bookings/form.html', title='New Booking', form=form, rooms=rooms)
             
             # Validate business rules
@@ -202,7 +257,7 @@ def view_booking(id):
         
         if not booking:
             flash('❌ Booking not found', 'danger')
-            return redirect(url_for('bookings.index'))
+            return redirect(url_for('bookings.bookings'))
             
         # Convert datetime strings if needed
         if isinstance(booking.get('created_at'), str):
@@ -219,7 +274,7 @@ def view_booking(id):
     except Exception as e:
         print(f"❌ ERROR: Failed to fetch booking {id}: {e}")
         flash('❌ Error loading booking details', 'danger')
-        return redirect(url_for('bookings.index'))
+        return redirect(url_for('bookings.bookings'))
 
 @bookings_bp.route('/bookings/<int:id>/edit', methods=['GET', 'POST'])
 @login_required
@@ -348,7 +403,7 @@ def update_booking_status(id):
             
             # Log activity
             safe_log_user_activity(
-                ActivityTypes.UPDATE_STATUS,
+                ActivityTypes.CHANGE_BOOKING_STATUS,
                 f"Updated booking #{id} status to {status}",
                 resource_type='booking',
                 resource_id=id
@@ -400,33 +455,50 @@ def generate_quotation(id):
         flash('Error generating quotation', 'danger')
         return redirect(url_for('bookings.view_booking', id=id))
 
+def check_pdf_dependencies():
+    """Check if PDF generation dependencies are available"""
+    try:
+        path = get_wkhtmltopdf_path()
+        if not os.path.exists(path):
+            print(f"⚠️ Warning: wkhtmltopdf not found at {path}")
+            return False
+        return True
+    except Exception as e:
+        print(f"⚠️ Warning: PDF dependency check failed: {e}")
+        return False
+
 @bookings_bp.route('/bookings/<int:id>/quotation/download')
 @login_required
 def download_quotation(id):
-    """Generate and download quotation PDF"""
+    """Generate and download quotation PDF using pdfkit with improved error handling"""
+    if not check_pdf_dependencies():
+        flash('❌ PDF generation is not available. Please contact system administrator.', 'danger')
+        return redirect(url_for('bookings.view_booking', id=id))
+    
+    temp_file_path = None
     try:
-        # Get booking details
         booking = get_booking_with_details(id)
         if not booking:
             flash('❌ Booking not found', 'danger')
-            return redirect(url_for('bookings.bookings'))  # Changed from index
+            return redirect(url_for('bookings.bookings'))
 
-        # Get current time in local timezone - Fixed datetime error
-        current_time = datetime.now(pytz.timezone('Africa/Harare'))
-        valid_until_date = current_time + timedelta(days=30)
+        # Get current time in CAT timezone
+        tz = pytz.timezone('Africa/Harare')
+        current_time = datetime.now(tz)
+        valid_until = current_time + timedelta(days=30)
 
-        # Prepare template data
+        # Prepare template data with enhanced booking info
         template_data = {
             'booking': booking,
-            'current_date': current_time,  # Changed from now
-            'quotation_number': f"Q{booking['id']}-{current_time.strftime('%Y%m')}",
-            'valid_until': valid_until_date.strftime('%Y-%m-%d')
+            'current_date': current_time,
+            'valid_until': valid_until,
+            'quotation_number': f"Q{booking['id']:04d}-{current_time.strftime('%Y%m')}"
         }
 
         # Render HTML template
-        html = render_template('bookings/quotation.html', **template_data)
+        html_content = render_template('bookings/quotation.html', **template_data)
 
-        # Configure PDF options
+        # PDF configuration with enhanced options
         pdf_options = {
             'page-size': 'A4',
             'margin-top': '20mm',
@@ -434,36 +506,59 @@ def download_quotation(id):
             'margin-bottom': '20mm',
             'margin-left': '20mm',
             'encoding': 'UTF-8',
-            'enable-local-file-access': None
+            'no-outline': None,
+            'enable-local-file-access': None,
+            'print-media-type': None,
+            'disable-smart-shrinking': None
         }
 
+        # Path to wkhtmltopdf executable
+        config = pdfkit.configuration(wkhtmltopdf=get_wkhtmltopdf_path())
+
         # Create temp directory if it doesn't exist
-        temp_dir = os.path.join(current_app.root_path, 'temp')
+        temp_dir = os.path.join(os.getcwd(), 'temp')
         os.makedirs(temp_dir, exist_ok=True)
 
-        # Generate PDF
-        output_path = os.path.join(temp_dir, f'quotation_{booking["id"]}.pdf')
-        pdfkit.from_string(html, output_path, options=pdf_options)
+        # Generate unique filename
+        filename = f'quotation_{booking["id"]}_{int(current_time.timestamp())}.pdf'
+        temp_file_path = os.path.join(temp_dir, filename)
+
+        # Generate PDF with error handling
+        pdfkit.from_string(html_content, temp_file_path, options=pdf_options, configuration=config)
+        
+        # Verify file was created
+        if not os.path.exists(temp_file_path):
+            raise Exception("PDF file was not created successfully")
 
         # Log activity
         safe_log_user_activity(
             ActivityTypes.GENERATE_REPORT,
-            f"Generated quotation for booking #{id}",
+            f"Generated and downloaded quotation PDF for booking #{id}",
             resource_type='booking',
             resource_id=id
         )
 
+        # Send file with cleanup after sending
         return send_file(
-            output_path,
-            download_name=f'Quotation-{booking["id"]}.pdf',
+            temp_file_path,
+            download_name=f'Quotation-{booking["id"]}-{current_time.strftime("%Y%m%d")}.pdf',
             as_attachment=True,
             mimetype='application/pdf'
         )
 
     except Exception as e:
-        print(f"❌ ERROR: Failed to generate quotation: {e}")
-        flash('❌ Error generating quotation', 'danger')
+        error_msg = handle_pdf_generation_error(e)
+        print(f"❌ ERROR: PDF generation failed: {error_msg}")
+        flash(f'❌ {error_msg}', 'danger')
         return redirect(url_for('bookings.view_booking', id=id))
+    
+    finally:
+        # Clean up temporary file
+        if temp_file_path and os.path.exists(temp_file_path):
+            try:
+                os.remove(temp_file_path)
+            except Exception as cleanup_error:
+                print(f"⚠️ Warning: Failed to cleanup temp file {temp_file_path}: {cleanup_error}")
 
 @bookings_bp.route('/bookings/<int:id>/invoice')
 @login_required
@@ -530,7 +625,7 @@ def send_quotation_email(id):
         booking = get_booking_with_details(id)
         if not booking:
             flash('❌ Booking not found', 'danger')
-            return redirect(url_for('bookings.index'))
+            return redirect(url_for('bookings.bookings'))
 
         # Get client email
         client_email = None
@@ -584,15 +679,26 @@ def send_invoice_email(id):
 @bookings_bp.route('/api/clients/search')
 @login_required
 def search_clients():
-    """Search clients with safe string handling"""
+    """Search clients with enhanced validation and performance"""
     try:
-        query = safe_str(request.args.get('q')).lower()
+        query = safe_str(request.args.get('q', '')).lower().strip()
+        
+        # Validate query length
         if len(query) < 2:
-            return jsonify([])
+            return jsonify({'error': 'Query must be at least 2 characters long', 'results': []})
+        
+        # Validate query content (prevent injection)
+        if not query.replace(' ', '').replace('-', '').replace('.', '').replace('@', '').isalnum():
+            return jsonify({'error': 'Invalid characters in search query', 'results': []})
+        
+        # Limit query length
+        if len(query) > 50:
+            return jsonify({'error': 'Query too long', 'results': []})
 
-        response = supabase_admin.table('clients').select('*').execute()
+        # Search in database with optimized query
+        response = supabase_admin.table('clients').select('id, contact_person, company_name, email').limit(20).execute()
         if not response.data:
-            return jsonify([])
+            return jsonify({'results': []})
 
         results = []
         for client in response.data:
@@ -601,6 +707,7 @@ def search_clients():
             contact = safe_str(client.get('contact_person')).lower()
             email = safe_str(client.get('email')).lower()
 
+            # Check if query matches any field
             if (query in company or 
                 query in contact or 
                 query in email):
@@ -608,29 +715,39 @@ def search_clients():
                     'id': client.get('id'),
                     'name': client.get('contact_person', ''),
                     'company': client.get('company_name', ''),
-                    'email': client.get('email', '')
+                    'email': client.get('email', ''),
+                    'display_name': client.get('company_name') or client.get('contact_person', 'Unknown')
                 })
+                
+                # Limit results
+                if len(results) >= 10:
+                    break
 
-        return jsonify(results)
+        return jsonify({'results': results, 'total': len(results)})
 
     except Exception as e:
-        print(f"❌ ERROR: Failed to get enhanced clients list: {e}")
-        return jsonify([])
+        print(f"❌ ERROR: Failed to search clients: {e}")
+        return jsonify({'error': 'Internal server error', 'results': []}), 500
 
 @bookings_bp.route('/api/companies/search')
 @login_required
 def search_companies():
-    """Search companies for autocomplete"""
+    """Search companies for autocomplete with enhanced validation"""
     try:
-        query = request.args.get('q', '').strip()
-        if len(query) < 2:
-            return jsonify([])
+        query = safe_str(request.args.get('q', '')).strip()
         
-        # Get unique company names
-        response = supabase_admin.table('clients').select('company_name').execute()
+        # Validate query
+        if len(query) < 2:
+            return jsonify({'error': 'Query must be at least 2 characters', 'results': []})
+        
+        if len(query) > 50:
+            return jsonify({'error': 'Query too long', 'results': []})
+        
+        # Get unique company names with better query
+        response = supabase_admin.table('clients').select('company_name').not_.is_('company_name', 'null').execute()
         
         if not response.data:
-            return jsonify([])
+            return jsonify({'results': []})
         
         companies = []
         seen_companies = set()
@@ -638,17 +755,25 @@ def search_companies():
         
         for row in response.data:
             try:
-                company_name = str(row.get('company_name') or '').strip()
+                company_name = safe_str(row.get('company_name')).strip()
                 
-                # Skip empty or 'None' values
-                if not company_name or safe_str_lower(company_name) == 'none':
+                # Skip empty, None values, or common invalid entries
+                if (not company_name or 
+                    company_name.lower() in ['none', 'null', 'n/a', 'na', 'unknown']):
                     continue
                 
                 # Check if matches and not already added
-                if query_lower in safe_str_lower(company_name) and company_name not in seen_companies:
-                    companies.append({'name': company_name})
+                if (query_lower in safe_str_lower(company_name) and 
+                    company_name not in seen_companies and
+                    len(company_name) >= 2):
+                    
+                    companies.append({
+                        'name': company_name,
+                        'value': company_name
+                    })
                     seen_companies.add(company_name)
                     
+                    # Limit results for performance
                     if len(companies) >= 10:
                         break
                         
@@ -656,35 +781,131 @@ def search_companies():
                 print(f"⚠️ WARNING: Error processing company: {e}")
                 continue
         
-        return jsonify(companies)
+        return jsonify({'results': companies, 'total': len(companies)})
         
     except Exception as e:
         print(f"❌ ERROR: Failed to search companies: {e}")
-        return jsonify([])
+        return jsonify({'error': 'Internal server error', 'results': []}), 500
 
-@bookings_bp.route('/api/bookings/calendar')
-@login_required
-def api_calendar_events():
-    """API endpoint for calendar events"""
-    try:
-        from core import get_booking_calendar_events_supabase
-        events = get_booking_calendar_events_supabase()
-        return jsonify(events)
-    except Exception as e:
-        print(f"❌ ERROR: Failed to fetch calendar events: {e}")
-        return jsonify([])
+# API calendar events moved to routes/api.py to avoid conflicts
 
 @bookings_bp.route('/bookings/calendar')
 @login_required
 def calendar_view():
-    """Display calendar view of bookings"""
+    """Display calendar view of bookings with enhanced functionality"""
     try:
+        # Get timezone for date calculations
+        timezone = pytz.timezone('Africa/Johannesburg')
+        today = datetime.now(timezone).date()
+        
+        # Parse date parameters with validation
+        try:
+            year = int(request.args.get('year', today.year))
+            month = int(request.args.get('month', today.month))
+            
+            # Validate date ranges
+            if not (2020 <= year <= 2030):
+                year = today.year
+            if not (1 <= month <= 12):
+                month = today.month
+                
+            start_date = date(year, month, 1)
+            
+            # Calculate end date for the month
+            if month == 12:
+                end_date = date(year + 1, 1, 1) - timedelta(days=1)
+            else:
+                end_date = date(year, month + 1, 1) - timedelta(days=1)
+                
+        except (ValueError, TypeError):
+            start_date = date(today.year, today.month, 1)
+            end_date = date(today.year, today.month + 1, 1) - timedelta(days=1) if today.month < 12 else date(today.year, 12, 31)
+        
+        # Get optional filters
+        room_filter = safe_str(request.args.get('room', '')).strip()
+        status_filter = safe_str(request.args.get('status', '')).strip()
+        
+        # Build query for bookings in the month
+        query = supabase_admin.table('bookings').select('''
+            *,
+            room:rooms(id, name, capacity),
+            client:clients(id, contact_person, company_name)
+        ''').gte('start_time', start_date.isoformat()).lte('start_time', end_date.isoformat())
+        
+        # Apply filters
+        if room_filter:
+            try:
+                room_id = int(room_filter)
+                query = query.eq('room_id', room_id)
+            except (ValueError, TypeError):
+                pass
+                
+        if status_filter and status_filter in ['confirmed', 'cancelled', 'pending']:
+            query = query.eq('status', status_filter)
+        
+        response = query.execute()
+        bookings = response.data if response.data else []
+        
+        # Process bookings for calendar display
+        processed_bookings = []
+        for booking in bookings:
+            try:
+                if not booking.get('start_time'):
+                    continue
+                    
+                # Parse booking date from start_time
+                start_time = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00'))
+                booking_date = start_time.date()
+                booking['formatted_date'] = booking_date.strftime('%Y-%m-%d')
+                booking['day_of_month'] = booking_date.day
+                
+                # Get client info safely
+                client = booking.get('client', {}) or {}
+                if client:
+                    client_name = safe_str(client.get('contact_person', ''))
+                    booking['client_name'] = client_name if client_name else 'Unknown Client'
+                    booking['company_name'] = safe_str(client.get('company_name', ''))
+                else:
+                    booking['client_name'] = 'Unknown Client'
+                    booking['company_name'] = ''
+                
+                # Get room info safely
+                room = booking.get('room', {}) or {}
+                booking['room_name'] = safe_str(room.get('name', 'Unknown Room'))
+                
+                processed_bookings.append(booking)
+                
+            except Exception as e:
+                print(f"⚠️ WARNING: Error processing booking {booking.get('id', 'unknown')}: {e}")
+                continue
+        
+        # Get available rooms for filtering
+        rooms_response = supabase_admin.table('rooms').select('id, name').order('name').execute()
+        available_rooms = rooms_response.data if rooms_response.data else []
+        
+        # Generate calendar navigation
+        prev_month = start_date.replace(day=1) - timedelta(days=1)
+        next_month = start_date.replace(day=28) + timedelta(days=4)
+        next_month = next_month.replace(day=1)
+        
         safe_log_user_activity(
             ActivityTypes.PAGE_VIEW,
-            "Viewed booking calendar",
+            f"Viewed booking calendar for {start_date.strftime('%B %Y')}",
             resource_type='page'
         )
-        return render_template('bookings/calendar.html', title='Booking Calendar')
+        
+        return render_template('calendar.html', 
+                             title='Booking Calendar',
+                             bookings=processed_bookings,
+                             current_date=start_date,
+                             current_month_name=start_date.strftime('%B %Y'),
+                             prev_month=prev_month,
+                             next_month=next_month,
+                             today=today,
+                             room_filter=room_filter,
+                             status_filter=status_filter,
+                             available_rooms=available_rooms)
+                             
     except Exception as e:
         print(f"❌ ERROR: Failed to load calendar view: {e}")
         flash('Error loading calendar view', 'danger')
@@ -698,7 +919,7 @@ def print_details(id):
         booking = get_booking_with_details(id)
         if not booking:
             flash('Booking not found', 'danger')
-            return redirect(url_for('bookings.index'))
+            return redirect(url_for('bookings.bookings'))
 
         # Add current datetime for the footer
         now = datetime.now(UTC)
@@ -717,37 +938,163 @@ def print_details(id):
     except Exception as e:
         print(f"❌ ERROR: Failed to print booking details: {e}")
         flash('Error loading booking details for printing', 'danger')
-        return redirect(url_for('bookings.index'))
+        return redirect(url_for('bookings.bookings'))
 
-@bookings_bp.route('/bookings/new', methods=['POST'])
+def handle_pdf_generation_error(e):
+    """Handle PDF generation errors gracefully"""
+    error_message = str(e).lower()
+    if 'wkhtmltopdf' in error_message:
+        return "PDF generation failed: wkhtmltopdf not found. Please ensure it's installed correctly."
+    elif 'permission' in error_message:
+        return "PDF generation failed: Permission denied when creating temporary files."
+    elif 'disk' in error_message:
+        return "PDF generation failed: Not enough disk space."
+    else:
+        return f"PDF generation failed: {str(e)}"
+
+def get_wkhtmltopdf_path():
+    """Get wkhtmltopdf path based on environment"""
+    import platform
+    if platform.system() == 'Windows':
+        return r'C:\Program Files\wkhtmltopdf\bin\wkhtmltopdf.exe'
+    return '/usr/bin/wkhtmltopdf'  # Linux path
+
+@bookings_bp.route('/api/bookings/<int:booking_id>/status', methods=['POST'])
 @login_required
-def create_booking():
-    """Create new booking"""
+def update_booking_status_api(booking_id):
+    """Update booking status via API"""
     try:
-        form = BookingForm()
-        if form.validate_on_submit():
-            # Extract form data
-            booking_data = extract_booking_form_data(form)
-            
-            # Add created_by (store username instead of ID)
-            booking_data.update({
-                'created_by': current_user.username,  # Store username
-                'created_at': datetime.now(pytz.timezone('Africa/Harare')).isoformat(),
-                'updated_at': datetime.now(pytz.timezone('Africa/Harare')).isoformat()
-            })
-            
-            # Create booking
-            result = create_complete_booking(booking_data)
-            
-            if result:
-                flash('✅ Booking created successfully!', 'success')
-                return redirect(url_for('bookings.view_booking', id=result.get('id'), created='true'))
-            
-            flash('❌ Failed to create booking', 'danger')
-            
-        return render_template('bookings/form.html', form=form)
+        # Validate input
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        new_status = safe_str(data.get('status', '')).strip().lower()
+        if new_status not in ['confirmed', 'cancelled', 'pending']:
+            return jsonify({'error': 'Invalid status. Must be confirmed, cancelled, or pending'}), 400
+        
+        # Get existing booking
+        booking = get_booking_with_details(booking_id)
+        if not booking:
+            return jsonify({'error': 'Booking not found'}), 404
+        
+        old_status = booking.get('status', 'unknown')
+        
+        # Update status
+        update_data = {
+            'status': new_status,
+            'updated_at': datetime.now(UTC).isoformat()
+        }
+        
+        response = supabase_admin.table('bookings').update(update_data).eq('id', booking_id).execute()
+        
+        if not response.data:
+            return jsonify({'error': 'Failed to update booking status'}), 500
+        
+        # Log the activity
+        safe_log_user_activity(
+            ActivityTypes.CHANGE_BOOKING_STATUS,
+            f"Changed booking status from {old_status} to {new_status}",
+            resource_type='booking',
+            resource_id=booking_id
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': f'Booking status updated to {new_status}',
+            'booking_id': booking_id,
+            'new_status': new_status
+        })
         
     except Exception as e:
-        print(f"❌ ERROR: Failed to create booking: {e}")
-        flash('❌ Error creating booking', 'danger')
-        return redirect(url_for('bookings.bookings'))
+        print(f"❌ ERROR: Failed to update booking status: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@bookings_bp.route('/api/bookings/<int:booking_id>/quick-info')
+@login_required
+def get_booking_quick_info(booking_id):
+    """Get quick booking information for tooltips/popups"""
+    try:
+        booking = get_booking_with_details(booking_id)
+        if not booking:
+            return jsonify({'error': 'Booking not found'}), 404
+        
+        # Format quick info
+        client = booking.get('client', {}) or {}
+        room = booking.get('room', {}) or {}
+        
+        client_name = safe_str(client.get('contact_person', ''))
+        if not client_name:
+            client_name = 'Unknown Client'
+        
+        quick_info = {
+            'id': booking['id'],
+            'title': safe_str(booking.get('title', 'Untitled Booking')),
+            'client_name': client_name,
+            'company': safe_str(client.get('company_name', '')),
+            'room_name': safe_str(room.get('name', 'Unknown Room')),
+            'date': datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00')).date().isoformat() if booking.get('start_time') else '',
+            'time_slot': safe_str(booking.get('time_slot', '')),
+            'status': safe_str(booking.get('status', 'unknown')),
+            'attendees': booking.get('number_of_attendees', 0),
+            'total_cost': booking.get('total_cost', 0)
+        }
+        
+        return jsonify(quick_info)
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to get booking quick info: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@bookings_bp.route('/api/room-availability')
+@login_required
+def check_room_availability():
+    """Check room availability for a specific date and time"""
+    try:
+        # Get parameters
+        room_id = request.args.get('room_id', type=int)
+        booking_date = safe_str(request.args.get('date', '')).strip()
+        time_slot = safe_str(request.args.get('time_slot', '')).strip()
+        exclude_booking_id = request.args.get('exclude_booking_id', type=int)
+        
+        # Validate parameters
+        if not all([room_id, booking_date, time_slot]):
+            return jsonify({'error': 'Missing required parameters'}), 400
+        
+        # Validate date format
+        try:
+            parsed_date = datetime.strptime(booking_date, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+        
+        # Check for existing bookings - filter by date range since start_time includes time
+        start_of_day = parsed_date.isoformat()
+        end_of_day = (parsed_date + timedelta(days=1)).isoformat()
+        query = supabase_admin.table('bookings').select('id, title, status').eq('room_id', room_id).gte('start_time', start_of_day).lt('start_time', end_of_day).eq('time_slot', time_slot)
+        
+        # Exclude current booking if editing
+        if exclude_booking_id:
+            query = query.neq('id', exclude_booking_id)
+        
+        response = query.execute()
+        existing_bookings = response.data if response.data else []
+        
+        # Filter out cancelled bookings
+        active_bookings = [b for b in existing_bookings if b.get('status') != 'cancelled']
+        
+        is_available = len(active_bookings) == 0
+        
+        result = {
+            'available': is_available,
+            'room_id': room_id,
+            'date': booking_date,
+            'time_slot': time_slot,
+            'existing_bookings': len(active_bookings),
+            'conflicts': [{'id': b['id'], 'title': b.get('title', ''), 'status': b.get('status', '')} for b in active_bookings] if not is_available else []
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to check room availability: {e}")
+        return jsonify({'error': 'Internal server error'}), 500

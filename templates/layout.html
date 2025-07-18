@@ -23,7 +23,7 @@
     <!-- Custom CSS -->
     <link
       rel="stylesheet"
-      href="{{ url_for('static', filename='css/style.css') }}"
+      href="{{ url_for('static', filename='css/styles.css') }}"
     />
 
     {% block extra_css %}{% endblock %}
@@ -38,7 +38,7 @@
       "
     >
       <div class="container">
-        <a class="navbar-brand" href="{{ url_for('dashboard.dashboard') }}">
+        <a class="navbar-brand" href="{{ url_for('dashboard.index') }}">
           <img
             src="{{ url_for('static', filename='img/rainbow-towers-logo.png') }}"
             alt="Rainbow Towers Logo"
@@ -63,16 +63,16 @@
           <ul class="navbar-nav me-auto">
             <li class="nav-item">
               <a
-                class="nav-link {% if request.endpoint == 'dashboard.dashboard' %}active{% endif %}"
-                href="{{ url_for('dashboard.dashboard') }}"
+                class="nav-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}"
+                href="{{ url_for('dashboard.index') }}"
               >
                 <i class="fas fa-tachometer-alt"></i> Dashboard
               </a>
             </li>
             <li class="nav-item">
               <a
-                class="nav-link {% if request.endpoint == 'dashboard.calendar' %}active{% endif %}"
-                href="{{ url_for('dashboard.calendar') }}"
+                class="nav-link {% if request.endpoint == 'bookings.calendar_view' %}active{% endif %}"
+                href="{{ url_for('bookings.calendar_view') }}"
               >
                 <i class="fas fa-calendar-alt"></i> Calendar
               </a>

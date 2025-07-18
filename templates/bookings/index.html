@@ -126,7 +126,7 @@
         <a href="{{ url_for('bookings.new_booking') }}" class="btn btn-success btn-lg">
             <i class="fas fa-plus me-2"></i>New Booking
         </a>
-        <a href="{{ url_for('dashboard.calendar') }}" class="btn btn-outline-primary">
+        <a href="{{ url_for('bookings.calendar_view') }}" class="btn btn-outline-primary">
             <i class="fas fa-calendar-alt me-1"></i>Calendar
         </a>
     </div>
@@ -602,7 +602,7 @@
                 <a href="{{ url_for('bookings.new_booking') }}" class="btn btn-light">
                     <i class="fas fa-plus me-1"></i>New Booking
                 </a>
-                <a href="{{ url_for('dashboard.calendar') }}" class="btn btn-outline-light">
+                <a href="{{ url_for('bookings.calendar_view') }}" class="btn btn-outline-light">
                     <i class="fas fa-calendar-alt me-1"></i>Calendar
                 </a>
                 <a href="{{ url_for('reports.reports') }}" class="btn btn-outline-light">

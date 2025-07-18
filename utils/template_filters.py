@@ -106,3 +106,99 @@ def truncate_safe_filter(text, length=100, suffix='...'):
 
 def default_if_none_filter(value, default='N/A'):
     return value if value is not None else default 
+
+def format_currency_filter(amount):
+    """Format amount as currency"""
+    try:
+        if amount is None:
+            return "$0.00"
+        return f"${float(amount):,.2f}"
+    except (ValueError, TypeError):
+        return "$0.00"
+
+def format_percentage_filter(value, decimal_places=1):
+    """Format value as percentage"""
+    try:
+        if value is None:
+            return "0%"
+        return f"{float(value):.{decimal_places}f}%"
+    except (ValueError, TypeError):
+        return "0%"
+
+def time_ago_filter(dt):
+    """Calculate time ago from datetime"""
+    try:
+        from datetime import datetime, UTC
+        
+        if isinstance(dt, str):
+            dt = datetime.fromisoformat(dt.replace('Z', '+00:00')).replace(tzinfo=None)
+        
+        if not isinstance(dt, datetime):
+            return "Unknown"
+            
+        now = datetime.now(UTC).replace(tzinfo=None)
+        diff = now - dt
+        
+        if diff.days > 0:
+            if diff.days == 1:
+                return "1 day ago"
+            elif diff.days < 7:
+                return f"{diff.days} days ago"
+            elif diff.days < 30:
+                weeks = diff.days // 7
+                return f"{weeks} week{'s' if weeks > 1 else ''} ago"
+            else:
+                months = diff.days // 30
+                return f"{months} month{'s' if months > 1 else ''} ago"
+        
+        hours = diff.seconds // 3600
+        if hours > 0:
+            return f"{hours} hour{'s' if hours > 1 else ''} ago"
+        
+        minutes = diff.seconds // 60
+        if minutes > 0:
+            return f"{minutes} minute{'s' if minutes > 1 else ''} ago"
+        
+        return "Just now"
+        
+    except Exception as e:
+        return "Unknown"
+
+def days_until_filter(dt):
+    """Calculate days until datetime"""
+    try:
+        from datetime import datetime, UTC
+        
+        if isinstance(dt, str):
+            dt = datetime.fromisoformat(dt.replace('Z', '+00:00')).replace(tzinfo=None)
+        
+        if not isinstance(dt, datetime):
+            return "Unknown"
+            
+        now = datetime.now(UTC).replace(tzinfo=None)
+        diff = dt - now
+        
+        if diff.days > 0:
+            if diff.days == 1:
+                return "Tomorrow"
+            elif diff.days < 7:
+                return f"In {diff.days} days"
+            elif diff.days < 30:
+                weeks = diff.days // 7
+                return f"In {weeks} week{'s' if weeks > 1 else ''}"
+            else:
+                months = diff.days // 30
+                return f"In {months} month{'s' if months > 1 else ''}"
+        elif diff.days == 0:
+            hours = diff.seconds // 3600
+            if hours > 0:
+                return f"In {hours} hour{'s' if hours > 1 else ''}"
+            minutes = diff.seconds // 60
+            if minutes > 0:
+                return f"In {minutes} minute{'s' if minutes > 1 else ''}"
+            return "Now"
+        else:
+            return "Past due"
+            
+    except Exception as e:
+        return "Unknown"

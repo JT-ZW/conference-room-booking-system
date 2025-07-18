@@ -670,6 +670,13 @@ def generate_invoice(id):
             flash('❌ Booking not found', 'danger')
             return redirect(url_for('bookings.bookings'))
 
+        # Debug: Print booking structure
+        print(f"🔍 Booking type: {type(booking)}")
+        print(f"🔍 Has client: {'client' in booking}")
+        print(f"🔍 Client type: {type(booking.get('client'))}")
+        print(f"🔍 Has room: {'room' in booking}")
+        print(f"🔍 Room type: {type(booking.get('room'))}")
+
         # Get current time in CAT timezone
         tz = pytz.timezone('Africa/Harare')
         current_date = datetime.now(tz)
@@ -700,6 +707,8 @@ def generate_invoice(id):
             resource_id=id
         )
 
+        print(f"🔍 About to render template with booking ID: {booking.get('id')}")
+        
         return render_template(
             'bookings/invoice.html',
             booking=booking,
@@ -710,7 +719,9 @@ def generate_invoice(id):
         )
 
     except Exception as e:
+        import traceback
         print(f"❌ ERROR: Failed to generate invoice: {e}")
+        print(f"❌ Full traceback: {traceback.format_exc()}")
         flash('❌ Error generating invoice', 'danger')
         return redirect(url_for('bookings.view_booking', id=id))
 

@@ -18,187 +18,463 @@ block extra_css %}
     top: 1rem;
     right: 1rem;
   }
+
+  .form-floating {
+    position: relative;
+  }
+
+  .form-floating > .form-control:focus ~ label,
+  .form-floating > .form-control:not(:placeholder-shown) ~ label {
+    opacity: 0.65;
+    transform: scale(0.85) translateY(-0.5rem) translateX(0.15rem);
+  }
+
+  .form-floating > label {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    padding: 1rem 0.75rem;
+    pointer-events: none;
+    border: 1px solid transparent;
+    transform-origin: 0 0;
+    transition: opacity 0.1s ease-in-out, transform 0.1s ease-in-out;
+  }
+
+  .required-field {
+    color: #dc3545;
+  }
+
+  .field-help {
+    font-size: 0.875rem;
+    color: #6c757d;
+    margin-top: 0.25rem;
+  }
+
+  .template-btn {
+    transition: all 0.2s ease;
+    border: 2px dashed #dee2e6;
+  }
+
+  .template-btn:hover {
+    border-color: #007bff;
+    background-color: #f8f9fa;
+    transform: translateY(-2px);
+  }
+
+  .template-btn.active {
+    border-color: #007bff;
+    background-color: #e3f2fd;
+  }
+
+  .save-panel {
+    position: sticky;
+    top: 1rem;
+  }
+
+  .client-preview {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 0.5rem;
+    padding: 1.5rem;
+    margin-top: 1rem;
+  }
+
+  .validation-feedback {
+    display: block;
+    width: 100%;
+    margin-top: 0.25rem;
+    font-size: 0.875rem;
+  }
+
+  .was-validated .form-control:invalid {
+    border-color: #dc3545;
+  }
+
+  .was-validated .form-control:valid {
+    border-color: #28a745;
+  }
+
+  @media (max-width: 768px) {
+    .save-panel {
+      position: static;
+      margin-top: 2rem;
+    }
+  }
 </style>
 {% endblock %} {% block content %}
-<div class="d-flex justify-content-between align-items-center mb-4">
-  <h1>
-    <i
-      class="fas fa-user{% if client %}-edit{% else %}-plus{% endif %} text-primary me-2"
-    ></i>
-    {% if client %}Edit Client{% else %}New Client{% endif %}
-  </h1>
-  <a href="{{ url_for('clients') }}" class="btn btn-outline-secondary">
-    <i class="fas fa-arrow-left me-1"></i>Back to Clients
-  </a>
-</div>
+<div class="container-fluid">
+  <!-- Header Section -->
+  <div class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <h1 class="mb-2">
+        <i
+          class="fas fa-user{% if client %}-edit{% else %}-plus{% endif %} text-primary me-2"
+        ></i>
+        {% if client %}Edit Client{% else %}New Client{% endif %}
+      </h1>
+      <p class="text-muted mb-0">
+        {% if client %} Update client information and manage their details {%
+        else %} Add a new client to your directory for booking management {%
+        endif %}
+      </p>
+    </div>
+    <div>
+      <a
+        href="{{ url_for('clients.clients') }}"
+        class="btn btn-outline-secondary"
+      >
+        <i class="fas fa-arrow-left me-1"></i>Back to Clients
+      </a>
+    </div>
+  </div>
 
-<form method="POST">
-  {{ form.hidden_tag() }}
+  <!-- Error/Success Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %} {% if
+  messages %} {% for category, message in messages %}
+  <div
+    class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show"
+    role="alert"
+  >
+    {{ message }}
+    <button
+      type="button"
+      class="btn-close"
+      data-bs-dismiss="alert"
+      aria-label="Close"
+    ></button>
+  </div>
+  {% endfor %} {% endif %} {% endwith %}
 
-  <div class="row">
-    <!-- Main Form -->
-    <div class="col-lg-8">
-      <div class="card shadow-sm border-0 mb-4">
-        <div class="card-header bg-white">
-          <h5 class="mb-0 text-primary">
-            <i class="fas fa-info-circle me-2"></i>Client Information
-          </h5>
+  <!-- Main Form -->
+  <form method="POST" id="clientForm" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="row">
+      <!-- Main Form Fields -->
+      <div class="col-lg-8">
+        <div class="card shadow-sm border-0 mb-4">
+          <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0 text-primary">
+              <i class="fas fa-info-circle me-2"></i>Client Information
+            </h5>
+            <small class="text-muted"
+              >Enter the client's contact and company details</small
+            >
+          </div>
+          <div class="card-body">
+            <!-- Company Name and Contact Person Row -->
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <div class="form-floating mb-3">
+                  {{ form.company_name(class="form-control",
+                  placeholder="Company or Organization Name", id="company_name")
+                  }}
+                  <label for="company_name">
+                    <i class="fas fa-building me-1"></i>Company/Organization
+                    Name
+                  </label>
+                  {% if form.company_name.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.company_name.errors %} {{ error }} {%
+                    endfor %}
+                  </div>
+                  {% endif %}
+                  <div class="field-help">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Leave blank for individual clients
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-floating mb-3">
+                  {{ form.contact_person(class="form-control",
+                  placeholder="Primary Contact Person", id="contact_person",
+                  required=true) }}
+                  <label for="contact_person">
+                    <i class="fas fa-user me-1"></i>Primary Contact Person
+                    <span class="required-field">*</span>
+                  </label>
+                  {% if form.contact_person.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.contact_person.errors %} {{ error }} {%
+                    endfor %}
+                  </div>
+                  {% endif %}
+                  <div class="field-help">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Full name of the main contact person
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Email and Phone Row -->
+            <div class="row mb-4">
+              <div class="col-md-6">
+                <div class="form-floating mb-3">
+                  {{ form.email(class="form-control", placeholder="Email
+                  Address", id="email", type="email", required=true) }}
+                  <label for="email">
+                    <i class="fas fa-envelope me-1"></i>Email Address
+                    <span class="required-field">*</span>
+                  </label>
+                  {% if form.email.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.email.errors %} {{ error }} {% endfor
+                    %}
+                  </div>
+                  {% endif %}
+                  <div class="field-help">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Primary email for booking confirmations
+                  </div>
+                </div>
+              </div>
+              <div class="col-md-6">
+                <div class="form-floating mb-3">
+                  {{ form.phone(class="form-control", placeholder="Phone
+                  Number", id="phone", type="tel") }}
+                  <label for="phone">
+                    <i class="fas fa-phone me-1"></i>Phone Number
+                  </label>
+                  {% if form.phone.errors %}
+                  <div class="invalid-feedback d-block">
+                    {% for error in form.phone.errors %} {{ error }} {% endfor
+                    %}
+                  </div>
+                  {% endif %}
+                  <div class="field-help">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Contact phone number (optional)
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Address Field -->
+            <div class="mb-4">
+              <label for="address" class="form-label fw-bold">
+                <i class="fas fa-map-marker-alt me-1"></i>Address
+              </label>
+              {{ form.address(class="form-control", rows="3",
+              placeholder="Complete mailing address...", id="address") }} {% if
+              form.address.errors %}
+              <div class="invalid-feedback d-block">
+                {% for error in form.address.errors %} {{ error }} {% endfor %}
+              </div>
+              {% endif %}
+              <div class="field-help">
+                <i class="fas fa-info-circle me-1"></i>
+                Full postal address for correspondence and invoicing
+              </div>
+            </div>
+
+            <!-- Notes Field -->
+            <div class="mb-0">
+              <label for="notes" class="form-label fw-bold">
+                <i class="fas fa-sticky-note me-1"></i>Notes & Special
+                Requirements
+              </label>
+              {{ form.notes(class="form-control", rows="4",
+              placeholder="Additional information, preferences, or special
+              requirements...", id="notes") }} {% if form.notes.errors %}
+              <div class="invalid-feedback d-block">
+                {% for error in form.notes.errors %} {{ error }} {% endfor %}
+              </div>
+              {% endif %}
+              <div class="field-help">
+                <i class="fas fa-info-circle me-1"></i>
+                Any special requirements, dietary restrictions, or important
+                notes
+              </div>
+            </div>
+          </div>
         </div>
-        <div class="card-body">
-          <div class="row mb-3">
-            <div class="col-md-6">
-              <label class="form-label fw-bold">Company Name</label>
-              {{ form.company_name(class="form-control", placeholder="Company
-              name (optional)") }} {% if form.company_name.errors %}
-              <div class="text-danger small mt-1">
-                {% for error in form.company_name.errors %} {{ error }} {%
-                endfor %}
-              </div>
-              {% endif %}
-              <div class="small text-muted mt-1">
-                Leave blank for individual clients
-              </div>
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-bold"
-                >Contact Person <span class="text-danger">*</span></label
-              >
-              {{ form.contact_person(class="form-control", placeholder="Full
-              name of primary contact") }} {% if form.contact_person.errors %}
-              <div class="text-danger small mt-1">
-                {% for error in form.contact_person.errors %} {{ error }} {%
-                endfor %}
-              </div>
-              {% endif %}
-            </div>
-          </div>
+      </div>
 
-          <div class="row mb-3">
-            <div class="col-md-6">
-              <label class="form-label fw-bold"
-                >Email <span class="text-danger">*</span></label
-              >
-              {{ form.email(class="form-control", placeholder="Contact email
-              address") }} {% if form.email.errors %}
-              <div class="text-danger small mt-1">
-                {% for error in form.email.errors %} {{ error }} {% endfor %}
-              </div>
-              {% endif %}
-            </div>
-            <div class="col-md-6">
-              <label class="form-label fw-bold">Phone Number</label>
-              {{ form.phone(class="form-control", placeholder="Contact phone
-              number") }} {% if form.phone.errors %}
-              <div class="text-danger small mt-1">
-                {% for error in form.phone.errors %} {{ error }} {% endfor %}
-              </div>
-              {% endif %}
-            </div>
+      <!-- Side Panel -->
+      <div class="col-lg-4">
+        <!-- Save Panel -->
+        <div class="card shadow-sm border-0 save-panel mb-4">
+          <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0 text-primary">
+              <i class="fas fa-save me-2"></i>Save Client
+            </h5>
           </div>
+          <div class="card-body">
+            <p class="text-muted small mb-3">
+              {% if client %} Update the client information or cancel to discard
+              changes. {% else %} Add a new client to the system. They will be
+              available for bookings immediately. {% endif %}
+            </p>
 
-          <div class="mb-3">
-            <label class="form-label fw-bold">Address</label>
-            {{ form.address(class="form-control", rows="3", placeholder="Client
-            mailing address") }} {% if form.address.errors %}
-            <div class="text-danger small mt-1">
-              {% for error in form.address.errors %} {{ error }} {% endfor %}
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-success btn-lg" id="saveBtn">
+                <i class="fas fa-save me-2"></i>
+                {% if client %}Update Client{% else %}Create Client{% endif %}
+              </button>
+              <a
+                href="{{ url_for('clients.clients') }}"
+                class="btn btn-outline-secondary"
+              >
+                <i class="fas fa-times me-1"></i>Cancel
+              </a>
+            </div>
+
+            {% if client %}
+            <hr class="my-3" />
+            <div class="small text-muted">
+              <div class="d-flex justify-content-between mb-1">
+                <span><i class="fas fa-hashtag me-1"></i>Client ID:</span>
+                <strong>{{ client.id }}</strong>
+              </div>
+              <div class="d-flex justify-content-between mb-1">
+                <span><i class="fas fa-calendar me-1"></i>Created:</span>
+                <strong>
+                  {% if client.created_at is not none and client.created_at is
+                  not string %} {{ client.created_at.strftime('%d %b %Y') }} {%
+                  else %} Unknown {% endif %}
+                </strong>
+              </div>
+              {% if client.get('booking_count') is defined %}
+              <div class="d-flex justify-content-between">
+                <span><i class="fas fa-calendar-check me-1"></i>Bookings:</span>
+                <strong>{{ client.booking_count }}</strong>
+              </div>
+              {% endif %}
             </div>
             {% endif %}
           </div>
+        </div>
 
-          <div class="mb-0">
-            <label class="form-label fw-bold">Notes</label>
-            {{ form.notes(class="form-control", rows="4",
-            placeholder="Additional information about this client...") }} {% if
-            form.notes.errors %}
-            <div class="text-danger small mt-1">
-              {% for error in form.notes.errors %} {{ error }} {% endfor %}
+        <!-- Client Type Templates -->
+        <div class="card shadow-sm border-0 mb-4">
+          <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0 text-primary">
+              <i class="fas fa-layer-group me-2"></i>Quick Templates
+            </h5>
+            <small class="text-muted"
+              >Choose a template to pre-fill common fields</small
+            >
+          </div>
+          <div class="card-body">
+            <div class="row">
+              <div class="col-12 mb-3">
+                <button
+                  type="button"
+                  class="btn template-btn w-100 p-3 text-start"
+                  id="corporateClientBtn"
+                >
+                  <div class="d-flex align-items-center">
+                    <i class="fas fa-building text-primary fa-2x me-3"></i>
+                    <div>
+                      <h6 class="mb-1">Corporate Client</h6>
+                      <small class="text-muted"
+                        >Companies, organizations, and businesses</small
+                      >
+                    </div>
+                  </div>
+                </button>
+              </div>
+              <div class="col-12">
+                <button
+                  type="button"
+                  class="btn template-btn w-100 p-3 text-start"
+                  id="individualClientBtn"
+                >
+                  <div class="d-flex align-items-center">
+                    <i class="fas fa-user text-info fa-2x me-3"></i>
+                    <div>
+                      <h6 class="mb-1">Individual Client</h6>
+                      <small class="text-muted"
+                        >Personal bookings and private events</small
+                      >
+                    </div>
+                  </div>
+                </button>
+              </div>
             </div>
-            {% endif %}
+          </div>
+        </div>
+
+        <!-- Live Preview -->
+        <div class="card shadow-sm border-0">
+          <div class="card-header bg-white border-bottom">
+            <h5 class="mb-0 text-primary">
+              <i class="fas fa-eye me-2"></i>Live Preview
+            </h5>
+            <small class="text-muted"
+              >How this client will appear in the directory</small
+            >
+          </div>
+          <div class="card-body p-0">
+            <div class="client-preview" id="clientPreview">
+              <div class="d-flex align-items-center">
+                <i class="fas fa-user-circle fa-3x me-3 opacity-75"></i>
+                <div>
+                  <h6 class="mb-1" id="previewName">Enter client name...</h6>
+                  <small id="previewCompany" class="opacity-75"
+                    >No company specified</small
+                  >
+                  <div class="mt-1">
+                    <small id="previewEmail" class="opacity-75">
+                      <i class="fas fa-envelope me-1"></i>Enter email...
+                    </small>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
     </div>
+  </form>
 
-    <!-- Save Panel -->
-    <div class="col-lg-4">
-      <div class="card shadow-sm border-0 position-sticky" style="top: 1rem">
-        <div class="card-header bg-white">
+  <!-- Quick Actions (for existing clients) -->
+  {% if client %}
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-white border-bottom">
           <h5 class="mb-0 text-primary">
-            <i class="fas fa-save me-2"></i>Save Client
+            <i class="fas fa-bolt me-2"></i>Quick Actions
           </h5>
         </div>
         <div class="card-body">
-          <p class="text-muted small mb-3">
-            {% if client %} Update the client information or cancel to discard
-            changes. {% else %} Add a new client to the system. They will be
-            available for bookings immediately. {% endif %}
-          </p>
-
-          <div class="d-grid gap-2">
-            <button type="submit" class="btn btn-success">
-              <i class="fas fa-save me-1"></i>
-              {% if client %}Update Client{% else %}Create Client{% endif %}
-            </button>
-            <a
-              href="{{ url_for('clients') }}"
-              class="btn btn-outline-secondary"
-            >
-              Cancel
-            </a>
-          </div>
-
-          {% if client %}
-          <hr class="my-4" />
-          <div class="d-flex justify-content-between align-items-center">
-            <span class="text-muted small">Client ID: {{ client.id }}</span>
-            <span class="text-muted small"
-              >Created: {{ client.created_at.strftime('%d %b %Y') }}</span
-            >
-          </div>
-          {% endif %}
-        </div>
-      </div>
-
-      <!-- Client Type Cards -->
-      <div class="row mt-4">
-        <div class="col-md-6 mb-4">
-          <div class="card form-card shadow-sm border-0">
-            <div class="card-body text-center py-4">
-              <i class="fas fa-building client-icon text-primary"></i>
-              <i
-                class="fas fa-building text-primary mb-3"
-                style="font-size: 2rem"
-              ></i>
-              <h5 class="card-title">Corporate Client</h5>
-              <p class="card-text small text-muted">
-                Companies, organizations, and businesses
-              </p>
-              <button
-                type="button"
-                class="btn btn-sm btn-outline-primary mt-2"
-                id="corporateClientBtn"
+          <div class="row">
+            <div class="col-md-3 mb-2">
+              <a
+                href="{{ url_for('clients.view_client', id=client.id) }}"
+                class="btn btn-outline-info w-100"
               >
-                Select Template
-              </button>
+                <i class="fas fa-eye me-1"></i>View Details
+              </a>
             </div>
-          </div>
-        </div>
-        <div class="col-md-6 mb-4">
-          <div class="card form-card shadow-sm border-0">
-            <div class="card-body text-center py-4">
-              <i class="fas fa-user client-icon text-info"></i>
-              <i class="fas fa-user text-info mb-3" style="font-size: 2rem"></i>
-              <h5 class="card-title">Individual Client</h5>
-              <p class="card-text small text-muted">
-                Personal bookings and private events
-              </p>
+            <div class="col-md-3 mb-2">
+              <a
+                href="{{ url_for('bookings.new_booking') }}?client={{ client.id }}"
+                class="btn btn-outline-success w-100"
+              >
+                <i class="fas fa-calendar-plus me-1"></i>New Booking
+              </a>
+            </div>
+            <div class="col-md-3 mb-2">
+              <a
+                href="{{ url_for('clients.client_analytics', id=client.id) }}"
+                class="btn btn-outline-warning w-100"
+              >
+                <i class="fas fa-chart-line me-1"></i>Analytics
+              </a>
+            </div>
+            <div class="col-md-3 mb-2">
               <button
                 type="button"
-                class="btn btn-sm btn-outline-info mt-2"
-                id="individualClientBtn"
+                class="btn btn-outline-danger w-100"
+                data-bs-toggle="modal"
+                data-bs-target="#deleteModal"
               >
-                Select Template
+                <i class="fas fa-trash me-1"></i>Delete
               </button>
             </div>
           </div>
@@ -206,35 +482,320 @@ block extra_css %}
       </div>
     </div>
   </div>
-</form>
+
+  <!-- Delete Confirmation Modal -->
+  <div
+    class="modal fade"
+    id="deleteModal"
+    tabindex="-1"
+    aria-labelledby="deleteModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="deleteModalLabel">
+            <i class="fas fa-exclamation-triangle me-2"></i>Confirm Deletion
+          </h5>
+          <button
+            type="button"
+            class="btn-close btn-close-white"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="modal-body">
+          <p class="mb-3">Are you sure you want to delete this client?</p>
+          <div class="alert alert-warning">
+            <i class="fas fa-info-circle me-2"></i>
+            <strong>Warning:</strong> This action cannot be undone. The client
+            will be permanently removed from your system.
+          </div>
+          <p class="mb-0">
+            <strong>Client:</strong> {{ client.get('contact_person', 'Unknown')
+            }}{% if client.get('company_name') %} ({{ client.company_name }}){%
+            endif %}
+          </p>
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            <i class="fas fa-times me-1"></i>Cancel
+          </button>
+          <form
+            method="POST"
+            action="{{ url_for('clients.delete_client', id=client.id) }}"
+            class="d-inline"
+          >
+            <button type="submit" class="btn btn-danger">
+              <i class="fas fa-trash me-1"></i>Delete Client
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
 {% endblock %} {% block extra_js %}
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // Client type template buttons
-    const corporateClientBtn = document.getElementById("corporateClientBtn");
-    const individualClientBtn = document.getElementById("individualClientBtn");
-    const companyNameInput = document.getElementById("company_name");
-    const contactPersonInput = document.getElementById("contact_person");
+  document.addEventListener('DOMContentLoaded', function() {
+      // Form elements
+      const form = document.getElementById('clientForm');
+      const corporateBtn = document.getElementById('corporateClientBtn');
+      const individualBtn = document.getElementById('individualClientBtn');
+      const saveBtn = document.getElementById('saveBtn');
 
-    // Set corporate client template
-    corporateClientBtn.addEventListener("click", function () {
-      if (!companyNameInput.value) {
-        companyNameInput.value = "[Company Name]";
+      // Form fields
+      const companyNameField = document.getElementById('company_name');
+      const contactPersonField = document.getElementById('contact_person');
+      const emailField = document.getElementById('email');
+      const phoneField = document.getElementById('phone');
+      const addressField = document.getElementById('address');
+      const notesField = document.getElementById('notes');
+
+      // Preview elements
+      const previewName = document.getElementById('previewName');
+      const previewCompany = document.getElementById('previewCompany');
+      const previewEmail = document.getElementById('previewEmail');
+
+      // Template buttons functionality
+      corporateBtn.addEventListener('click', function() {
+          // Remove active class from other button
+          individualBtn.classList.remove('active');
+          this.classList.add('active');
+
+          // Focus on company name if empty
+          if (!companyNameField.value.trim()) {
+              companyNameField.focus();
+              companyNameField.placeholder = "Enter company name...";
+          }
+
+          // Add corporate-specific placeholder to notes
+          if (!notesField.value.trim()) {
+              notesField.placeholder = "Company size, industry, special requirements, billing preferences...";
+          }
+
+          updatePreview();
+      });
+
+      individualBtn.addEventListener('click', function() {
+          // Remove active class from other button
+          corporateBtn.classList.remove('active');
+          this.classList.add('active');
+
+          // Clear company name and focus on contact person
+          companyNameField.value = '';
+          if (!contactPersonField.value.trim()) {
+              contactPersonField.focus();
+          }
+
+          // Add individual-specific placeholder to notes
+          if (!notesField.value.trim()) {
+              notesField.placeholder = "Dietary restrictions, accessibility needs, preferred communication method...";
+          }
+
+          updatePreview();
+      });
+
+      // Live preview functionality
+      function updatePreview() {
+          const name = contactPersonField.value.trim() || 'Enter client name...';
+          const company = companyNameField.value.trim() || 'No company specified';
+          const email = emailField.value.trim() || 'Enter email...';
+
+          previewName.textContent = name;
+          previewCompany.textContent = company;
+          previewEmail.innerHTML = `<i class="fas fa-envelope me-1"></i>${email}`;
+
+          // Update company display logic
+          if (companyNameField.value.trim()) {
+              previewCompany.textContent = companyNameField.value.trim();
+              previewCompany.style.fontStyle = 'normal';
+          } else {
+              previewCompany.textContent = 'Individual Client';
+              previewCompany.style.fontStyle = 'italic';
+          }
       }
 
-      if (!contactPersonInput.value) {
-        contactPersonInput.focus();
-      }
-    });
+      // Add event listeners for real-time preview updates
+      [companyNameField, contactPersonField, emailField].forEach(field => {
+          if (field) {
+              field.addEventListener('input', updatePreview);
+              field.addEventListener('blur', updatePreview);
+          }
+      });
 
-    // Set individual client template
-    individualClientBtn.addEventListener("click", function () {
-      companyNameInput.value = "";
+      // Form validation
+      form.addEventListener('submit', function(e) {
+          let isValid = true;
 
-      if (!contactPersonInput.value) {
-        contactPersonInput.focus();
+          // Required field validation
+          const requiredFields = [
+              { field: contactPersonField, name: 'Contact Person' },
+              { field: emailField, name: 'Email Address' }
+          ];
+
+          requiredFields.forEach(item => {
+              if (!item.field.value.trim()) {
+                  isValid = false;
+                  item.field.classList.add('is-invalid');
+
+                  // Create or update error message
+                  let errorDiv = item.field.parentNode.querySelector('.invalid-feedback');
+                  if (!errorDiv) {
+                      errorDiv = document.createElement('div');
+                      errorDiv.className = 'invalid-feedback d-block';
+                      item.field.parentNode.appendChild(errorDiv);
+                  }
+                  errorDiv.textContent = `${item.name} is required.`;
+              } else {
+                  item.field.classList.remove('is-invalid');
+                  item.field.classList.add('is-valid');
+              }
+          });
+
+          // Email format validation
+          if (emailField.value.trim()) {
+              const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+              if (!emailRegex.test(emailField.value.trim())) {
+                  isValid = false;
+                  emailField.classList.add('is-invalid');
+
+                  let errorDiv = emailField.parentNode.querySelector('.invalid-feedback');
+                  if (!errorDiv) {
+                      errorDiv = document.createElement('div');
+                      errorDiv.className = 'invalid-feedback d-block';
+                      emailField.parentNode.appendChild(errorDiv);
+                  }
+                  errorDiv.textContent = 'Please enter a valid email address.';
+              }
+          }
+
+          if (!isValid) {
+              e.preventDefault();
+
+              // Show error message
+              const errorAlert = document.createElement('div');
+              errorAlert.className = 'alert alert-danger alert-dismissible fade show';
+              errorAlert.innerHTML = `
+                  <i class="fas fa-exclamation-triangle me-2"></i>
+                  <strong>Please correct the errors below:</strong> All required fields must be filled out correctly.
+                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+              `;
+
+              // Insert error at top of form
+              form.insertBefore(errorAlert, form.firstChild);
+
+              // Scroll to first error
+              const firstError = form.querySelector('.is-invalid');
+              if (firstError) {
+                  firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                  firstError.focus();
+              }
+          } else {
+              // Show loading state
+              saveBtn.disabled = true;
+              saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Saving...';
+          }
+      });
+
+      // Remove validation classes when user starts typing
+      [contactPersonField, emailField].forEach(field => {
+          if (field) {
+              field.addEventListener('input', function() {
+                  this.classList.remove('is-invalid', 'is-valid');
+                  const errorDiv = this.parentNode.querySelector('.invalid-feedback');
+                  if (errorDiv) {
+                      errorDiv.remove();
+                  }
+              });
+          }
+      });
+
+      // Initialize preview on page load
+      updatePreview();
+
+      // Auto-save draft functionality (optional)
+      let autoSaveTimeout;
+      function autoSaveDraft() {
+          clearTimeout(autoSaveTimeout);
+          autoSaveTimeout = setTimeout(() => {
+              const formData = {
+                  company_name: companyNameField.value,
+                  contact_person: contactPersonField.value,
+                  email: emailField.value,
+                  phone: phoneField.value,
+                  address: addressField.value,
+                  notes: notesField.value
+              };
+
+              // Save to localStorage as draft
+              try {
+                  localStorage.setItem('client_form_draft', JSON.stringify(formData));
+                  console.log('Draft saved automatically');
+              } catch (e) {
+                  console.log('Could not save draft:', e);
+              }
+          }, 2000);
       }
-    });
+
+      // Add auto-save listeners
+      [companyNameField, contactPersonField, emailField, phoneField, addressField, notesField].forEach(field => {
+          if (field) {
+              field.addEventListener('input', autoSaveDraft);
+          }
+      });
+
+      // Load draft on page load (for new clients only)
+      {% if not client %}
+      try {
+          const draft = localStorage.getItem('client_form_draft');
+          if (draft) {
+              const formData = JSON.parse(draft);
+
+              // Only load if form is mostly empty
+              const isEmpty = !contactPersonField.value && !emailField.value;
+              if (isEmpty) {
+                  Object.keys(formData).forEach(key => {
+                      const field = document.getElementById(key);
+                      if (field && formData[key]) {
+                          field.value = formData[key];
+                      }
+                  });
+                  updatePreview();
+
+                  // Show notification
+                  const draftAlert = document.createElement('div');
+                  draftAlert.className = 'alert alert-info alert-dismissible fade show';
+                  draftAlert.innerHTML = `
+                      <i class="fas fa-info-circle me-2"></i>
+                      <strong>Draft loaded:</strong> We've restored your previous form data.
+                      <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                  `;
+                  form.insertBefore(draftAlert, form.firstChild);
+              }
+          }
+      } catch (e) {
+          console.log('Could not load draft:', e);
+      }
+      {% endif %}
+
+      // Clear draft when form is successfully submitted
+      form.addEventListener('submit', function() {
+          setTimeout(() => {
+              try {
+                  localStorage.removeItem('client_form_draft');
+              } catch (e) {
+                  console.log('Could not clear draft:', e);
+              }
+          }, 1000);
+      });
+
+      console.log('✅ Client form initialized successfully');
   });
 </script>
 {% endblock %}

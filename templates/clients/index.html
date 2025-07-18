@@ -1,807 +1,318 @@
 {% extends "layout.html" %}
 
-{% block title %}Clients | Rainbow Towers Conference Booking{% endblock %}
+{% block title %}Client Directory | Rainbow Towers Conference Booking{% endblock %}
 
 {% block extra_css %}
+<!-- Keep your existing CSS here -->
 <style>
-  .client-card {
-    transition: transform 0.2s ease-in-out;
+  .debug-panel {
+    background: #f8f9fa;
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    font-family: monospace;
+    font-size: 12px;
   }
   
-  .client-card:hover {
-    transform: translateY(-2px);
-  }
-  
-  .booking-badge {
-    font-size: 0.875rem;
-    padding: 0.375rem 0.75rem;
-    min-width: 2rem;
-    text-align: center;
-  }
-  
-  .client-name {
-    color: #495057;
-    text-decoration: none;
-    font-weight: 600;
-  }
-  
-  .client-name:hover {
+  .debug-panel h6 {
     color: #007bff;
-    text-decoration: underline;
+    margin-bottom: 10px;
   }
   
-  .search-highlight {
-    background-color: #fff3cd;
-    padding: 0.125rem 0.25rem;
-    border-radius: 0.25rem;
+  .debug-data {
+    background: white;
+    padding: 10px;
+    border-radius: 4px;
+    max-height: 200px;
+    overflow-y: auto;
   }
-  
-  .stats-row {
+
+  /* Keep all your existing styles from the original template */
+  .client-directory-header {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     color: white;
     border-radius: 0.5rem;
-    margin-bottom: 1.5rem;
+    padding: 2rem;
+    margin-bottom: 2rem;
   }
-  
-  .stat-item {
-    text-align: center;
-    padding: 1rem;
+
+  .stats-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(10px);
+    border: none;
+    border-radius: 0.75rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
   }
-  
-  .stat-number {
-    font-size: 2rem;
-    font-weight: 700;
-    margin-bottom: 0.25rem;
+
+  .client-table {
+    background: white;
+    border-radius: 0.75rem;
+    overflow: hidden;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
   }
-  
-  .stat-label {
-    font-size: 0.875rem;
-    opacity: 0.9;
-  }
-  
-  .table-row-hover:hover {
+
+  .client-table th {
     background-color: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: 600;
+    color: #495057;
+    padding: 1rem 0.75rem;
   }
-  
-  .action-buttons .btn {
-    margin: 0 1px;
+
+  .client-table td {
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f3f4;
   }
-  
-  .refresh-spin {
-    animation: spin 1s linear infinite;
-  }
-  
-  @keyframes spin {
-    0% { transform: rotate(0deg); }
-    100% { transform: rotate(360deg); }
-  }
-  
-  .empty-state {
-    padding: 3rem 1rem;
-    text-align: center;
-    color: #6c757d;
-  }
-  
-  .quick-actions-bar {
-    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
-    border-radius: 0.5rem;
-    border: 1px solid #dee2e6;
-  }
-  
-  .search-input {
-    border-right: none;
-  }
-  
-  .search-btn {
-    border-left: none;
-  }
-  
-  .client-row {
-    transition: all 0.2s ease;
-  }
-  
+
   .client-row:hover {
     background-color: #f8f9fa;
-    transform: translateX(2px);
   }
-  
-  .loading-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-  }
-  
-  .loading-content {
-    background: white;
-    padding: 2rem;
-    border-radius: 0.5rem;
+
+  .empty-state {
     text-align: center;
+    padding: 4rem 2rem;
+    color: #6c757d;
   }
 </style>
 {% endblock %}
 
 {% block content %}
-<!-- Page Header -->
-<div class="d-flex justify-content-between align-items-center mb-4">
+<!-- DEBUG PANEL - Remove this after fixing the issue 
+<div class="debug-panel">
+  <h6><i class="fas fa-bug"></i> Debug Information (Remove after fixing)</h6>
+  <div class="debug-data">
+    <strong>Template Variables:</strong><br>
+    - clients variable exists: {{ clients is defined }}<br>
+    - clients is not none: {{ clients is not none }}<br>
+    - clients length: {{ clients|length if clients else 'N/A' }}<br>
+    - clients type: {{ clients.__class__.__name__ if clients else 'None' }}<br>
+    - search_query: "{{ search_query or 'Empty' }}"<br>
+    - sort_by: "{{ sort_by or 'Empty' }}"<br>
+    <br>
+    <strong>First 2 clients (if any):</strong><br>
+    {% if clients and clients|length > 0 %}
+      {% for client in clients[:2] %}
+        Client {{ loop.index }}:<br>
+        - ID: {{ client.id if client.id is defined else 'No ID' }}<br>
+        - Company: {{ client.company_name if client.company_name else 'No company' }}<br>
+        - Contact: {{ client.contact_person if client.contact_person else 'No contact' }}<br>
+        - Email: {{ client.email if client.email else 'No email' }}<br>
+        - Booking Count: {{ client.booking_count if client.booking_count is defined else 'No count' }}<br>
+        <br>
+      {% endfor %}
+    {% else %}
+      No clients data available for display<br>
+    {% endif %}
+  </div>
+</div> -->
+
+<!-- Workflow Notice -->
+<div class="alert alert-info">
+  <div class="d-flex align-items-center">
+    <i class="fas fa-info-circle text-info me-2"></i>
     <div>
-        <h1>
-            <i class="fas fa-users text-primary me-2"></i>Clients
-        </h1>
-        <p class="text-muted mb-0">Manage your client database and track booking activity</p>
+      <strong>Auto-Generated Client Directory:</strong> Clients are automatically created when making bookings. 
+      To add a new client, simply <a href="{{ url_for('bookings.new_booking') }}" class="text-decoration-none"><strong>create a new booking</strong></a> 
+      and enter their details in the booking form.
     </div>
-    <div>
-        <a href="{{ url_for('new_client') }}" class="btn btn-success">
-            <i class="fas fa-plus me-1"></i>Add New Client
-        </a>
+  </div>
+</div>
+
+<!-- Header Section -->
+<div class="client-directory-header">
+  <div class="row align-items-center">
+    <div class="col-md-8">
+      <h1 class="mb-2">
+        <i class="fas fa-address-book me-3"></i>Client Directory
+      </h1>
+      <p class="mb-0 opacity-90">
+        View and manage all clients created through the booking process
+      </p>
     </div>
+    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+      <a href="{{ url_for('bookings.new_booking') }}" class="btn btn-success">
+        <i class="fas fa-calendar-plus me-1"></i>New Booking
+      </a>
+    </div>
+  </div>
 </div>
 
 <!-- Statistics Overview -->
-{% if clients %}
+{% if clients and clients|length > 0 %}
 {% set total_clients = clients|length %}
-{% set clients_with_bookings = clients|selectattr('booking_count', '>', 0)|list|length %}
+{% set active_clients = clients|selectattr('booking_count', '>', 0)|list|length %}
 {% set total_bookings = clients|sum(attribute='booking_count') %}
-{% set avg_bookings_per_client = (total_bookings / total_clients)|round(1) if total_clients > 0 else 0 %}
-<div class="stats-row">
-    <div class="row">
-        <div class="col-md-3">
-            <div class="stat-item">
-                <div class="stat-number">{{ total_clients }}</div>
-                <div class="stat-label">Total Clients</div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-item">
-                <div class="stat-number">{{ clients_with_bookings }}</div>
-                <div class="stat-label">Active Clients</div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-item">
-                <div class="stat-number">{{ total_bookings }}</div>
-                <div class="stat-label">Total Bookings</div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="stat-item">
-                <div class="stat-number">{{ avg_bookings_per_client }}</div>
-                <div class="stat-label">Avg. Bookings/Client</div>
-            </div>
-        </div>
+
+<div class="row mb-4">
+  <div class="col-md-3 mb-3">
+    <div class="card stats-card text-center h-100">
+      <div class="card-body">
+        <div class="h3 text-primary">{{ total_clients }}</div>
+        <div class="text-muted">Total Clients</div>
+      </div>
     </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card stats-card text-center h-100">
+      <div class="card-body">
+        <div class="h3 text-success">{{ active_clients }}</div>
+        <div class="text-muted">Active Clients</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card stats-card text-center h-100">
+      <div class="card-body">
+        <div class="h3 text-info">{{ total_bookings }}</div>
+        <div class="text-muted">Total Bookings</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 mb-3">
+    <div class="card stats-card text-center h-100">
+      <div class="card-body">
+        <div class="h3 text-warning">{{ "%.1f"|format((total_bookings / total_clients) if total_clients > 0 else 0) }}</div>
+        <div class="text-muted">Avg. per Client</div>
+      </div>
+    </div>
+  </div>
 </div>
 {% endif %}
 
-<!-- Search and Filter Section -->
-<div class="card shadow-sm border-0 mb-4 client-card">
-    <div class="card-body">
-        <form method="GET" class="row g-3" id="clientsFilterForm">
-            <div class="col-md-5">
-                <label class="form-label small text-muted">Search Clients</label>
-                <div class="input-group">
-                    <input type="text" 
-                           class="form-control search-input" 
-                           placeholder="Search by company name, contact person, or email..." 
-                           name="search" 
-                           value="{{ search_query or '' }}"
-                           id="searchInput">
-                    <button class="btn btn-primary search-btn" type="submit" id="searchBtn">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <label class="form-label small text-muted">Sort By</label>
-                <select class="form-select" name="sort" onchange="this.form.submit()" id="sortSelect">
-                    <option value="company" {% if sort_by == 'company' %}selected{% endif %}>Company Name (A-Z)</option>
-                    <option value="contact" {% if sort_by == 'contact' %}selected{% endif %}>Contact Person (A-Z)</option>
-                    <option value="bookings" {% if sort_by == 'bookings' %}selected{% endif %}>Most Bookings First</option>
-                    <option value="recent" {% if sort_by == 'recent' %}selected{% endif %}>Most Recently Added</option>
-                </select>
-            </div>
-            <div class="col-md-3">
-                <label class="form-label small text-muted">Actions</label>
-                <div class="d-flex gap-2">
-                    <a href="{{ url_for('clients') }}" 
-                       class="btn btn-outline-secondary flex-fill"
-                       title="Clear all filters">
-                        <i class="fas fa-times me-1"></i>Clear
-                    </a>
-                    <button type="button" 
-                            class="btn btn-outline-info" 
-                            onclick="refreshClientData()" 
-                            title="Refresh client data"
-                            id="refreshBtn">
-                        <i class="fas fa-sync-alt" id="refreshIcon"></i>
-                    </button>
-                </div>
-            </div>
-        </form>
-        
-        <!-- Search Results Info -->
-        {% if search_query %}
-        <div class="mt-3">
-            <div class="alert alert-info py-2 mb-0 d-flex justify-content-between align-items-center">
-                <div>
-                    <i class="fas fa-search me-1"></i>
-                    Found {{ clients|length }} result(s) for "<strong>{{ search_query }}</strong>"
-                </div>
-                <a href="{{ url_for('clients') }}" class="btn btn-sm btn-outline-primary">
-                    <i class="fas fa-times me-1"></i>Clear Search
-                </a>
-            </div>
+<!-- Search Section -->
+<div class="card mb-4">
+  <div class="card-body">
+    <form method="GET">
+      <div class="row g-3">
+        <div class="col-md-6">
+          <label class="form-label">Search Clients</label>
+          <input type="text" class="form-control" name="search" value="{{ search_query or '' }}" placeholder="Search by name, company, or email...">
         </div>
-        {% endif %}
-    </div>
+        <div class="col-md-4">
+          <label class="form-label">Sort By</label>
+          <select class="form-control" name="sort" onchange="this.form.submit()">
+            <option value="company" {% if sort_by == 'company' %}selected{% endif %}>Company Name</option>
+            <option value="contact" {% if sort_by == 'contact' %}selected{% endif %}>Contact Person</option>
+            <option value="bookings" {% if sort_by == 'bookings' %}selected{% endif %}>Most Bookings</option>
+            <option value="recent" {% if sort_by == 'recent' %}selected{% endif %}>Recently Added</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label">&nbsp;</label>
+          <div class="d-grid">
+            <button type="submit" class="btn btn-primary">Search</button>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
 </div>
 
-<!-- Clients Table -->
-<div class="card shadow-sm border-0" id="clientsCard">
-    {% if clients %}
-    <div class="card-header bg-white">
-        <div class="d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 text-primary">
-                <i class="fas fa-list me-1"></i>
-                Client Directory 
-                <span class="badge bg-primary ms-2">{{ clients|length }}</span>
-            </h6>
-            <div class="text-muted small">
-                Sorted by: {{ sort_by|replace('_', ' ')|title }}
-                {% if search_query %} | Filtered{% endif %}
-            </div>
-        </div>
-    </div>
-    {% endif %}
-    
-    <div class="card-body p-0">
-        <div class="table-responsive">
-            <table class="table table-hover mb-0" id="clientsTable">
-                <thead class="table-light">
-                    <tr>
-                        <th width="25%">
-                            <i class="fas fa-building me-1 text-muted"></i>Company Name
-                        </th>
-                        <th width="20%">
-                            <i class="fas fa-user me-1 text-muted"></i>Contact Person
-                        </th>
-                        <th width="20%">
-                            <i class="fas fa-envelope me-1 text-muted"></i>Email
-                        </th>
-                        <th width="15%">
-                            <i class="fas fa-phone me-1 text-muted"></i>Phone
-                        </th>
-                        <th width="10%" class="text-center">
-                            <i class="fas fa-calendar-alt me-1 text-muted"></i>Bookings
-                        </th>
-                        <th width="10%" class="text-end">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for client in clients %}
-                    <tr data-client-id="{{ client.id }}" class="client-row table-row-hover">
-                        <td>
-                            <div>
-                                <a href="{{ url_for('view_client', id=client.id) }}" 
-                                   class="client-name">
-                                    {{ client.company_name or '-' }}
-                                </a>
-                                {% if not client.company_name %}
-                                <small class="text-muted d-block">No company name provided</small>
-                                {% endif %}
-                            </div>
-                        </td>
-                        <td>
-                            <div>
-                                <strong>{{ client.contact_person }}</strong>
-                                {% if client.company_name and client.contact_person != client.company_name %}
-                                <br><small class="text-muted">{{ client.company_name }}</small>
-                                {% endif %}
-                            </div>
-                        </td>
-                        <td>
-                            <a href="mailto:{{ client.email }}" 
-                               class="text-decoration-none"
-                               title="Send email to {{ client.email }}">
-                                {{ client.email }}
-                            </a>
-                        </td>
-                        <td>
-                            {% if client.phone %}
-                                <a href="tel:{{ client.phone }}" 
-                                   class="text-decoration-none"
-                                   title="Call {{ client.phone }}">
-                                    {{ client.phone }}
-                                </a>
-                            {% else %}
-                                <span class="text-muted">-</span>
-                            {% endif %}
-                        </td>
-                        <td class="text-center">
-                            {% set booking_count = client.booking_count|default(0) %}
-                            <span class="badge booking-badge {% if booking_count > 0 %}bg-primary{% else %}bg-secondary{% endif %}" 
-                                  title="{{ booking_count }} booking(s)"
-                                  data-booking-count="{{ booking_count }}">
-                                {{ booking_count }}
-                            </span>
-                        </td>
-                        <td class="text-end">
-                            <div class="btn-group action-buttons" role="group">
-                                <a href="{{ url_for('view_client', id=client.id) }}" 
-                                   class="btn btn-sm btn-outline-primary" 
-                                   title="View Details"
-                                   data-bs-toggle="tooltip">
-                                    <i class="fas fa-eye"></i>
-                                </a>
-                                <a href="{{ url_for('edit_client', id=client.id) }}" 
-                                   class="btn btn-sm btn-outline-warning" 
-                                   title="Edit Client"
-                                   data-bs-toggle="tooltip">
-                                    <i class="fas fa-edit"></i>
-                                </a>
-                                <button type="button" 
-                                        class="btn btn-sm btn-outline-danger" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#deleteClientModal{{ client.id }}"
-                                        title="Delete Client"
-                                        data-bs-tooltip="tooltip">
-                                    <i class="fas fa-trash"></i>
-                                </button>
-                            </div>
-                            
-                            <!-- Delete Client Modal -->
-                            <div class="modal fade" id="deleteClientModal{{ client.id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header">
-                                            <h5 class="modal-title">
-                                                <i class="fas fa-exclamation-triangle text-danger me-2"></i>
-                                                Delete Client
-                                            </h5>
-                                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <div class="modal-body">
-                                            <p>Are you sure you want to delete <strong>{{ client.company_name or client.contact_person }}</strong>?</p>
-                                            
-                                            {% if client.booking_count and client.booking_count > 0 %}
-                                            <div class="alert alert-danger">
-                                                <i class="fas fa-exclamation-triangle me-1"></i>
-                                                <strong>Warning:</strong> This client has {{ client.booking_count }} booking(s). 
-                                                Deleting this client may affect these bookings.
-                                            </div>
-                                            {% else %}
-                                            <div class="alert alert-info">
-                                                <i class="fas fa-info-circle me-1"></i>
-                                                This client has no bookings and can be safely deleted.
-                                            </div>
-                                            {% endif %}
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                                Cancel
-                                            </button>
-                                            <form action="{{ url_for('delete_client', id=client.id) }}" method="POST" class="d-inline">
-                                                <button type="submit" 
-                                                        class="btn btn-danger" 
-                                                        {% if client.booking_count and client.booking_count > 0 %}disabled{% endif %}>
-                                                    <i class="fas fa-trash me-1"></i>Delete Client
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </td>
-                    </tr>
-                    {% else %}
-                    <tr>
-                        <td colspan="6" class="empty-state">
-                            <div class="py-4">
-                                <i class="fas fa-users fa-3x text-muted mb-3"></i>
-                                <h5 class="text-muted">
-                                    {% if search_query %}
-                                        No clients match your search
-                                    {% else %}
-                                        No clients found
-                                    {% endif %}
-                                </h5>
-                                {% if search_query %}
-                                <p class="text-muted mb-3">
-                                    No clients match your search criteria for "<strong>{{ search_query }}</strong>".<br>
-                                    Try adjusting your search terms or <a href="{{ url_for('clients') }}">view all clients</a>.
-                                </p>
-                                {% else %}
-                                <p class="text-muted mb-3">
-                                    Get started by adding your first client to the system.<br>
-                                    Clients are essential for creating bookings and tracking business relationships.
-                                </p>
-                                {% endif %}
-                                <a href="{{ url_for('new_client') }}" class="btn btn-primary">
-                                    <i class="fas fa-plus me-1"></i>Add Your First Client
-                                </a>
-                            </div>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-    
-    {% if clients %}
-    <div class="card-footer bg-white text-muted">
-        <div class="d-flex justify-content-between align-items-center">
-            <div>
-                <small>
-                    Showing {{ clients|length }} client(s)
-                    {% if search_query %}matching your search{% endif %}
-                </small>
-            </div>
-            <div>
-                <small>
-                    <i class="fas fa-sync-alt me-1"></i>
-                    Last updated: <span id="lastUpdated">Just now</span>
-                </small>
-            </div>
-        </div>
-    </div>
-    {% endif %}
-</div>
-
-<!-- Quick Actions Bar -->
-{% if clients %}
-<div class="row mt-4">
-    <div class="col-md-8">
-        <div class="card shadow-sm border-0 quick-actions-bar">
-            <div class="card-body py-3">
-                <div class="d-flex align-items-center flex-wrap">
-                    <div class="me-3 mb-2 mb-md-0">
-                        <i class="fas fa-bolt text-primary me-2"></i>
-                        <span class="fw-bold">Quick Actions:</span>
-                    </div>
-                    <div class="d-flex gap-2 flex-wrap">
-                        <a href="{{ url_for('new_client') }}" class="btn btn-sm btn-success">
-                            <i class="fas fa-user-plus me-1"></i>Add Client
-                        </a>
-                        <a href="{{ url_for('new_booking') }}" class="btn btn-sm btn-primary">
-                            <i class="fas fa-calendar-plus me-1"></i>New Booking
-                        </a>
-                        <button type="button" class="btn btn-sm btn-outline-info" onclick="exportClients()">
-                            <i class="fas fa-download me-1"></i>Export List
-                        </button>
-                        {% if current_user.role in ['admin', 'manager'] %}
-                        <a href="/debug/clients-sync" class="btn btn-sm btn-outline-secondary" target="_blank">
-                            <i class="fas fa-bug me-1"></i>Debug
-                        </a>
-                        {% endif %}
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-    <div class="col-md-4">
-        <div class="card shadow-sm border-0">
-            <div class="card-body py-3 text-center">
-                <div class="row">
-                    <div class="col-6">
-                        <div class="text-primary">
-                            <strong>{{ "%.1f"|format((clients_with_bookings / total_clients * 100) if total_clients > 0 else 0) }}%</strong>
-                        </div>
-                        <small class="text-muted">Activity Rate</small>
-                    </div>
-                    <div class="col-6">
-                        <div class="text-success">
-                            <strong>${{ (total_bookings * 250)|default(0) }}</strong>
-                        </div>
-                        <small class="text-muted">Est. Revenue</small>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-{% endif %}
-
-<!-- Loading Overlay -->
-<div class="loading-overlay d-none" id="loadingOverlay">
-    <div class="loading-content">
-        <div class="spinner-border text-primary mb-3" role="status">
-            <span class="visually-hidden">Loading...</span>
-        </div>
-        <h5>Refreshing client data...</h5>
-        <p class="text-muted mb-0">Please wait while we update the information</p>
-    </div>
-</div>
-
-<!-- Debug Info for Admins -->
-{% if current_user.role in ['admin', 'manager'] and clients and total_bookings == 0 %}
-<div class="alert alert-warning mt-4">
-    <div class="d-flex align-items-center">
-        <i class="fas fa-exclamation-triangle me-2"></i>
-        <div class="flex-grow-1">
-            <strong>Debug Notice (Admin Only):</strong> 
-            {{ total_clients }} client(s) found but no bookings detected. This might indicate:
-            <ul class="mb-0 mt-1">
-                <li>Data synchronization issues between clients and bookings</li>
-                <li>Database permission problems</li>
-                <li>Recently added clients without bookings yet</li>
-            </ul>
-        </div>
-        <div>
-            <a href="/debug/clients-sync" class="btn btn-sm btn-outline-warning" target="_blank">
-                <i class="fas fa-search me-1"></i>Investigate
+<!-- Client Directory Table -->
+<div class="client-table">
+  <!-- EXPLICIT CHECK: Show this section if we have clients -->
+  {% if clients and clients|length > 0 %}
+  <div class="alert alert-success">
+    <strong>✅ Clients Found:</strong> Displaying {{ clients|length }} client(s)
+  </div>
+  
+  <table class="table table-hover mb-0">
+    <thead>
+      <tr>
+        <th>Company / Organization</th>
+        <th>Contact Person</th>
+        <th>Email Address</th>
+        <th>Phone</th>
+        <th>Bookings</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for client in clients %}
+      <tr class="client-row">
+        <td>
+          {% if client.company_name %}
+            <strong>{{ client.company_name }}</strong>
+          {% else %}
+            <em class="text-muted">Individual Client</em>
+          {% endif %}
+        </td>
+        <td>{{ client.contact_person or 'Not provided' }}</td>
+        <td>
+          <a href="mailto:{{ client.email }}">{{ client.email }}</a>
+        </td>
+        <td>{{ client.phone or 'Not provided' }}</td>
+        <td class="text-center">
+          <span class="badge bg-primary">{{ client.booking_count or 0 }}</span>
+        </td>
+        <td>
+          <div class="btn-group btn-group-sm">
+            <a href="{{ url_for('clients.view_client', id=client.id) }}" class="btn btn-outline-info">
+              <i class="fas fa-eye"></i> View
             </a>
-        </div>
+            <a href="{{ url_for('clients.edit_client', id=client.id) }}" class="btn btn-outline-primary">
+              <i class="fas fa-edit"></i> Edit
+            </a>
+            <a href="{{ url_for('bookings.new_booking') }}?client={{ client.id }}" class="btn btn-outline-success">
+              <i class="fas fa-calendar-plus"></i> Book
+            </a>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  
+  <!-- EXPLICIT ELSE: Show this if no clients -->
+  {% else %}
+  <div class="empty-state">
+    <div class="alert alert-warning">
+      <strong>⚠️ No Clients to Display</strong>
     </div>
+    
+    {% if search_query %}
+    <i class="fas fa-search fa-3x mb-3"></i>
+    <h4>No clients match your search</h4>
+    <p>No clients found matching "<strong>{{ search_query }}</strong>".</p>
+    <a href="{{ url_for('clients.clients') }}" class="btn btn-secondary">Clear Search</a>
+    {% else %}
+    <i class="fas fa-users fa-3x mb-3"></i>
+    <h4>No clients in directory</h4>
+    <p>Clients are automatically created when you make bookings.</p>
+    <a href="{{ url_for('bookings.new_booking') }}" class="btn btn-primary">
+      <i class="fas fa-calendar-plus me-1"></i>Create First Booking
+    </a>
+    {% endif %}
+  </div>
+  {% endif %}
 </div>
-{% endif %}
 
 {% endblock %}
 
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log("📊 Enhanced clients page loaded successfully");
+    console.log('🔍 Client Directory Debug Info:');
+    console.log('- Clients data exists:', {{ (clients is defined and clients is not none)|lower }});
+    console.log('- Number of clients:', {{ clients|length if clients else 0 }});
+    console.log('- Search query:', "{{ search_query or '' }}");
+    console.log('- Sort by:', "{{ sort_by or '' }}");
     
-    // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+    {% if clients %}
+    console.log('- First client:', {{ clients[0]|tojson if clients|length > 0 else '{}' }});
+    {% endif %}
     
-    // Enhanced search functionality with debouncing
-    const searchInput = document.getElementById('searchInput');
-    const searchForm = document.getElementById('clientsFilterForm');
-    let searchTimeout;
-    
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            const query = this.value.trim();
-            
-            // Auto-submit search after typing (with debounce)
-            searchTimeout = setTimeout(function() {
-                if (query.length >= 2 || query.length === 0) {
-                    searchForm.submit();
-                }
-            }, 500);
-        });
-        
-        // Handle Enter key
-        searchInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-                clearTimeout(searchTimeout);
-                searchForm.submit();
-            }
-        });
-    }
-    
-    // Update last updated time
-    updateLastUpdatedTime();
-    
-    // Log client statistics
-    const clientStats = {
-        totalClients: {{ clients|length if clients else 0 }},
-        clientsWithBookings: {{ clients|selectattr('booking_count', '>', 0)|list|length if clients else 0 }},
-        totalBookings: {{ clients|sum(attribute='booking_count') if clients else 0 }},
-        searchQuery: "{{ search_query or '' }}",
-        sortBy: "{{ sort_by or 'company' }}"
-    };
-    
-    console.log("📈 Client Statistics:", clientStats);
-    
-    // Check for potential data issues
-    if (clientStats.totalClients > 0 && clientStats.totalBookings === 0) {
-        console.warn("⚠️ All clients have zero bookings - possible data sync issue");
-        // Auto-refresh after delay to check for updates
-        setTimeout(function() {
-            console.log("🔄 Auto-checking for updated booking counts...");
-            checkBookingCounts();
-        }, 10000); // Check after 10 seconds
-    }
-    
-    // Add search highlighting
-    highlightSearchTerms();
-    
-    // Initialize booking count validation
-    validateBookingCounts();
-});
-
-function refreshClientData() {
-    console.log("🔄 Refreshing client data...");
-    
-    const refreshIcon = document.getElementById('refreshIcon');
-    const refreshBtn = document.getElementById('refreshBtn');
-    const loadingOverlay = document.getElementById('loadingOverlay');
-    
-    // Show loading states
-    if (refreshIcon) {
-        refreshIcon.classList.add('refresh-spin');
-    }
-    if (refreshBtn) {
-        refreshBtn.disabled = true;
-    }
-    if (loadingOverlay) {
-        loadingOverlay.classList.remove('d-none');
-    }
-    
-    // Simulate loading time then reload
-    setTimeout(function() {
-        window.location.reload();
-    }, 1500);
-}
-
-function exportClients() {
-    console.log("📤 Exporting clients list...");
-    
-    // Create CSV content
-    const clients = [];
-    const rows = document.querySelectorAll('.client-row');
-    
-    // Add header
-    clients.push(['Company Name', 'Contact Person', 'Email', 'Phone', 'Bookings']);
-    
-    // Add data
-    rows.forEach(row => {
-        const cells = row.querySelectorAll('td');
-        if (cells.length >= 5) {
-            const companyName = cells[0].textContent.trim().replace('-', '');
-            const contactPerson = cells[1].textContent.trim();
-            const email = cells[2].textContent.trim();
-            const phone = cells[3].textContent.trim().replace('-', '');
-            const bookings = cells[4].textContent.trim();
-            
-            clients.push([companyName, contactPerson, email, phone, bookings]);
-        }
-    });
-    
-    // Create and download CSV
-    const csvContent = clients.map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `clients_export_${new Date().toISOString().split('T')[0]}.csv`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-    
-    console.log("✅ Client list exported successfully");
-}
-
-function highlightSearchTerms() {
-    const searchQuery = "{{ search_query or '' }}";
-    if (searchQuery.length > 0) {
-        const rows = document.querySelectorAll('.client-row');
-        const regex = new RegExp(`(${searchQuery})`, 'gi');
-        
-        rows.forEach(row => {
-            const cells = row.querySelectorAll('td');
-            cells.forEach((cell, index) => {
-                if (index < 3) { // Only highlight in first 3 columns
-                    const originalHTML = cell.innerHTML;
-                    cell.innerHTML = originalHTML.replace(regex, '<span class="search-highlight">$1</span>');
-                }
-            });
-        });
-    }
-}
-
-function validateBookingCounts() {
-    const bookingBadges = document.querySelectorAll('[data-booking-count]');
-    let totalBookings = 0;
-    let clientsWithBookings = 0;
-    
-    bookingBadges.forEach(badge => {
-        const count = parseInt(badge.dataset.bookingCount) || 0;
-        totalBookings += count;
-        if (count > 0) {
-            clientsWithBookings++;
-        }
-    });
-    
-    console.log("🔍 Booking count validation:");
-    console.log(`  - Total bookings from badges: ${totalBookings}`);
-    console.log(`  - Clients with bookings: ${clientsWithBookings}`);
-    
-    // Update stats if available
-    const statNumbers = document.querySelectorAll('.stat-number');
-    if (statNumbers.length >= 3) {
-        // Validate against displayed stats
-        const displayedTotal = parseInt(statNumbers[2].textContent) || 0;
-        if (totalBookings !== displayedTotal) {
-            console.warn(`⚠️ Booking count mismatch: badges show ${totalBookings}, stats show ${displayedTotal}`);
-        }
-    }
-}
-
-function checkBookingCounts() {
-    // Make AJAX call to check booking counts
-    fetch('/api/clients/booking-counts')
-        .then(response => response.json())
-        .then(data => {
-            if (data.success) {
-                console.log("📊 Booking counts from API:", data.booking_counts);
-                
-                // Update badges if different
-                let hasChanges = false;
-                Object.keys(data.booking_counts).forEach(clientId => {
-                    const badge = document.querySelector(`[data-client-id="${clientId}"] [data-booking-count]`);
-                    if (badge) {
-                        const currentCount = parseInt(badge.dataset.bookingCount) || 0;
-                        const newCount = data.booking_counts[clientId] || 0;
-                        
-                        if (currentCount !== newCount) {
-                            hasChanges = true;
-                            badge.textContent = newCount;
-                            badge.dataset.bookingCount = newCount;
-                            
-                            // Update badge class
-                            badge.classList.remove('bg-primary', 'bg-secondary');
-                            badge.classList.add(newCount > 0 ? 'bg-primary' : 'bg-secondary');
-                            
-                            console.log(`📊 Updated client ${clientId}: ${currentCount} → ${newCount}`);
-                        }
-                    }
-                });
-                
-                if (hasChanges) {
-                    console.log("✅ Booking counts updated from API");
-                    updateLastUpdatedTime();
-                } else {
-                    console.log("ℹ️ No booking count changes detected");
-                }
-            }
-        })
-        .catch(error => {
-            console.error("❌ Error checking booking counts:", error);
-        });
-}
-
-function updateLastUpdatedTime() {
-    const lastUpdatedEl = document.getElementById('lastUpdated');
-    if (lastUpdatedEl) {
-        const now = new Date();
-        lastUpdatedEl.textContent = now.toLocaleTimeString();
-    }
-}
-
-// Auto-refresh booking counts every 2 minutes
-setInterval(checkBookingCounts, 120000);
-
-// Enhanced error handling
-window.addEventListener('error', function(e) {
-    if (e.message.includes('url_for')) {
-        console.warn('Template routing error - some links may not work:', e.message);
+    // Check if table exists
+    const table = document.querySelector('.client-table table');
+    if (table) {
+        console.log('✅ Client table found in DOM');
+        console.log('- Table rows:', table.querySelectorAll('tbody tr').length);
+    } else {
+        console.log('❌ Client table not found in DOM');
     }
 });
-
-// Add keyboard shortcuts
-document.addEventListener('keydown', function(e) {
-    // Ctrl/Cmd + K to focus search
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        const searchInput = document.getElementById('searchInput');
-        if (searchInput) {
-            searchInput.focus();
-        }
-    }
-    
-    // Ctrl/Cmd + N to add new client
-    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-        e.preventDefault();
-        window.location.href = "{{ url_for('new_client') }}";
-    }
-});
-
-console.log("⌨️ Keyboard shortcuts: Ctrl+K (search), Ctrl+N (new client)");
 </script>
 {% endblock %}

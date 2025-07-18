@@ -199,7 +199,7 @@ Conference Booking{% endblock %} {% block extra_css %}
         <a class="dropdown-item" href="#" onclick="resetFilters()"
           >Reset Filters</a
         >
-        <a class="dropdown-item" href="{{ url_for('rooms') }}">Refresh</a>
+        <a class="dropdown-item" href="{{ url_for('rooms.rooms') }}">Refresh</a>
       </div>
     </div>
   </div>
@@ -328,7 +328,7 @@ Conference Booking{% endblock %} {% block extra_css %}
       </div>
       <div class="card-footer bg-white border-0 d-flex justify-content-between">
         <a
-          href="{{ url_for('calendar') }}?room={{ room.id }}"
+          href="{{ url_for('dashboard.calendar') }}?room={{ room.id }}"
           class="btn btn-sm btn-primary"
         >
           <i class="fas fa-calendar-alt me-1"></i>View Availability

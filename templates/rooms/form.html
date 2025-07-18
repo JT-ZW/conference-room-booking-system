@@ -57,7 +57,7 @@ endblock %} {% block extra_css %}
     <i class="fas fa-door-open text-primary me-2"></i>
     {% if room %}Edit Conference Room{% else %}New Conference Room{% endif %}
   </h1>
-  <a href="{{ url_for('rooms') }}" class="btn btn-outline-secondary">
+  <a href="{{ url_for('rooms.rooms') }}" class="btn btn-outline-secondary">
     <i class="fas fa-arrow-left me-1"></i>Back to Rooms
   </a>
 </div>
@@ -351,7 +351,7 @@ endblock %} {% block extra_css %}
               <i class="fas fa-save me-1"></i>
               {% if room %}Update Room{% else %}Create Room{% endif %}
             </button>
-            <a href="{{ url_for('rooms') }}" class="btn btn-outline-secondary">
+            <a href="{{ url_for('rooms.rooms') }}" class="btn btn-outline-secondary">
               Cancel
             </a>
           </div>

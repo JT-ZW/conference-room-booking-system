@@ -125,7 +125,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     <i class="fas fa-chart-pie text-primary me-2"></i>Room Utilization Report
   </h1>
   <div>
-    <a href="{{ url_for('reports') }}" class="btn btn-outline-secondary me-2">
+    <a href="{{ url_for('reports.reports') }}" class="btn btn-outline-secondary me-2">
       <i class="fas fa-arrow-left me-1"></i>Back to Reports
     </a>
     <button class="btn btn-primary" onclick="window.print()">
@@ -163,7 +163,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   <div class="card-body">
     <form
       method="GET"
-      action="{{ url_for('room_utilization_report') }}"
+      action="{{ url_for('reports.room_utilization_report') }}"
       class="row g-3 align-items-end"
     >
       <div class="col-md-4">
@@ -569,7 +569,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         <a href="{{ url_for('calendar') }}" class="btn btn-primary me-2">
           <i class="fas fa-calendar-plus me-1"></i>View Booking Calendar
         </a>
-        <a href="{{ url_for('rooms') }}" class="btn btn-outline-primary">
+        <a href="{{ url_for('rooms.rooms') }}" class="btn btn-outline-primary">
           <i class="fas fa-cog me-1"></i>Manage Rooms
         </a>
       </div>

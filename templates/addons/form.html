@@ -320,7 +320,7 @@ block extra_css %}
         ></button>
       </div>
       <form
-        action="{{ url_for('new_addon_category') }}"
+        action="{{ url_for('addons.new_addon_category') }}"
         method="POST"
         id="newCategoryForm"
       >
@@ -376,7 +376,7 @@ block extra_css %}
 
         const formData = new FormData(newCategoryForm);
 
-        fetch('{{ url_for("new_addon_category") }}', {
+        fetch('{{ url_for("addons.new_addon_category") }}', {
           method: "POST",
           body: formData,
           headers: {

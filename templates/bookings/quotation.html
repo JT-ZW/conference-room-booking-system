@@ -1,989 +1,508 @@
-{% extends "layout.html" %} {% block title %}Quotation #{{ quotation_number }} |
-Rainbow Towers Conference Booking{% endblock %} {% block extra_css %}
+{% extends "layout.html" %} {% block title %}Proforma Invoice - {{ booking.title
+or 'Booking' }} | Rainbow Towers{% endblock %} {% block extra_css %}
 <style>
   @media print {
     .no-print {
       display: none !important;
     }
     body {
-      background-color: white !important;
+      margin: 0;
+      padding: 0;
+      background: white !important;
     }
     .container {
       max-width: 100% !important;
-      width: 100% !important;
-    }
-    .card {
-      border: none !important;
-      box-shadow: none !important;
-    }
-    .card-body {
+      margin: 0 !important;
       padding: 0 !important;
     }
-    .page-break {
-      page-break-after: always;
+    .quotation-container {
+      box-shadow: none !important;
+    }
+    .action-buttons {
+      display: none !important;
     }
   }
 
-  .quotation-header {
-    border-bottom: 3px solid #4e73df;
-    padding-bottom: 25px;
-    margin-bottom: 35px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
-    padding: 2rem;
-    border-radius: 10px 10px 0 0;
-    margin: -1.5rem -1.5rem 35px -1.5rem;
+  body {
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+    background-color: #f5f5f5;
   }
 
-  .logo-container {
-    text-align: right;
-  }
-
-  .logo-container img {
-    max-height: 80px;
-    filter: brightness(0) invert(1);
-  }
-
-  .quotation-title {
-    font-size: 32px;
-    font-weight: bold;
-    margin-bottom: 8px;
-  }
-
-  .quotation-subtitle {
-    font-size: 18px;
-    opacity: 0.9;
-  }
-
-  .client-details,
-  .booking-details {
-    margin-bottom: 35px;
-  }
-
-  .detail-card {
-    background: #f8f9fc;
-    border-left: 4px solid #4e73df;
-    padding: 20px;
-    border-radius: 5px;
-    margin-bottom: 20px;
-  }
-
-  .table-items {
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-  }
-
-  .table-items th {
-    background: linear-gradient(135deg, #4e73df 0%, #3c5aa6 100%);
-    color: white;
-    border: none;
-    font-weight: 600;
-    padding: 15px;
-  }
-
-  .table-items td {
-    padding: 12px 15px;
-    border-bottom: 1px solid #e3e6f0;
-  }
-
-  .total-row {
-    background-color: #f8f9fc;
-    border-top: 2px solid #4e73df;
-    font-weight: bold;
-  }
-
-  .grand-total-row {
-    background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
-    color: white;
-    font-weight: bold;
-    font-size: 1.1em;
-  }
-
-  .terms-info {
-    background: linear-gradient(135deg, #f6c23e 0%, #d4a843 100%);
-    color: white;
-    border: none;
-    border-radius: 10px;
-    padding: 25px;
-    margin-top: 35px;
-  }
-
-  .validity-alert {
-    background: linear-gradient(135deg, #e74a3b 0%, #c23321 100%);
-    color: white;
-    border: none;
-    padding: 15px;
-    border-radius: 8px;
-    margin-bottom: 25px;
-    animation: pulse 2s infinite;
-  }
-
-  @keyframes pulse {
-    0% {
-      transform: scale(1);
-    }
-    50% {
-      transform: scale(1.02);
-    }
-    100% {
-      transform: scale(1);
-    }
-  }
-
-  .status-badge {
-    font-size: 16px;
-    padding: 8px 20px;
-    border-radius: 20px;
-    font-weight: bold;
-  }
-
-  .qr-code {
-    text-align: center;
-    margin: 30px 0;
-    padding: 20px;
-    background: #f8f9fc;
-    border-radius: 10px;
-  }
-
-  .qr-code img {
-    max-width: 120px;
-    border: 3px solid #4e73df;
-    border-radius: 10px;
-    padding: 10px;
+  .quotation-container {
     background: white;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   }
 
-  .quotation-footer {
-    margin-top: 50px;
-    padding-top: 30px;
-    border-top: 2px solid #e3e6f0;
+  .header {
     text-align: center;
-    color: #5a5c69;
-  }
-
-  .action-buttons {
-    background: linear-gradient(135deg, #858796 0%, #60616f 100%);
-    color: white;
     padding: 20px;
-    border-radius: 10px;
-    margin-bottom: 20px;
+    border-bottom: 3px solid #d4a843;
   }
 
-  .btn-enhanced {
-    border-radius: 25px;
-    padding: 10px 20px;
-    font-weight: 600;
-    transition: all 0.3s ease;
+  .logo {
+    max-height: 100px;
+    margin-bottom: 10px;
   }
 
-  .btn-enhanced:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  .hotel-info {
+    font-size: 11px;
+    color: #666;
+    margin-top: 10px;
   }
 
-  .amenities-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 10px;
-    margin: 15px 0;
-  }
-
-  .amenity-item {
-    background: #e3f2fd;
-    color: #1976d2;
-    padding: 8px 12px;
-    border-radius: 15px;
-    font-size: 0.9em;
+  .invoice-title {
+    background: linear-gradient(135deg, #d4a843 0%, #b8922a 100%);
+    color: white;
     text-align: center;
+    padding: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0;
   }
 
-  .error-notice {
-    background: #fff3cd;
-    border: 1px solid #ffeaa7;
-    color: #856404;
-    padding: 15px;
-    border-radius: 8px;
+  .date-section {
+    text-align: right;
+    padding: 15px 20px;
+    font-weight: bold;
+  }
+
+  .client-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    padding: 20px;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .client-column h4 {
+    color: #d4a843;
+    margin: 0 0 10px 0;
+    font-size: 12px;
+    font-weight: bold;
+  }
+
+  .client-details {
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  .event-section {
+    padding: 20px;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .event-title {
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 15px;
+    color: #333;
+  }
+
+  .services-table {
+    width: 100%;
+    border-collapse: collapse;
     margin: 20px 0;
   }
 
-  .success-highlight {
-    background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
-    border-left: 4px solid #28a745;
-    padding: 15px;
+  .services-table th {
+    background: linear-gradient(135deg, #d4a843 0%, #b8922a 100%);
+    color: white;
+    padding: 12px 8px;
+    text-align: center;
+    font-weight: bold;
+    border: 1px solid #b8922a;
+    font-size: 11px;
+  }
+
+  .services-table td {
+    padding: 10px 8px;
+    border: 1px solid #ddd;
+    text-align: center;
+    font-size: 11px;
+  }
+
+  .services-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+
+  .total-row {
+    background: linear-gradient(135deg, #d4a843 0%, #b8922a 100%);
+    color: white;
+    font-weight: bold;
+  }
+
+  .terms-section {
+    padding: 20px;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .terms-section h4 {
+    color: #d4a843;
+    margin: 15px 0 8px 0;
+    font-size: 12px;
+  }
+
+  .terms-section ol {
+    margin: 0;
+    padding-left: 18px;
+  }
+
+  .terms-section li {
+    margin-bottom: 5px;
+  }
+
+  .signature-section {
+    margin-top: 30px;
+    padding: 20px;
+    border-top: 1px solid #ddd;
+  }
+
+  .signature-line {
+    display: inline-block;
+    border-bottom: 1px solid #333;
+    width: 250px;
+    margin: 0 10px;
+  }
+
+  .action-buttons {
+    background: #f8f9fa;
+    padding: 20px;
+    text-align: center;
+    border-bottom: 3px solid #d4a843;
+  }
+
+  .btn {
+    background: #d4a843;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin: 0 5px;
     border-radius: 5px;
-    margin: 15px 0;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.3s;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .btn:hover {
+    background: #b8922a;
+    color: white;
+    text-decoration: none;
+  }
+
+  .btn-secondary {
+    background: #6c757d;
+  }
+
+  .btn-secondary:hover {
+    background: #545b62;
+  }
+
+  @media print {
+    body {
+      background: white;
+    }
+    .container {
+      width: 100%;
+      max-width: none;
+    }
+    .card {
+      border: 1px solid #ddd;
+    }
+    .card-header {
+      background-color: #f8f9fa !important;
+    }
   }
 </style>
 {% endblock %} {% block content %}
-<!-- Enhanced Action Buttons (Not Printed) -->
+<!-- Action Buttons (Not Printed) -->
 <div class="action-buttons no-print">
-  <div class="d-flex justify-content-between align-items-center">
-    <div>
-      <h2 class="mb-1">
-        <i class="fas fa-file-alt me-2"></i>Quotation Generator
-      </h2>
-      <p class="mb-0 opacity-75">
-        Professional quotation for conference room booking
-      </p>
+  <a
+    href="{{ url_for('bookings.view_booking', id=booking.id) }}"
+    class="btn btn-secondary"
+  >
+    ← Back to Booking
+  </a>
+  <button class="btn" onclick="window.print()">🖨️ Print Invoice</button>
+  <button class="btn" onclick="downloadPDF()">📄 Download PDF</button>
+  <button class="btn" onclick="sendEmail()">📧 Send to Client</button>
+</div>
+
+<div class="quotation-container" id="quotation-content">
+  <!-- Header with Logo -->
+  <div class="header">
+    <img
+      src="{{ url_for('static', filename='img/rainbow-towers-logo.png') }}"
+      alt="Rainbow Towers Logo"
+      class="logo"
+    />
+    <div class="hotel-info">
+      HARARE'S LEISURE HOTEL & CONFERENCE CENTRE<br />
+      1 Pennefather Avenue, P.O. Box 3033, Causeway, Harare, Zimbabwe<br />
+      Tel: +263 242 772633 - 9<br />
+      Email: reservations@rtg.co.zw<br />
+      Website: www.rtgafrica.com
     </div>
-    <div class="btn-group">
-      <a
-        href="{{ url_for('view_booking', id=booking.id) }}"
-        class="btn btn-light btn-enhanced"
+  </div>
+
+  <!-- Invoice Title -->
+  <div class="invoice-title">PROFORMA INVOICE</div>
+
+  <!-- Date -->
+  <div class="date-section">DATE: {{ current_date.strftime('%d %B %Y') }}</div>
+
+  <!-- Client Information -->
+  <div class="client-info">
+    <div class="client-column">
+      <h4>CONTACT PERSON</h4>
+      <div class="client-details">
+        {% if booking.client %}
+        <strong>Contact Person:</strong> {{ booking.client.contact_person or
+        booking.client_name or 'Not specified' }}<br />
+        <strong>Company:</strong> {{ booking.client.company_name or
+        booking.company_name or 'Individual Client' }}<br />
+        <strong>Phone:</strong> {{ booking.client.phone or 'Not provided' }}<br />
+        <strong>Address:</strong> {{ booking.client.address or 'Not provided'
+        }}<br />
+        <strong>Email:</strong> {{ booking.client.email or booking.client_email
+        or 'Not provided' }}<br />
+        <strong>Mobile:</strong> {{ booking.client.phone or 'Not provided' }} {%
+        else %} <strong>Contact Person:</strong> {{ booking.client_name or 'Not
+        specified' }}<br />
+        <strong>Company:</strong> {{ booking.company_name or 'Individual Client'
+        }}<br />
+        <strong>Phone:</strong> Not provided<br />
+        <strong>Address:</strong> Not provided<br />
+        <strong>Email:</strong> {{ booking.client_email or 'Not provided' }}<br />
+        <strong>Mobile:</strong> Not provided {% endif %}
+      </div>
+    </div>
+    <div class="client-column">
+      <h4>VAT REG NUMBER</h4>
+      <div class="client-details">10001189</div>
+      <h4 style="margin-top: 20px">BANK DETAILS</h4>
+      <div class="client-details">
+        <strong>Account Name:</strong> The Rainbow Towers<br />
+        <strong>Bank Name:</strong> Stanbic<br />
+        <strong>Branch:</strong> Nelson Mandela<br />
+        <strong>Acc Number:</strong> 9140000892512<br />
+        <strong>Nostro FCA</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hotel Contact -->
+  <div class="client-info" style="border-bottom: 2px solid #d4a843">
+    <div class="client-column">
+      <h4>CONTACT PERSON</h4>
+      <div class="client-details">
+        <strong>Contact Person:</strong> Tandiwe<br />
+        <strong>Address:</strong> 1 Pennefather Ave, Harare<br />
+        <strong>Phone:</strong> 0242 772633<br />
+        <strong>Mobile:</strong> 782705301<br />
+        <strong>Website:</strong> www.rtgafrica.com<br />
+        <strong>Facebook:</strong> rtgreservations<br />
+        <strong>Skype:</strong> reservations
+      </div>
+    </div>
+    <div class="client-column">
+      <!-- Empty column for spacing -->
+    </div>
+  </div>
+
+  <!-- Event Details -->
+  <div class="event-section">
+    <div class="event-title">{{ booking.title or 'Event Booking' }}</div>
+    <div style="margin-top: 10px; font-weight: bold">
+      THE RAINBOW TOWERS HOTEL
+    </div>
+  </div>
+
+  <!-- Services Table -->
+  <table class="services-table">
+    <thead>
+      <tr>
+        <th style="width: 40%">REQUESTED SERVICE</th>
+        <th style="width: 12%">NO. OF PAX</th>
+        <th style="width: 12%">NO. OF ROOMS</th>
+        <th style="width: 16%">UNIT PRICE/PER PERSON</th>
+        <th style="width: 12%">NO. OF DAYS</th>
+        <th style="width: 18%">TOTAL AMOUNT US$</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set total_amount = 0 %}
+
+      <!-- Use custom addons if available -->
+      {% if booking.custom_addons %} {% for addon in booking.custom_addons %}
+      <tr>
+        <td style="text-align: left">
+          {{ addon.description or 'Service Item' }}
+        </td>
+        <td>{{ booking.attendees or '-' }}</td>
+        <td>{{ addon.quantity or 1 }}</td>
+        <td>{{ "%.2f"|format(addon.unit_price or 0) }}</td>
+        <td>1</td>
+        <td>{{ "%.2f"|format(addon.total_price or 0) }}</td>
+      </tr>
+      {% set total_amount = total_amount + (addon.total_price or 0) %} {% endfor
+      %} {% else %}
+      <!-- Fallback: Use room rental as main service -->
+      {% set room_name = booking.room.name if booking.room else 'Conference
+      Room' %} {% set room_rate = booking.total_price or totals.total or 0 %}
+      <tr>
+        <td style="text-align: left">
+          {{ room_name }} - Conference Room Rental
+        </td>
+        <td>{{ booking.attendees or '-' }}</td>
+        <td>1</td>
+        <td>{{ "%.2f"|format(room_rate) }}</td>
+        <td>1</td>
+        <td>{{ "%.2f"|format(room_rate) }}</td>
+      </tr>
+      {% set total_amount = room_rate %} {% endif %}
+    </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td colspan="5" style="text-align: right; font-weight: bold">
+          TOTAL US$
+        </td>
+        <td style="font-weight: bold">{{ "%.2f"|format(total_amount) }}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <!-- Terms and Conditions -->
+  <div class="terms-section">
+    <h4>TERMS AND CONDITIONS</h4>
+    <ol>
+      <li>
+        The hotel will provide all required equipment for the conference at a
+        cost.
+      </li>
+      <li>
+        The hotel shall not allow clients to bring own equipment as this is a
+        service provided by the hotel. Equipment shall include but not limited
+        to PA systems, screens, translation equipment.
+      </li>
+      <li>
+        All Equipment needs to be communicated at the point of making a
+        reservation.
+      </li>
+      <li>
+        100% of the total amount quoted is required within 48 hours of making an
+        enquiry to guarantee your booking.
+      </li>
+      <li>Full payment is required for confirmation of the booking.</li>
+      <li>Rates are subject to change without notice.</li>
+    </ol>
+
+    <h4>AIRPORT TRANSFERS AND ACTIVITIES</h4>
+    <p>
+      The hotel through its subsidiary Heritage Expeditions Africa (HExA)
+      provides the following ground handling services:
+    </p>
+    <ul style="margin: 5px 0; padding-left: 18px">
+      <li>Shuttle Services</li>
+      <li>City Tours</li>
+      <li>Day Trips</li>
+      <li>Various Activities</li>
+    </ul>
+
+    <h4>CANCELLATION POLICY</h4>
+    <p>
+      Accommodation and conference rooms booked are subject to the following
+      policy:
+    </p>
+    <ul style="margin: 5px 0; padding-left: 18px">
+      <li>15 - 29 Days: 50% refund is made</li>
+      <li>8 - 14 Days: 25% refund is made</li>
+      <li>0 - 7 Days: No refund</li>
+    </ul>
+
+    <h4>PAYMENT</h4>
+    <p>
+      We require confirmation of payment 2 weeks before arrival to secure your
+      booking. Payment can be a purchase order, cash or bank transfer.
+    </p>
+    <p>
+      Please note that we hold the right to cancel your reservation if we have
+      not received your full payment, an order or letter of commitment to pay.
+    </p>
+    <p>
+      This quotation does not constitute an undertaking by RTG to provide the
+      requested services. It will only remain a quotation and may only
+      constitute an undertaking to provide services after both payment has been
+      made and the booking confirmed.
+    </p>
+
+    <h4>INCREASE IN NUMBERS OR ADDITIONAL SERVICES</h4>
+    <ul style="margin: 5px 0; padding-left: 18px">
+      <li>Day conferences – numbers to be communicated by 0900hrs</li>
+      <li>Lunch Bookings – numbers to be communicated by 0900hrs</li>
+      <li>Dinner/Cocktail bookings – numbers to be communicated by 1200hrs</li>
+    </ul>
+    <p>
+      Please note that if there is no communication regarding the reduction of
+      numbers, the hotel will charge as per original booking numbers.
+    </p>
+    <p>
+      In the event of an increase in numbers for either conferencing or
+      accommodation bookings, the hotel will charge accordingly and your
+      organisation will be required to provide order, commitment letter or
+      payment within 24 hours.
+    </p>
+
+    <h4>NO SHOWS</h4>
+    <p>
+      Guests with a valid room reservation who do not arrive on the day of the
+      reservation will be considered no-shows and the applicable room rate equal
+      to one night stay will be charged.
+    </p>
+  </div>
+
+  <!-- Signature Section -->
+  <div class="signature-section">
+    <p>
+      <strong
+        >If in agreement, please sign and return copy to certify
+        confirmation</strong
       >
-        <i class="fas fa-arrow-left me-2"></i>Back to Booking
-      </a>
-      <button
-        type="button"
-        class="btn btn-light btn-enhanced"
-        onclick="window.print()"
-      >
-        <i class="fas fa-print me-2"></i>Print Quotation
-      </button>
-      <button
-        type="button"
-        class="btn btn-success btn-enhanced"
-        data-bs-toggle="modal"
-        data-bs-target="#sendQuotationModal"
-      >
-        <i class="fas fa-envelope me-2"></i>Send to Client
-      </button>
-      <button
-        type="button"
-        class="btn btn-primary btn-enhanced"
-        id="downloadPdf"
-      >
-        <i class="fas fa-download me-2"></i>Download PDF
-      </button>
+    </p>
+    <div style="margin-top: 30px">
+      <span>Name </span><span class="signature-line"></span>
+      <span> Signature </span><span class="signature-line"></span>
+      <span> Date </span><span class="signature-line"></span>
     </div>
   </div>
 </div>
 
-<!-- Quotation Card -->
-<div class="card shadow-lg border-0">
-  <div class="card-body p-4" id="quotation-content">
-    <!-- Enhanced Quotation Header -->
-    <div class="quotation-header">
-      <div class="row align-items-center">
-        <div class="col-md-8">
-          <div class="quotation-title">QUOTATION</div>
-          <div class="quotation-subtitle">
-            Rainbow Towers Hotel & Conference Centre
-          </div>
-          <div class="mt-3">
-            <span class="badge bg-light text-primary"
-              >{{ quotation_number }}</span
-            >
-            <span class="badge bg-light text-primary ms-2"
-              >Valid until {{ valid_until.strftime('%d %B %Y') }}</span
-            >
-          </div>
-        </div>
-        <div class="col-md-4 logo-container">
-          <img
-            src="/static/img/rainbow-towers-logo.png"
-            alt="Rainbow Towers Logo"
-          />
-        </div>
-      </div>
-    </div>
-
-    <!-- Error Handling Notice -->
-    {% if not booking.room or not booking.client %}
-    <div class="error-notice">
-      <i class="fas fa-exclamation-triangle me-2"></i>
-      <strong>Notice:</strong> Some booking details may be incomplete. Please
-      verify all information before sending to client. {% if not booking.room %}
-      <br />• Room information missing or incomplete {% endif %} {% if not
-      booking.client %} <br />• Client information missing or incomplete {%
-      endif %}
-    </div>
-    {% endif %}
-
-    <!-- Validity Alert -->
-    <div class="validity-alert">
-      <div class="d-flex align-items-center">
-        <div class="me-3">
-          <i class="fas fa-clock fa-2x"></i>
-        </div>
-        <div>
-          <strong>Quotation Validity Period</strong><br />
-          This quotation expires on {{ valid_until.strftime('%d %B %Y') }}
-          <small class="d-block mt-1">
-            ({{ (valid_until - now).days }} days from today)
-          </small>
-        </div>
-      </div>
-    </div>
-
-    <!-- Client & Quotation Information -->
-    <div class="row">
-      <div class="col-md-6">
-        <div class="detail-card">
-          <h5 class="text-primary mb-3">
-            <i class="fas fa-user me-2"></i>Client Information
-          </h5>
-          {% if booking.client %}
-          <div class="mb-2">
-            <strong
-              >{{ booking.client.company_name or 'Individual Client' }}</strong
-            >
-          </div>
-          <div class="mb-2">
-            <i class="fas fa-user me-1"></i>{{ booking.client.contact_person or
-            'Contact Person Not Specified' }}
-          </div>
-          <div class="mb-2">
-            <i class="fas fa-envelope me-1"></i>{{ booking.client.email or
-            'Email Not Provided' }}
-          </div>
-          {% if booking.client.phone %}
-          <div class="mb-2">
-            <i class="fas fa-phone me-1"></i>{{ booking.client.phone }}
-          </div>
-          {% endif %} {% if booking.client.address %}
-          <div class="mb-0">
-            <i class="fas fa-map-marker-alt me-1"></i>{{
-            booking.client.address|replace('\n', '<br />')|safe }}
-          </div>
-          {% endif %} {% else %}
-          <div class="text-muted">
-            <i class="fas fa-exclamation-triangle me-2"></i>Client information
-            not available
-          </div>
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="col-md-6">
-        <div class="detail-card">
-          <h5 class="text-primary mb-3">
-            <i class="fas fa-file-alt me-2"></i>Quotation Details
-          </h5>
-          <div class="row">
-            <div class="col-6"><strong>Number:</strong></div>
-            <div class="col-6">{{ quotation_number }}</div>
-          </div>
-          <div class="row">
-            <div class="col-6"><strong>Booking Ref:</strong></div>
-            <div class="col-6">BK-{{ booking.id }}</div>
-          </div>
-          <div class="row">
-            <div class="col-6"><strong>Quote Date:</strong></div>
-            <div class="col-6">{{ now.strftime('%d %B %Y') }}</div>
-          </div>
-          <div class="row">
-            <div class="col-6"><strong>Event Date:</strong></div>
-            <div class="col-6">
-              {% if booking.start_time %} {{ booking.start_time.strftime('%d %B
-              %Y') if booking.start_time and not booking.start_time is string
-              else booking.start_time[:10] if booking.start_time else 'TBD' }}
-              {% else %} To Be Determined {% endif %}
-            </div>
-          </div>
-          <div class="row">
-            <div class="col-6"><strong>Valid Until:</strong></div>
-            <div class="col-6">{{ valid_until.strftime('%d %B %Y') }}</div>
-          </div>
-          <div class="row mt-2">
-            <div class="col-12">
-              <span class="status-badge bg-warning text-white">
-                <i class="fas fa-file-alt me-1"></i>QUOTATION
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Enhanced Event Details -->
-    <div class="success-highlight">
-      <h5 class="text-success mb-3">
-        <i class="fas fa-calendar-check me-2"></i>Proposed Event Information
-      </h5>
-      <div class="row">
-        <div class="col-md-6">
-          <div class="mb-2">
-            <strong>Event Title:</strong> {{ booking.title or 'Event Title Not
-            Specified' }}
-          </div>
-          <div class="mb-2">
-            <strong>Conference Room:</strong>
-            {% if booking.room %} {{ booking.room.name }} {% else %}
-            <span class="text-muted">Room details not available</span>
-            {% endif %}
-          </div>
-          <div class="mb-2">
-            <strong>Room Capacity:</strong>
-            {% if booking.room and booking.room.capacity %} {{
-            booking.room.capacity }} people {% else %}
-            <span class="text-muted">Capacity information not available</span>
-            {% endif %}
-          </div>
-          <div class="mb-0">
-            <strong>Expected Attendees:</strong> {{ booking.attendees or 'To be
-            confirmed' }}
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="mb-2">
-            <strong>Proposed Date:</strong>
-            {% if booking.start_time %} {{ booking.start_time.strftime('%d %B
-            %Y') if booking.start_time and not booking.start_time is string else
-            booking.start_time[:10] if booking.start_time else 'TBD' }} {% else
-            %} To Be Determined {% endif %}
-          </div>
-          <div class="mb-2">
-            <strong>Start Time:</strong>
-            {% if booking.start_time %} {{ booking.start_time.strftime('%H:%M')
-            if booking.start_time and not booking.start_time is string else
-            booking.start_time[11:16] if booking.start_time else 'TBD' }} {%
-            else %} To Be Determined {% endif %}
-          </div>
-          <div class="mb-2">
-            <strong>End Time:</strong>
-            {% if booking.end_time %} {{ booking.end_time.strftime('%H:%M') if
-            booking.end_time and not booking.end_time is string else
-            booking.end_time[11:16] if booking.end_time else 'TBD' }} {% else %}
-            To Be Determined {% endif %}
-          </div>
-          <div class="mb-0">
-            <strong>Duration:</strong> {{ booking.rate_type or 'Duration to be
-            confirmed' }}
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Room Amenities (Enhanced) -->
-    {% if booking.room and booking.room.amenities %}
-    <div class="mb-4">
-      <h5 class="text-primary mb-3">
-        <i class="fas fa-star me-2"></i>Room Amenities & Features
-      </h5>
-      <div class="amenities-grid">
-        {% if booking.room.amenities is string %} {% for amenity in
-        booking.room.amenities.split(',') %}
-        <div class="amenity-item">
-          <i class="fas fa-check me-1"></i>{{ amenity.strip() }}
-        </div>
-        {% endfor %} {% elif booking.room.amenities is iterable %} {% for
-        amenity in booking.room.amenities %}
-        <div class="amenity-item">
-          <i class="fas fa-check me-1"></i>{{ amenity }}
-        </div>
-        {% endfor %} {% endif %}
-      </div>
-    </div>
-    {% endif %}
-
-    <!-- Enhanced Quotation Breakdown -->
-    <h5 class="text-primary mb-3">
-      <i class="fas fa-calculator me-2"></i>Detailed Price Breakdown
-    </h5>
-    <div class="table-responsive mb-4">
-      <table class="table table-items">
-        <thead>
-          <tr>
-            <th class="text-start">Description</th>
-            <th class="text-center">Quantity</th>
-            <th class="text-end">Unit Price</th>
-            <th class="text-end">Total Amount</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Room Charge -->
-          <tr>
-            <td>
-              <div class="fw-bold">
-                {% if booking.room %} {{ booking.room.name }} - Conference Room
-                Rental {% else %} Conference Room Rental {% endif %}
-              </div>
-              <small class="text-muted"
-                >{{ booking.rate_type or 'Rate calculation pending' }}</small
-              >
-            </td>
-            <td class="text-center">1</td>
-            <td class="text-end">
-              ${{ "%.2f"|format(booking.room_rate or 0) }}
-            </td>
-            <td class="text-end fw-bold">
-              ${{ "%.2f"|format(booking.room_rate or 0) }}
-            </td>
-          </tr>
-
-          <!-- Add-ons with enhanced display -->
-          {% if booking.addon_items %} {% for addon_item in booking.addon_items
-          %}
-          <tr>
-            <td>
-              <div class="fw-bold">
-                {{ addon_item.name or 'Additional Service' }}
-              </div>
-              <small class="text-muted"
-                >{{ addon_item.category or 'Additional Services' }}</small
-              >
-            </td>
-            <td class="text-center">{{ addon_item.quantity or 1 }}</td>
-            <td class="text-end">
-              ${{ "%.2f"|format(addon_item.price or 0) }}
-            </td>
-            <td class="text-end fw-bold">
-              ${{ "%.2f"|format(addon_item.total or 0) }}
-            </td>
-          </tr>
-          {% endfor %} {% elif booking.addons_total and booking.addons_total > 0
-          %}
-          <tr>
-            <td>
-              <div class="fw-bold">Additional Services</div>
-              <small class="text-muted">Various add-on services</small>
-            </td>
-            <td class="text-center">1</td>
-            <td class="text-end">${{ "%.2f"|format(booking.addons_total) }}</td>
-            <td class="text-end fw-bold">
-              ${{ "%.2f"|format(booking.addons_total) }}
-            </td>
-          </tr>
-          {% endif %}
-
-          <!-- Discount with enhanced display -->
-          {% if booking.discount and booking.discount > 0 %}
-          <tr class="table-warning">
-            <td>
-              <div class="fw-bold text-success">Special Discount</div>
-              <small class="text-muted"
-                >Promotional rate for valued client</small
-              >
-            </td>
-            <td class="text-center">1</td>
-            <td class="text-end text-success">
-              -${{ "%.2f"|format(booking.discount) }}
-            </td>
-            <td class="text-end fw-bold text-success">
-              -${{ "%.2f"|format(booking.discount) }}
-            </td>
-          </tr>
-          {% endif %}
-
-          <!-- Totals Section -->
-          <tr class="total-row">
-            <td colspan="3" class="text-end fw-bold">Subtotal (Before Tax)</td>
-            <td class="text-end fw-bold">
-              ${{ "%.2f"|format(booking.subtotal or 0) }}
-            </td>
-          </tr>
-          <tr class="total-row">
-            <td colspan="3" class="text-end fw-bold">VAT (15%)</td>
-            <td class="text-end fw-bold">
-              ${{ "%.2f"|format(booking.vat_amount or 0) }}
-            </td>
-          </tr>
-          <tr class="grand-total-row">
-            <td colspan="3" class="text-end fw-bold fs-5">
-              <i class="fas fa-dollar-sign me-2"></i>TOTAL QUOTED PRICE
-            </td>
-            <td class="text-end fw-bold fs-4">
-              ${{ "%.2f"|format(booking.total_with_vat or booking.total_price or
-              0) }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Enhanced Terms and Conditions -->
-    <div class="terms-info">
-      <h5 class="mb-4">
-        <i class="fas fa-file-contract me-2"></i>Terms & Conditions
-      </h5>
-      <div class="row">
-        <div class="col-md-6">
-          <div class="mb-3">
-            <strong
-              ><i class="fas fa-calendar-check me-2"></i>Quotation
-              Validity:</strong
-            ><br />
-            {{ (valid_until - now).days }} days from quotation date
-          </div>
-          <div class="mb-3">
-            <strong
-              ><i class="fas fa-credit-card me-2"></i>Payment Terms:</strong
-            ><br />
-            50% deposit required to confirm booking
-          </div>
-          <div class="mb-3">
-            <strong><i class="fas fa-ban me-2"></i>Cancellation Policy:</strong
-            ><br />
-            48 hours notice required for cancellations
-          </div>
-          <div class="mb-0">
-            <strong><i class="fas fa-tools me-2"></i>Setup Time:</strong><br />
-            30 minutes before event start time
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="mb-3">
-            <strong
-              ><i class="fas fa-check-circle me-2"></i>Price Includes:</strong
-            ><br />
-            Basic room setup, tables, chairs & standard AV
-          </div>
-          <div class="mb-3">
-            <strong
-              ><i class="fas fa-plus-circle me-2"></i>Additional
-              Charges:</strong
-            ><br />
-            Extra equipment rental if required
-          </div>
-          <div class="mb-3">
-            <strong
-              ><i class="fas fa-shield-alt me-2"></i>Security Deposit:</strong
-            ><br />
-            May be required for certain events
-          </div>
-          <div class="mb-0">
-            <strong
-              ><i class="fas fa-clipboard-check me-2"></i>Final
-              Confirmation:</strong
-            ><br />
-            Required 7 days before event date
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Enhanced Payment Information -->
-    <div
-      class="terms-info mt-4"
-      style="background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%)"
-    >
-      <h5 class="mb-4">
-        <i class="fas fa-university me-2"></i>Payment Information
-      </h5>
-      <div class="row">
-        <div class="col-md-6">
-          <div class="mb-2"><strong>Bank:</strong> ZWB Bank</div>
-          <div class="mb-2">
-            <strong>Account Name:</strong> Rainbow Towers Hotel Ltd
-          </div>
-          <div class="mb-2">
-            <strong>Account Number:</strong> 1234-5678-9012-3456
-          </div>
-          <div class="mb-2">
-            <strong>Payment Reference:</strong> {{ quotation_number }}
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="mb-2">
-            <strong>Deposit Amount (50%):</strong>
-            ${{ "%.2f"|format((booking.total_with_vat or booking.total_price or
-            0) * 0.5) }}
-          </div>
-          <div class="mb-2">
-            <strong>Balance (Due on Event Day):</strong>
-            ${{ "%.2f"|format((booking.total_with_vat or booking.total_price or
-            0) * 0.5) }}
-          </div>
-          <div class="mb-2"><strong>Contact:</strong> +263-242-772633</div>
-          <div class="mb-0">
-            <strong>Email:</strong> bookings@rainbowtowers.co.zw
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- QR Code with enhanced styling -->
-    <div class="qr-code">
-      <img
-        src="https://api.qrserver.com/v1/create-qr-code/?size=120x120&data={{ quotation_number }}"
-        alt="Quotation QR Code"
-      />
-      <div class="fw-bold mt-3 text-primary">Scan to verify quotation</div>
-      <small class="text-muted">{{ quotation_number }}</small>
-    </div>
-
-    <!-- Enhanced Additional Notes -->
-    {% if booking.notes %}
-    <div class="detail-card">
-      <h5 class="text-primary mb-3">
-        <i class="fas fa-sticky-note me-2"></i>Additional Notes
-      </h5>
-      <p class="mb-0">{{ booking.notes|replace('\n', '<br />')|safe }}</p>
-    </div>
-    {% endif %}
-
-    <!-- Enhanced Next Steps -->
-    <div class="success-highlight">
-      <h5 class="text-success mb-3">
-        <i class="fas fa-list-ol me-2"></i>Next Steps to Confirm Your Booking
-      </h5>
-      <div class="row">
-        <div class="col-md-6">
-          <ol class="mb-0">
-            <li class="mb-2">Review quotation details and pricing carefully</li>
-            <li class="mb-2">
-              Contact us with any questions or modifications needed
-            </li>
-            <li class="mb-2">Pay the deposit amount to secure your booking</li>
-          </ol>
-        </div>
-        <div class="col-md-6">
-          <ol start="4" class="mb-0">
-            <li class="mb-2">
-              Email payment confirmation to our bookings team
-            </li>
-            <li class="mb-2">Receive official booking confirmation</li>
-            <li class="mb-0">Prepare for your successful event!</li>
-          </ol>
-        </div>
-      </div>
-    </div>
-
-    <!-- Enhanced Footer -->
-    <div class="quotation-footer">
-      <div class="row">
-        <div class="col-md-6">
-          <h6 class="text-primary">
-            Thank you for considering Rainbow Towers!
-          </h6>
-          <p class="mb-1">
-            We look forward to hosting your event and making it memorable.
-          </p>
-        </div>
-        <div class="col-md-6">
-          <p class="mb-1">
-            <strong>Rainbow Towers Hotel & Conference Centre</strong>
-          </p>
-          <p class="mb-1">Harare, Zimbabwe | Tel: +263-242-772633</p>
-          <p class="mb-1">Email: bookings@rainbowtowers.co.zw</p>
-        </div>
-      </div>
-      <hr class="my-3" />
-      <p class="small text-muted mb-0">
-        This quotation was generated on {{ now.strftime('%d %B %Y at %H:%M') }}
-        | Document ID: {{ quotation_number }} | Booking Reference: BK-{{
-        booking.id }}
-      </p>
-    </div>
-  </div>
-</div>
-
-<!-- Enhanced Send Quotation Modal -->
-<div
-  class="modal fade"
-  id="sendQuotationModal"
-  tabindex="-1"
-  aria-labelledby="sendQuotationModalLabel"
-  aria-hidden="true"
->
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="modal-header bg-success text-white">
-        <h5 class="modal-title" id="sendQuotationModalLabel">
-          <i class="fas fa-envelope me-2"></i>Send Quotation to Client
-        </h5>
-        <button
-          type="button"
-          class="btn-close btn-close-white"
-          data-bs-dismiss="modal"
-          aria-label="Close"
-        ></button>
-      </div>
-      <div class="modal-body">
-        {% if booking.client and booking.client.email %}
-        <div class="alert alert-success">
-          <i class="fas fa-check-circle me-2"></i>Ready to send quotation
-        </div>
-        <p><strong>Send professional quotation to:</strong></p>
-        <div class="card bg-light">
-          <div class="card-body">
-            <h6 class="card-title">
-              {{ booking.client.contact_person or 'Client Contact' }}
-            </h6>
-            <p class="card-text">
-              <i class="fas fa-building me-1"></i>{{ booking.client.company_name
-              or 'Individual Client' }}<br />
-              <i class="fas fa-envelope me-1"></i>{{ booking.client.email }}
-            </p>
-          </div>
-        </div>
-        <div class="mt-3">
-          <small class="text-muted">
-            <i class="fas fa-info-circle me-1"></i>
-            The quotation will be sent as a professional PDF attachment with
-            your company branding.
-          </small>
-        </div>
-        {% else %}
-        <div class="alert alert-warning">
-          <i class="fas fa-exclamation-triangle me-2"></i>Client email not
-          available
-        </div>
-        <p>
-          Cannot send quotation because client email address is not available.
-          Please:
-        </p>
-        <ul>
-          <li>Update the client contact information</li>
-          <li>Manually download and send the PDF</li>
-        </ul>
-        {% endif %}
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          <i class="fas fa-times me-1"></i>Cancel
-        </button>
-        {% if booking.client and booking.client.email %}
-        <form
-          action="{{ url_for('send_quotation_email', id=booking.id) }}"
-          method="POST"
-          style="display: inline"
-        >
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <button type="submit" class="btn btn-success">
-            <i class="fas fa-paper-plane me-1"></i>Send Quotation
-          </button>
-        </form>
-        {% else %}
-        <button
-          type="button"
-          class="btn btn-primary"
-          onclick="document.getElementById('downloadPdf').click(); this.closest('.modal').querySelector('.btn-close').click();"
-        >
-          <i class="fas fa-download me-1"></i>Download Instead
-        </button>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-</div>
-
-{% endblock %} {% block extra_js %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // Enhanced PDF download with better options
-    document.getElementById("downloadPdf").addEventListener("click", function () {
-      const button = this;
-      const originalText = button.innerHTML;
+  function downloadPDF() {
+      // You can integrate with your existing PDF generation logic
+      window.print();
+  }
 
-      // Show loading state
-      button.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Generating PDF...';
-      button.disabled = true;
+  function sendEmail() {
+      // Integrate with your email sending functionality
+      {% if booking.client and booking.client.email %}
+          if (confirm('Send quotation to {{ booking.client.email }}?')) {
+              // Add your email sending logic here
+              alert('Email functionality to be implemented');
+          }
+      {% else %}
+          alert('No client email available. Please update client contact information.');
+      {% endif %}
+  }
 
-      // Configure enhanced options
-      const options = {
-        margin: [10, 10, 10, 10],
-        filename: "quotation-{{ quotation_number }}.pdf",
-        image: { type: "jpeg", quality: 0.98 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          letterRendering: true,
-          allowTaint: false
-        },
-        jsPDF: {
-          unit: "mm",
-          format: "a4",
-          orientation: "portrait",
-          putOnlyUsedFonts: true,
-          compress: true
-        },
-      };
-
-      // Get the element to print
-      const element = document.getElementById("quotation-content");
-
-      // Generate PDF with error handling
-      html2pdf()
-        .set(options)
-        .from(element)
-        .save()
-        .then(() => {
-          // Reset button state
-          button.innerHTML = originalText;
-          button.disabled = false;
-
-          // Show success notification
-          showNotification('PDF downloaded successfully!', 'success');
-        })
-        .catch((error) => {
-          console.error('PDF generation error:', error);
-          button.innerHTML = originalText;
-          button.disabled = false;
-
-          // Show error notification
-          showNotification('Error generating PDF. Please try again.', 'error');
-        });
-    });
-
-    // Enhanced notification system
-    function showNotification(message, type = 'info') {
-      const notification = document.createElement('div');
-      notification.className = `alert alert-${type === 'error' ? 'danger' : type} alert-dismissible fade show position-fixed`;
-      notification.style.cssText = 'top: 20px; right: 20px; z-index: 9999; max-width: 400px;';
-      notification.innerHTML = `
-        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} me-2"></i>
-        ${message}
-        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-      `;
-
-      document.body.appendChild(notification);
-
-      // Auto-remove after 5 seconds
-      setTimeout(() => {
-        if (notification.parentNode) {
-          notification.remove();
-        }
-      }, 5000);
-    }
-
-    // Print functionality with better styling
-    const originalPrint = window.print;
-    window.print = function() {
-      // Add print-specific styles
-      const printStyles = document.createElement('style');
-      printStyles.textContent = `
-        @media print {
-          .quotation-header { background: white !important; color: black !important; }
-          .terms-info { background: white !important; color: black !important; border: 1px solid #ccc !important; }
-          .validity-alert { background: white !important; color: black !important; border: 1px solid #ccc !important; }
-        }
-      `;
-      document.head.appendChild(printStyles);
-
-      // Call original print
-      originalPrint.call(window);
-
-      // Remove print styles after printing
-      setTimeout(() => {
-        if (printStyles.parentNode) {
-          printStyles.remove();
-        }
-      }, 1000);
-    };
-
-    // Track user interactions for analytics
-    document.querySelectorAll('button, a').forEach(element => {
-      element.addEventListener('click', function() {
-        console.log('User interaction:', this.textContent.trim() || this.title || 'Unknown action');
-      });
-    });
-
-    // Auto-save quotation data (optional)
-    const quotationData = {
-      number: '{{ quotation_number }}',
-      booking_id: {{ booking.id }},
-      total: {{ booking.total_with_vat or booking.total_price or 0 }},
-      generated_at: '{{ now.isoformat() }}'
-    };
-
-    // Store in localStorage for potential recovery
-    localStorage.setItem('last_quotation', JSON.stringify(quotationData));
-
-    console.log('Enhanced quotation page loaded for booking #{{ booking.id }}');
-  });
+  // Log activity when quotation is viewed
+  console.log('Quotation viewed for booking ID: {{ booking.id }}');
 </script>
 {% endblock %}

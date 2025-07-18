@@ -17,15 +17,15 @@ Booking{% endblock %} {% block extra_css %}
     border-color: #4e73df;
   }
 
-  .report-revenue {
+  .report-daily {
     border-color: #1cc88a;
   }
 
-  .report-clients {
+  .report-weekly {
     border-color: #36b9cc;
   }
 
-  .report-popular {
+  .report-monthly {
     border-color: #f6c23e;
   }
 
@@ -191,6 +191,19 @@ Booking{% endblock %} {% block extra_css %}
       transform: rotate(360deg);
     }
   }
+
+  .download-options {
+    background-color: #f8f9fa;
+    border-radius: 0.375rem;
+    padding: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .download-btn {
+    font-size: 0.875rem;
+    padding: 0.375rem 0.75rem;
+    margin: 0.125rem;
+  }
 </style>
 {% endblock %} {% block content %}
 <!-- Page Header -->
@@ -200,7 +213,8 @@ Booking{% endblock %} {% block extra_css %}
       <i class="fas fa-chart-bar me-3"></i>Reports & Analytics
     </h1>
     <p class="lead mb-0">
-      Comprehensive insights into your conference room booking performance
+      Comprehensive conference room booking reports and daily operations
+      summaries
     </p>
     <small class="text-light opacity-75 d-block mt-2">
       <i class="fas fa-clock me-1"></i>Last updated: {{ now.strftime('%d %B %Y
@@ -214,44 +228,44 @@ Booking{% endblock %} {% block extra_css %}
   <div class="container py-4">
     {% if stats %}
     <div class="row text-center" id="statsGrid">
-      <!-- Bookings This Month -->
+      <!-- Today's Bookings -->
       <div class="col-md-3 mb-3">
         <div
           class="stats-card rounded p-3 h-100"
-          onclick="showStatsDetails('bookings')"
+          onclick="showStatsDetails('today')"
         >
-          <i class="fas fa-calendar-check fa-2x mb-2"></i>
-          <div class="stat-value" id="bookingsValue">
+          <i class="fas fa-calendar-day fa-2x mb-2"></i>
+          <div class="stat-value" id="todayValue">
             {{ stats.current_month_bookings|default(0) }}
           </div>
-          <div class="stat-label">Bookings This Month</div>
+          <div class="stat-label">Today's Events</div>
           {% if stats.current_month_bookings and stats.current_month_bookings >
           0 %}
           <div class="stat-trend">
             <i class="fas fa-arrow-up text-success me-1"></i>
-            Active this month
+            Active today
           </div>
           {% else %}
-          <div class="stat-trend no-data-state">No bookings yet</div>
+          <div class="stat-trend no-data-state">No events today</div>
           {% endif %}
         </div>
       </div>
 
-      <!-- Revenue This Month -->
+      <!-- This Week's Revenue -->
       <div class="col-md-3 mb-3">
         <div
           class="stats-card rounded p-3 h-100"
-          onclick="showStatsDetails('revenue')"
+          onclick="showStatsDetails('week')"
         >
           <i class="fas fa-dollar-sign fa-2x mb-2"></i>
-          <div class="stat-value" id="revenueValue">
+          <div class="stat-value" id="weekValue">
             {% if stats.current_month_revenue %} {% if
             stats.current_month_revenue >= 1000 %} ${{
             "%.0f"|format(stats.current_month_revenue) }} {% else %} ${{
             "%.2f"|format(stats.current_month_revenue) }} {% endif %} {% else %}
             $0 {% endif %}
           </div>
-          <div class="stat-label">Revenue This Month</div>
+          <div class="stat-label">This Week's Revenue</div>
           {% if stats.avg_booking_value and stats.avg_booking_value > 0 %}
           <div class="stat-trend">
             Avg: ${{ "%.0f"|format(stats.avg_booking_value) }} per booking
@@ -297,7 +311,7 @@ Booking{% endblock %} {% block extra_css %}
           <div class="stat-value" id="utilizationValue">
             {{ stats.utilization_rate|default(0) }}%
           </div>
-          <div class="stat-label">Utilization Rate</div>
+          <div class="stat-label">Room Utilization</div>
           {% if stats.utilization_rate %} {% if stats.utilization_rate >= 70 %}
           <div class="stat-trend">
             <i class="fas fa-arrow-up text-success me-1"></i>
@@ -319,26 +333,7 @@ Booking{% endblock %} {% block extra_css %}
         </div>
       </div>
     </div>
-
-    <!-- Additional Stats Row -->
-    {% if stats.total_booked_hours or stats.most_popular_addon %}
-    <div class="row text-center mt-3">
-      <div class="col-md-6">
-        <div class="stats-card rounded p-2">
-          <small class="text-light opacity-75">Total Booked Hours</small>
-          <div class="h5 mb-0">{{ stats.total_booked_hours|default(0) }}h</div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="stats-card rounded p-2">
-          <small class="text-light opacity-75">Most Popular Add-on</small>
-          <div class="h6 mb-0">
-            {{ stats.most_popular_addon|default('No data') }}
-          </div>
-        </div>
-      </div>
-    </div>
-    {% endif %} {% else %}
+    {% else %}
     <!-- Loading State -->
     <div class="row text-center" id="loadingState">
       <div class="col-12">
@@ -399,16 +394,16 @@ stats.current_month_revenue == 0 and stats.active_rooms == 0) %}
         <i class="fas fa-bolt text-primary me-2"></i>Quick Actions
       </h5>
       <p class="text-muted mb-md-0">
-        Generate reports for specific date ranges or export data for further
-        analysis.
+        Generate reports for specific date ranges, download daily summaries, or
+        view operational analytics.
       </p>
     </div>
     <div class="col-md-4 text-md-end">
-      <button class="btn btn-primary me-2" onclick="showDateRangeModal()">
-        <i class="fas fa-calendar-alt me-1"></i>Custom Date Range
+      <button class="btn btn-primary me-2" onclick="generateTomorrowReport()">
+        <i class="fas fa-calendar-plus me-1"></i>Tomorrow's Report
       </button>
-      <button class="btn btn-outline-primary" onclick="window.print()">
-        <i class="fas fa-print me-1"></i>Print Reports
+      <button class="btn btn-outline-primary" onclick="showDateRangeModal()">
+        <i class="fas fa-calendar-alt me-1"></i>Custom Range
       </button>
     </div>
   </div>
@@ -433,26 +428,26 @@ stats.current_month_revenue == 0 and stats.active_rooms == 0) %}
         <p class="card-text mb-3">
           Analyze how efficiently your conference rooms are being utilized.
           Identify peak usage periods, underutilized spaces, and optimization
-          opportunities.
+          opportunities for better resource management.
         </p>
 
         <ul class="feature-list mb-4 flex-grow-1">
           <li>Utilization rates by room and time period</li>
           <li>Peak vs. off-peak usage analysis</li>
           <li>Room capacity vs. actual usage</li>
-          <li>Revenue per room analysis</li>
-          <li>Booking frequency patterns</li>
+          <li>Revenue per room performance</li>
+          <li>Booking frequency and duration patterns</li>
         </ul>
 
         <div class="mt-auto">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <small class="text-muted">
-              <i class="fas fa-clock me-1"></i>Last updated: Today
+              <i class="fas fa-clock me-1"></i>Real-time data
             </small>
             <span class="badge bg-primary">Popular</span>
           </div>
           <a
-            href="{{ url_for('room_utilization_report') }}"
+            href="{{ url_for('reports.room_utilization_report') }}"
             class="btn btn-primary btn-report w-100"
           >
             <i class="fas fa-chart-pie me-2"></i>View Utilization Report
@@ -462,137 +457,184 @@ stats.current_month_revenue == 0 and stats.active_rooms == 0) %}
     </div>
   </div>
 
-  <!-- Revenue Report -->
+  <!-- Daily Summary Report -->
   <div class="col-lg-6 mb-4">
-    <div class="card shadow-sm border-0 h-100 report-card report-revenue">
+    <div class="card shadow-sm border-0 h-100 report-card report-daily">
       <div class="card-body d-flex flex-column">
         <div class="d-flex align-items-start mb-3">
           <div class="report-icon-wrapper bg-success-soft me-3">
-            <i class="fas fa-dollar-sign fa-2x text-success"></i>
+            <i class="fas fa-calendar-day fa-2x text-success"></i>
           </div>
           <div class="flex-grow-1">
-            <h5 class="card-title mb-1">Revenue & Financial Analysis</h5>
-            <div class="text-muted small">Monitor financial performance</div>
+            <h5 class="card-title mb-1">Daily Summary Report</h5>
+            <div class="text-muted small">Next day events breakdown</div>
           </div>
         </div>
 
         <p class="card-text mb-3">
-          Get comprehensive insights into your booking revenue streams. Track
-          income from room bookings, add-on services, and identify growth
-          opportunities.
+          Get a comprehensive breakdown of all events scheduled for the
+          following day. Perfect for daily operations planning and staff
+          coordination with detailed event information and room assignments.
         </p>
 
         <ul class="feature-list mb-4 flex-grow-1">
-          <li>Revenue breakdown by room and service</li>
-          <li>Monthly and quarterly trends</li>
-          <li>Add-on service contribution analysis</li>
-          <li>Average booking value tracking</li>
-          <li>Seasonal revenue patterns</li>
+          <li>Tomorrow's complete event schedule</li>
+          <li>Room-by-room event breakdown</li>
+          <li>Client details and contact information</li>
+          <li>Event timing and duration</li>
+          <li>Attendee counts and special requirements</li>
         </ul>
 
         <div class="mt-auto">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <small class="text-muted">
-              <i class="fas fa-clock me-1"></i>Real-time data
+              <i class="fas fa-clock me-1"></i>Updated daily at 6 PM
             </small>
             <span class="badge bg-success">Essential</span>
           </div>
           <a
-            href="{{ url_for('revenue_report') }}"
+            href="{{ url_for('reports.daily_summary_report') }}"
             class="btn btn-success btn-report w-100"
           >
-            <i class="fas fa-dollar-sign me-2"></i>View Revenue Report
+            <i class="fas fa-calendar-day me-2"></i>View Daily Summary
           </a>
+          <div class="download-options mt-2">
+            <small class="text-muted d-block mb-1">Quick Download:</small>
+            <button
+              class="btn btn-outline-success btn-sm download-btn"
+              onclick="downloadDailyExcel()"
+            >
+              <i class="fas fa-file-excel me-1"></i>Excel
+            </button>
+            <button
+              class="btn btn-outline-success btn-sm download-btn"
+              onclick="downloadDailyPDF()"
+            >
+              <i class="fas fa-file-pdf me-1"></i>PDF
+            </button>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Client Analysis -->
+  <!-- Weekly Summary Report -->
   <div class="col-lg-6 mb-4">
-    <div class="card shadow-sm border-0 h-100 report-card report-clients">
+    <div class="card shadow-sm border-0 h-100 report-card report-weekly">
       <div class="card-body d-flex flex-column">
         <div class="d-flex align-items-start mb-3">
           <div class="report-icon-wrapper bg-info-soft me-3">
-            <i class="fas fa-users fa-2x text-info"></i>
+            <i class="fas fa-calendar-week fa-2x text-info"></i>
           </div>
           <div class="flex-grow-1">
-            <h5 class="card-title mb-1">Client Behavior Analysis</h5>
-            <div class="text-muted small">Understand customer patterns</div>
+            <h5 class="card-title mb-1">Weekly Summary Report</h5>
+            <div class="text-muted small">Week-at-a-glance overview</div>
           </div>
         </div>
 
         <p class="card-text mb-3">
-          Understand your client base and their booking behaviors. Identify your
-          most valuable customers and develop targeted retention strategies.
+          Comprehensive weekly overview showing all rooms and their scheduled
+          events in a table format. Perfect for weekly planning, resource
+          allocation, and identifying busy periods across all facilities.
         </p>
 
         <ul class="feature-list mb-4 flex-grow-1">
-          <li>Top clients by booking frequency</li>
-          <li>Customer lifetime value analysis</li>
-          <li>Booking patterns and preferences</li>
-          <li>Client retention and churn rates</li>
-          <li>Segment-based insights</li>
+          <li>7-day room schedule grid view</li>
+          <li>All rooms and events in one view</li>
+          <li>Event details with pricing information</li>
+          <li>Client and attendee information</li>
+          <li>Weekly utilization summary</li>
         </ul>
 
         <div class="mt-auto">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <small class="text-muted">
-              <i class="fas fa-clock me-1"></i>Updated daily
+              <i class="fas fa-clock me-1"></i>Updated every Monday
             </small>
-            <span class="badge bg-info">Insights</span>
+            <span class="badge bg-info">Planning</span>
           </div>
           <a
-            href="{{ url_for('client_analysis_report') }}"
+            href="{{ url_for('reports.weekly_summary_report') }}"
             class="btn btn-info btn-report w-100"
           >
-            <i class="fas fa-users me-2"></i>View Client Analysis
+            <i class="fas fa-calendar-week me-2"></i>View Weekly Summary
           </a>
+          <div class="download-options mt-2">
+            <small class="text-muted d-block mb-1">Download Options:</small>
+            <button
+              class="btn btn-outline-info btn-sm download-btn"
+              onclick="downloadWeeklyExcel()"
+            >
+              <i class="fas fa-file-excel me-1"></i>Excel
+            </button>
+            <button
+              class="btn btn-outline-info btn-sm download-btn"
+              onclick="downloadWeeklyPDF()"
+            >
+              <i class="fas fa-file-pdf me-1"></i>PDF
+            </button>
+          </div>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- Popular Add-ons -->
+  <!-- Monthly Report -->
   <div class="col-lg-6 mb-4">
-    <div class="card shadow-sm border-0 h-100 report-card report-popular">
+    <div class="card shadow-sm border-0 h-100 report-card report-monthly">
       <div class="card-body d-flex flex-column">
         <div class="d-flex align-items-start mb-3">
           <div class="report-icon-wrapper bg-warning-soft me-3">
-            <i class="fas fa-star fa-2x text-warning"></i>
+            <i class="fas fa-calendar-alt fa-2x text-warning"></i>
           </div>
           <div class="flex-grow-1">
-            <h5 class="card-title mb-1">Add-on Service Analytics</h5>
-            <div class="text-muted small">Optimize service offerings</div>
+            <h5 class="card-title mb-1">Monthly Performance Report</h5>
+            <div class="text-muted small">Comprehensive monthly analytics</div>
           </div>
         </div>
 
         <p class="card-text mb-3">
-          Discover which add-on services are most popular among your clients.
-          Identify upselling opportunities and optimize your service portfolio.
+          Detailed monthly performance analysis combining utilization, revenue,
+          and operational metrics. Perfect for management reviews, performance
+          tracking, and strategic planning decisions.
         </p>
 
         <ul class="feature-list mb-4 flex-grow-1">
-          <li>Most popular add-on services</li>
-          <li>Revenue contribution by service</li>
-          <li>Usage patterns and trends</li>
-          <li>Cross-selling opportunities</li>
-          <li>Service performance metrics</li>
+          <li>Monthly revenue and booking summaries</li>
+          <li>Room performance comparisons</li>
+          <li>Client activity and trends</li>
+          <li>Utilization vs. target analysis</li>
+          <li>Executive summary with insights</li>
         </ul>
 
         <div class="mt-auto">
           <div class="d-flex justify-content-between align-items-center mb-3">
             <small class="text-muted">
-              <i class="fas fa-clock me-1"></i>Updated hourly
+              <i class="fas fa-clock me-1"></i>Generated monthly
             </small>
-            <span class="badge bg-warning">Growth</span>
+            <span class="badge bg-warning">Executive</span>
           </div>
           <a
-            href="{{ url_for('popular_addons_report') }}"
+            href="{{ url_for('reports.monthly_report') }}"
             class="btn btn-warning btn-report w-100"
           >
-            <i class="fas fa-star me-2"></i>View Add-on Analytics
+            <i class="fas fa-calendar-alt me-2"></i>View Monthly Report
           </a>
+          <div class="download-options mt-2">
+            <small class="text-muted d-block mb-1">Export Formats:</small>
+            <button
+              class="btn btn-outline-warning btn-sm download-btn"
+              onclick="downloadMonthlyExcel()"
+            >
+              <i class="fas fa-file-excel me-1"></i>Excel
+            </button>
+            <button
+              class="btn btn-outline-warning btn-sm download-btn"
+              onclick="downloadMonthlyPDF()"
+            >
+              <i class="fas fa-file-pdf me-1"></i>PDF
+            </button>
+          </div>
         </div>
       </div>
     </div>
@@ -613,19 +655,19 @@ stats.current_month_revenue == 0 and stats.active_rooms == 0) %}
           <div class="col-md-6">
             <h6>Data Sources</h6>
             <ul class="text-muted">
-              <li>Real-time booking data</li>
-              <li>Room configuration settings</li>
-              <li>Client information database</li>
-              <li>Add-on service records</li>
+              <li>Real-time booking database</li>
+              <li>Room configuration and pricing</li>
+              <li>Client information and history</li>
+              <li>Event schedules and assignments</li>
             </ul>
           </div>
           <div class="col-md-6">
             <h6>Report Features</h6>
             <ul class="text-muted">
-              <li>Interactive charts and graphs</li>
-              <li>Exportable data formats</li>
+              <li>Excel and PDF export options</li>
               <li>Custom date range filtering</li>
-              <li>Automated insights and recommendations</li>
+              <li>Automated daily generation</li>
+              <li>Mobile-friendly viewing</li>
             </ul>
           </div>
         </div>
@@ -637,25 +679,32 @@ stats.current_month_revenue == 0 and stats.active_rooms == 0) %}
     <div class="card shadow-sm border-0">
       <div class="card-header bg-white">
         <h6 class="mb-0 text-primary">
-          <i class="fas fa-question-circle me-2"></i>Need Help?
+          <i class="fas fa-download me-2"></i>Quick Downloads
         </h6>
       </div>
       <div class="card-body">
         <p class="text-muted mb-3">
-          Having trouble with reports or need custom analytics?
+          Download today's and tomorrow's reports instantly:
         </p>
         <div class="d-grid gap-2">
           <button
             class="btn btn-outline-primary btn-sm"
-            onclick="showHelpModal()"
+            onclick="downloadTodayReport()"
           >
-            <i class="fas fa-book me-1"></i>View Documentation
+            <i class="fas fa-file-excel me-1"></i>Today's Summary (Excel)
           </button>
           <button
-            class="btn btn-outline-secondary btn-sm"
-            onclick="contactSupport()"
+            class="btn btn-outline-success btn-sm"
+            onclick="downloadTomorrowReport()"
           >
-            <i class="fas fa-headset me-1"></i>Contact Support
+            <i class="fas fa-file-excel me-1"></i>Tomorrow's Summary (Excel)
+          </button>
+          <hr class="my-2" />
+          <button
+            class="btn btn-outline-secondary btn-sm"
+            onclick="showHelpModal()"
+          >
+            <i class="fas fa-question-circle me-1"></i>Help & Documentation
           </button>
         </div>
       </div>
@@ -748,9 +797,9 @@ stats.current_month_bookings == 0) %}
             >
               <option value="">Select a report...</option>
               <option value="room_utilization">Room Utilization</option>
-              <option value="revenue">Revenue Analysis</option>
-              <option value="client_analysis">Client Analysis</option>
-              <option value="popular_addons">Add-on Analytics</option>
+              <option value="daily_summary">Daily Summary</option>
+              <option value="weekly_summary">Weekly Summary</option>
+              <option value="monthly_report">Monthly Report</option>
             </select>
           </div>
         </form>
@@ -848,17 +897,7 @@ stats.current_month_bookings == 0) %}
       showStatsValidationWarning();
     } else {
       console.log("✅ Statistics validation passed");
-      // Optionally hide loading states
       hideLoadingStates();
-    }
-
-    // Auto-refresh stats every 5 minutes if all stats are zero
-    if (statsData && (statsData.current_month_bookings === 0 && statsData.current_month_revenue === 0 && statsData.active_rooms === 0)) {
-      console.log("🔄 Setting up auto-refresh for missing statistics");
-      setTimeout(function() {
-        console.log("🔄 Auto-refreshing statistics...");
-        refreshStats();
-      }, 300000); // 5 minutes
     }
   });
 
@@ -897,32 +936,23 @@ stats.current_month_bookings == 0) %}
 
   function refreshStats() {
     console.log("🔄 Refreshing statistics...");
-
     const refreshIcon = document.getElementById('refreshIcon');
     if (refreshIcon) {
       refreshIcon.classList.add('refresh-indicator');
     }
-
-    // Show loading message
-    const statsGrid = document.getElementById('statsGrid');
-    if (statsGrid) {
-      const originalContent = statsGrid.innerHTML;
-      statsGrid.innerHTML = `
-        <div class="col-12 text-center py-4">
-          <i class="fas fa-spinner fa-spin fa-2x mb-3"></i>
-          <div class="h5">Refreshing statistics...</div>
-          <small class="text-light opacity-75">Please wait</small>
-        </div>
-      `;
-
-      // Refresh the page after a short delay to allow for server processing
-      setTimeout(function() {
-        window.location.reload();
-      }, 2000);
-    } else {
-      // Fallback: just reload the page
+    setTimeout(function() {
       window.location.reload();
-    }
+    }, 2000);
+  }
+
+  function generateTomorrowReport() {
+    console.log("📅 Generating tomorrow's report...");
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateStr = tomorrow.toISOString().split('T')[0];
+
+    // Navigate to daily summary with tomorrow's date
+    window.location.href = `{{ url_for('reports.daily_summary_report') }}?date=${dateStr}`;
   }
 
   function showDateRangeModal() {
@@ -943,7 +973,6 @@ stats.current_month_bookings == 0) %}
       return;
     }
 
-    // Validate date range
     if (new Date(startDate) > new Date(endDate)) {
       alert('Start date must be before end date');
       return;
@@ -952,27 +981,63 @@ stats.current_month_bookings == 0) %}
     let reportUrl = '';
     switch(reportType) {
       case 'room_utilization':
-        reportUrl = `{{ url_for('room_utilization_report') }}?start_date=${startDate}&end_date=${endDate}`;
+        reportUrl = `{{ url_for('reports.room_utilization_report') }}?start_date=${startDate}&end_date=${endDate}`;
         break;
-      case 'revenue':
-        reportUrl = `{{ url_for('revenue_report') }}?start_date=${startDate}&end_date=${endDate}`;
+      case 'daily_summary':
+        reportUrl = `{{ url_for('reports.daily_summary_report') }}?date=${startDate}`;
         break;
-      case 'client_analysis':
-        reportUrl = `{{ url_for('client_analysis_report') }}?start_date=${startDate}&end_date=${endDate}`;
+      case 'weekly_summary':
+        reportUrl = `{{ url_for('reports.weekly_summary_report') }}?start_date=${startDate}&end_date=${endDate}`;
         break;
-      case 'popular_addons':
-        reportUrl = `{{ url_for('popular_addons_report') }}?start_date=${startDate}&end_date=${endDate}`;
+      case 'monthly_report':
+        reportUrl = `{{ url_for('reports.monthly_report') }}?start_date=${startDate}&end_date=${endDate}`;
         break;
     }
 
     if (reportUrl) {
-      // Close modal first
       const modal = bootstrap.Modal.getInstance(document.getElementById('dateRangeModal'));
       modal.hide();
-
-      // Navigate to report
       window.location.href = reportUrl;
     }
+  }
+
+  // Download functions
+  function downloadDailyExcel() {
+    const today = new Date().toISOString().split('T')[0];
+    window.location.href = `/reports/daily-summary/download?format=excel&date=${today}`;
+  }
+
+  function downloadDailyPDF() {
+    const today = new Date().toISOString().split('T')[0];
+    window.location.href = `/reports/daily-summary/download?format=pdf&date=${today}`;
+  }
+
+  function downloadWeeklyExcel() {
+    window.location.href = `/reports/weekly-summary/download?format=excel`;
+  }
+
+  function downloadWeeklyPDF() {
+    window.location.href = `/reports/weekly-summary/download?format=pdf`;
+  }
+
+  function downloadMonthlyExcel() {
+    window.location.href = `/reports/monthly-report/download?format=excel`;
+  }
+
+  function downloadMonthlyPDF() {
+    window.location.href = `/reports/monthly-report/download?format=pdf`;
+  }
+
+  function downloadTodayReport() {
+    const today = new Date().toISOString().split('T')[0];
+    window.location.href = `/reports/daily-summary/download?format=excel&date=${today}`;
+  }
+
+  function downloadTomorrowReport() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateStr = tomorrow.toISOString().split('T')[0];
+    window.location.href = `/reports/daily-summary/download?format=excel&date=${dateStr}`;
   }
 
   function showStatsDetails(statType) {
@@ -983,24 +1048,22 @@ stats.current_month_bookings == 0) %}
     let detailsHTML = '';
 
     switch(statType) {
-      case 'bookings':
+      case 'today':
         detailsHTML = `
-          <h6>Bookings This Month</h6>
-          <p><strong>Total Bookings:</strong> ${statsData.current_month_bookings || 0}</p>
-          <p><strong>Average Booking Value:</strong> $${(statsData.avg_booking_value || 0).toFixed(2)}</p>
-          <p><strong>Total Revenue:</strong> $${(statsData.current_month_revenue || 0).toFixed(2)}</p>
+          <h6>Today's Events</h6>
+          <p><strong>Active Events:</strong> ${statsData.current_month_bookings || 0}</p>
+          <p><strong>Revenue Today:</strong> $${(statsData.current_month_revenue || 0).toFixed(2)}</p>
           <hr>
-          <small class="text-muted">This includes all confirmed and tentative bookings for the current month, excluding cancelled bookings.</small>
+          <small class="text-muted">Shows all confirmed events scheduled for today.</small>
         `;
         break;
-      case 'revenue':
+      case 'week':
         detailsHTML = `
-          <h6>Revenue This Month</h6>
-          <p><strong>Total Revenue:</strong> $${(statsData.current_month_revenue || 0).toFixed(2)}</p>
-          <p><strong>Number of Bookings:</strong> ${statsData.current_month_bookings || 0}</p>
-          <p><strong>Average per Booking:</strong> $${(statsData.avg_booking_value || 0).toFixed(2)}</p>
+          <h6>This Week's Performance</h6>
+          <p><strong>Weekly Revenue:</strong> $${(statsData.current_month_revenue || 0).toFixed(2)}</p>
+          <p><strong>Average per Event:</strong> $${(statsData.avg_booking_value || 0).toFixed(2)}</p>
           <hr>
-          <small class="text-muted">Revenue includes room bookings and add-on services, excluding cancelled bookings.</small>
+          <small class="text-muted">Includes all confirmed bookings for the current week.</small>
         `;
         break;
       case 'rooms':
@@ -1009,17 +1072,16 @@ stats.current_month_bookings == 0) %}
           <p><strong>Total Active Rooms:</strong> ${statsData.active_rooms || 0}</p>
           <p><strong>Status:</strong> Available for booking</p>
           <hr>
-          <small class="text-muted">Active rooms are those marked as 'available' in the system and can be booked by clients.</small>
+          <small class="text-muted">Rooms that are operational and available for reservations.</small>
         `;
         break;
       case 'utilization':
         detailsHTML = `
-          <h6>Room Utilization Rate</h6>
+          <h6>Room Utilization</h6>
           <p><strong>Current Rate:</strong> ${(statsData.utilization_rate || 0)}%</p>
           <p><strong>Total Booked Hours:</strong> ${(statsData.total_booked_hours || 0)} hours</p>
-          <p><strong>Active Rooms:</strong> ${statsData.active_rooms || 0}</p>
           <hr>
-          <small class="text-muted">Utilization rate is calculated based on total booked hours vs. available business hours for all active rooms.</small>
+          <small class="text-muted">Percentage of available room hours that are actually booked.</small>
         `;
         break;
     }
@@ -1029,19 +1091,8 @@ stats.current_month_bookings == 0) %}
   }
 
   function showHelpModal() {
-    alert('Documentation feature coming soon! For immediate assistance, please contact your system administrator.');
+    alert('Help documentation will be available soon. Please contact your administrator for assistance.');
   }
-
-  function contactSupport() {
-    alert('Support contact feature coming soon! Please reach out to your system administrator for help.');
-  }
-
-  // Add error handling for missing template functions
-  window.addEventListener('error', function(e) {
-    if (e.message.includes('url_for')) {
-      console.warn('Template function error:', e.message);
-    }
-  });
 
   // Debug information for development
   {% if current_user.role in ['admin', 'manager'] %}

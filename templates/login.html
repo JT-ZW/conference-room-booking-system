@@ -15,7 +15,7 @@ Booking{% endblock %} {% block content %}
           />
         </div>
 
-        <form method="POST" action="{{ url_for('login') }}">
+        <form method="POST" action="{{ url_for('auth.login') }}">
           {{ form.hidden_tag() }}
 
           <div class="mb-3">
@@ -65,7 +65,7 @@ Booking{% endblock %} {% block content %}
         <div class="text-center">
           <p class="text-muted mb-2 small">New to Rainbow Towers?</p>
           <a
-            href="{{ url_for('register') }}"
+            href="{{ url_for('auth.register') }}"
             class="btn btn-outline-success btn-sm"
           >
             <i class="fas fa-user-plus me-2"></i>Create Account

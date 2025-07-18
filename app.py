@@ -313,10 +313,30 @@ def utility_processor():
 def load_user(user_id):
     """Load user by ID for Flask-Login"""
     try:
+        # Try to get user from session first (more reliable)
+        if 'user_email' in session and 'user_id' in session and session['user_id'] == user_id:
+            # Create user object from session data
+            user_dict = {
+                'id': session['user_id'],
+                'email': session['user_email'],
+                'user_metadata': {},
+                'app_metadata': {}
+            }
+            return User(user_dict)
+            
+        # Fallback: try to get user from users table
         if supabase_admin:
-            response = supabase_admin.auth.admin.get_user_by_id(user_id)
-            if response.user:
-                return User(response.user.__dict__)
+            response = supabase_admin.table('users').select('*').eq('id', user_id).execute()
+            if response.data and len(response.data) > 0:
+                user_data = response.data[0]
+                user_dict = {
+                    'id': user_data['id'],
+                    'email': user_data['email'],
+                    'user_metadata': user_data.get('user_metadata', {}),
+                    'app_metadata': user_data.get('app_metadata', {})
+                }
+                return User(user_dict)
+        
         return None
     except Exception as e:
         print(f"Error loading user: {e}")

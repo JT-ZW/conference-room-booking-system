@@ -160,31 +160,66 @@ def supabase_delete(table_name, filters):
 # ===============================
 
 def authenticate_user(email, password):
-    """Authenticate user with Supabase"""
+    """Authenticate user with Supabase (version-agnostic)"""
     try:
-        response = supabase.auth.sign_in(
-            email=email,
-            password=password
-        )
+        # Try the modern method first
+        try:
+            response = supabase.auth.sign_in_with_password({
+                "email": email,
+                "password": password
+            })
+        except AttributeError:
+            # Fallback to older method if sign_in_with_password doesn't exist
+            response = supabase.auth.sign_in(email=email, password=password)
         
-        if response.user and response.session:
-            # Clear and set up session
+        # Handle different response structures
+        user = None
+        session_data = None
+        
+        if hasattr(response, 'user') and response.user:
+            user = response.user
+            
+            # Try to get session from response
+            if hasattr(response, 'session') and response.session:
+                session_data = response.session
+            elif hasattr(response, 'data') and hasattr(response.data, 'session'):
+                session_data = response.data.session
+            elif hasattr(user, 'session'):
+                session_data = user.session
+        
+        if user:
+            # Clear and set up Flask session
             session.clear()
             session.permanent = True
             
-            session_data = {
-                'access_token': response.session.access_token,
-                'refresh_token': response.session.refresh_token,
-                'user_id': response.user.id
-            }
-            
-            session['supabase_session'] = session_data
+            # Store basic user info
+            session['user_id'] = str(user.id)
+            session['user_email'] = user.email
             session['created_at'] = datetime.now(UTC).isoformat()
-            session['user_id'] = response.user.id
-            session['user_email'] = response.user.email
+            
+            # Store session tokens if available
+            if session_data:
+                try:
+                    flask_session_data = {
+                        'access_token': getattr(session_data, 'access_token', None),
+                        'refresh_token': getattr(session_data, 'refresh_token', None),
+                        'user_id': str(user.id)
+                    }
+                    session['supabase_session'] = flask_session_data
+                except Exception as e:
+                    print(f"Warning: Could not store session tokens: {e}")
+            
             session.modified = True
             
-            return User(response.user.__dict__)
+            # Create User object
+            user_dict = {
+                'id': user.id,
+                'email': user.email,
+                'user_metadata': getattr(user, 'user_metadata', {}),
+                'app_metadata': getattr(user, 'app_metadata', {})
+            }
+            
+            return User(user_dict)
         
         return None
             

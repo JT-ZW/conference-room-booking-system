@@ -2,6 +2,7 @@ from flask import Blueprint, render_template, jsonify
 from flask_login import login_required
 from datetime import datetime, UTC
 from core import get_dashboard_stats, get_recent_bookings, get_upcoming_bookings, get_todays_bookings, get_revenue_trends
+from utils.timezone_utils import get_cat_now
 
 dashboard_bp = Blueprint('dashboard', __name__)
 
@@ -25,7 +26,7 @@ def index():  # Changed from dashboard to index
                              upcoming_bookings=upcoming_bookings,
                              todays_bookings=todays_bookings,
                              revenue_trends=revenue_trends,
-                             now=datetime.now(UTC))
+                             now=get_cat_now())
 
     except Exception as e:
         print(f"❌ ERROR: Failed to load enhanced dashboard: {e}")

@@ -353,7 +353,7 @@
             <span class="label">Address:</span> 1 Pennefather Ave, Harare
           </div>
           <div><span class="label">Phone:</span> 0242 772633</div>
-          <div><span class="label">Mobile:</span> 782705301</div>
+          <div><span class="label">Mobile:</span></div>
           <div><span class="label">Website:</span> www.rtgafrica.com</div>
           <div><span class="label">Facebook:</span> rtgreservations</div>
         </div>
@@ -395,7 +395,20 @@
       </tr>
     </thead>
     <tbody>
-      <!-- Main Room Service 
+      <!-- Enhanced Line Items with Cost Breakdown -->
+      {% if booking.line_items %} {% for item in booking.line_items %}
+      <tr>
+        <td class="service-name">{{ item.description }}</td>
+        <td>{{ item.quantity }}</td>
+        <td>{{ item.unit_price }}</td>
+        <td class="amount">{{ "%.2f"|format(item.unit_price) }}</td>
+        <td>{{ item.quantity }}</td>
+        <td class="amount">{{ "%.2f"|format(item.total) }}</td>
+      </tr>
+      {% endfor %} {% else %}
+      <!-- Fallback to original structure -->
+      <!-- Main Room Service -->
+      {% if booking.room_rate and booking.room_rate > 0 %}
       <tr>
         <td class="service-name">
           {% if booking.room %} Room hire - {{ booking.room.name }} {% else %}
@@ -406,7 +419,8 @@
         <td class="amount">{{ "%.2f"|format(booking.room_rate or 0) }}</td>
         <td>1</td>
         <td class="amount">{{ "%.2f"|format(booking.room_rate or 0) }}</td>
-      </tr> -->
+      </tr>
+      {% endif %}
 
       <!-- Add-on Services -->
       {% if booking.addon_items %} {% for addon in booking.addon_items %}
@@ -419,6 +433,18 @@
         <td class="amount">
           {{ "%.2f"|format(addon.total or addon.price or 0) }}
         </td>
+      </tr>
+      {% endfor %} {% elif booking.custom_addons %} {% for addon in
+      booking.custom_addons %}
+      <tr>
+        <td class="service-name">
+          {{ addon.description or 'Additional Service' }}
+        </td>
+        <td>{{ booking.attendees or addon.quantity or 'TBC' }}</td>
+        <td>{{ addon.quantity or 1 }}</td>
+        <td class="amount">{{ "%.2f"|format(addon.unit_price or 0) }}</td>
+        <td>1</td>
+        <td class="amount">{{ "%.2f"|format(addon.total_price or 0) }}</td>
       </tr>
       {% endfor %} {% elif booking.addons_total and booking.addons_total > 0 %}
       <tr>
@@ -460,7 +486,7 @@
           "%.2f"|format(total) }}
         </td>
       </tr>
-      {% endfor %} {% endif %}
+      {% endfor %} {% endif %} {% endif %}
 
       <!-- Total Row -->
       <tr class="total-row">

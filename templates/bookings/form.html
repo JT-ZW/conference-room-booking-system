@@ -193,6 +193,37 @@
     border-radius: 10px;
     text-align: center;
   }
+
+  /* Status indicator styling */
+  .status-indicator .badge {
+    border-radius: 8px;
+    font-weight: 500;
+  }
+
+  .status-indicator .badge.tentative {
+    background-color: #ffc107;
+    color: #212529;
+  }
+
+  .status-indicator .badge.confirmed {
+    background-color: #28a745;
+    color: white;
+  }
+
+  .status-indicator .badge.cancelled {
+    background-color: #dc3545;
+    color: white;
+  }
+
+  .status-indicator .badge.completed {
+    background-color: #17a2b8;
+    color: white;
+  }
+
+  /* Status select styling */
+  #status option {
+    padding: 8px;
+  }
 </style>
 {% endblock %} 
 
@@ -369,6 +400,61 @@
             <textarea class="form-control" id="notes" name="notes" rows="3"
                       placeholder="Enter any special requirements or notes...">{{ booking.notes if booking else '' }}</textarea>
           </div>
+
+          <!-- Booking Status (Only show for existing bookings) -->
+          {% if booking %}
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Booking Status</label>
+              <select class="form-select" id="status" name="status">
+                <option value="tentative" {% if (booking.status == 'tentative') or (form.status.data == 'tentative') %}selected{% endif %}>
+                  Tentative
+                </option>
+                <option value="confirmed" {% if (booking.status == 'confirmed') or (form.status.data == 'confirmed') %}selected{% endif %}>
+                  Confirmed
+                </option>
+                <option value="cancelled" {% if (booking.status == 'cancelled') or (form.status.data == 'cancelled') %}selected{% endif %}>
+                  Cancelled
+                </option>
+                <option value="completed" {% if (booking.status == 'completed') or (form.status.data == 'completed') %}selected{% endif %}>
+                  Completed
+                </option>
+              </select>
+              <small class="form-text text-muted">
+                Change from Tentative to Confirmed once details are finalized
+              </small>
+            </div>
+            <div class="col-md-6">
+              <div class="status-indicator mt-2">
+                <span class="badge fs-6 p-2" id="statusBadge" 
+                      {% set current_status = booking.status or form.status.data or 'tentative' %}
+                      {% if current_status == 'tentative' %}
+                        style="background-color: #ffc107; color: #212529;"
+                      {% elif current_status == 'confirmed' %}
+                        style="background-color: #28a745; color: white;"
+                      {% elif current_status == 'cancelled' %}
+                        style="background-color: #dc3545; color: white;"
+                      {% elif current_status == 'completed' %}
+                        style="background-color: #17a2b8; color: white;"
+                      {% else %}
+                        style="background-color: #6c757d; color: white;"
+                      {% endif %}>
+                  {% if current_status == 'tentative' %}
+                    <i class="fas fa-clock me-1"></i>Tentative
+                  {% elif current_status == 'confirmed' %}
+                    <i class="fas fa-check-circle me-1"></i>Confirmed
+                  {% elif current_status == 'cancelled' %}
+                    <i class="fas fa-times-circle me-1"></i>Cancelled
+                  {% elif current_status == 'completed' %}
+                    <i class="fas fa-flag-checkered me-1"></i>Completed
+                  {% else %}
+                    <i class="fas fa-question-circle me-1"></i>Unknown
+                  {% endif %}
+                </span>
+              </div>
+            </div>
+          </div>
+          {% endif %}
         </div>
 
         <!-- Pricing -->
@@ -503,7 +589,8 @@ document.addEventListener('DOMContentLoaded', function() {
         dateFormat: 'Y-m-d H:i',
         time_24hr: true,
         minuteIncrement: 15,
-        minDate: 'today',
+        {% if not booking %}minDate: 'today',{% endif %}
+        {% if booking and booking.start_time %}defaultDate: '{{ booking.start_time.strftime('%Y-%m-%d %H:%M') }}',{% endif %}
         onChange: updateSummary
     });
     
@@ -512,7 +599,8 @@ document.addEventListener('DOMContentLoaded', function() {
         dateFormat: 'Y-m-d H:i',
         time_24hr: true,
         minuteIncrement: 15,
-        minDate: 'today',
+        {% if not booking %}minDate: 'today',{% endif %}
+        {% if booking and booking.end_time %}defaultDate: '{{ booking.end_time.strftime('%Y-%m-%d %H:%M') }}',{% endif %}
         onChange: updateSummary
     });
     
@@ -542,6 +630,63 @@ document.addEventListener('DOMContentLoaded', function() {
             customInput.value = '';
         }
     });
+
+    // Status change handler (only for edit mode)
+    const statusSelect = document.getElementById('status');
+    if (statusSelect) {
+        statusSelect.addEventListener('change', function() {
+            updateStatusBadge(this.value);
+        });
+    }
+
+    function updateStatusBadge(status) {
+        const statusBadge = document.getElementById('statusBadge');
+        if (!statusBadge) return;
+        
+        // Clear existing classes
+        statusBadge.className = 'badge fs-6 p-2';
+        
+        let iconClass, text, badgeClass;
+        
+        switch(status) {
+            case 'tentative':
+                iconClass = 'fas fa-clock';
+                text = 'Tentative';
+                badgeClass = 'tentative';
+                statusBadge.style.backgroundColor = '#ffc107';
+                statusBadge.style.color = '#212529';
+                break;
+            case 'confirmed':
+                iconClass = 'fas fa-check-circle';
+                text = 'Confirmed';
+                badgeClass = 'confirmed';
+                statusBadge.style.backgroundColor = '#28a745';
+                statusBadge.style.color = 'white';
+                break;
+            case 'cancelled':
+                iconClass = 'fas fa-times-circle';
+                text = 'Cancelled';
+                badgeClass = 'cancelled';
+                statusBadge.style.backgroundColor = '#dc3545';
+                statusBadge.style.color = 'white';
+                break;
+            case 'completed':
+                iconClass = 'fas fa-flag-checkered';
+                text = 'Completed';
+                badgeClass = 'completed';
+                statusBadge.style.backgroundColor = '#17a2b8';
+                statusBadge.style.color = 'white';
+                break;
+            default:
+                iconClass = 'fas fa-question-circle';
+                text = 'Unknown';
+                statusBadge.style.backgroundColor = '#6c757d';
+                statusBadge.style.color = 'white';
+        }
+        
+        statusBadge.className += ` ${badgeClass}`;
+        statusBadge.innerHTML = `<i class="${iconClass} me-1"></i>${text}`;
+    }
     
     // Client name autocomplete
     let clientSearchTimeout;
@@ -842,14 +987,19 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('bookingForm').addEventListener('submit', function(e) {
         e.preventDefault();
         
+        console.log('Form submission started...');
+        
         // Basic validation
         const requiredFields = ['room_id', 'attendees', 'client_name', 'event_type', 'start_time', 'end_time'];
         let isValid = true;
         
         requiredFields.forEach(fieldId => {
             const field = document.getElementById(fieldId);
-            if (!field.value.trim()) {
-                field.classList.add('is-invalid');
+            if (!field || !field.value.trim()) {
+                if (field) {
+                    field.classList.add('is-invalid');
+                }
+                console.log(`Validation failed for field: ${fieldId}`);
                 isValid = false;
             } else {
                 field.classList.remove('is-invalid');
@@ -857,29 +1007,45 @@ document.addEventListener('DOMContentLoaded', function() {
         });
         
         // Check custom event type if needed
-        if (document.getElementById('event_type').value === 'other') {
+        const eventTypeField = document.getElementById('event_type');
+        if (eventTypeField && eventTypeField.value === 'other') {
             const customField = document.getElementById('custom_event_type');
-            if (!customField.value.trim()) {
-                customField.classList.add('is-invalid');
+            if (!customField || !customField.value.trim()) {
+                if (customField) {
+                    customField.classList.add('is-invalid');
+                }
+                console.log('Validation failed: custom event type required');
                 isValid = false;
             }
         }
         
         // Validate dates
-        const startTime = new Date(document.getElementById('start_time').value);
-        const endTime = new Date(document.getElementById('end_time').value);
+        const startTimeField = document.getElementById('start_time');
+        const endTimeField = document.getElementById('end_time');
         
-        if (endTime <= startTime) {
-            document.getElementById('end_time').classList.add('is-invalid');
-            isValid = false;
+        if (startTimeField && endTimeField && startTimeField.value && endTimeField.value) {
+            const startTime = new Date(startTimeField.value);
+            const endTime = new Date(endTimeField.value);
+            
+            if (endTime <= startTime) {
+                endTimeField.classList.add('is-invalid');
+                console.log('Validation failed: end time must be after start time');
+                isValid = false;
+            }
         }
         
         if (!isValid) {
+            console.log('Form validation failed, not submitting');
             return false;
         }
         
+        console.log('Form validation passed, submitting...');
+        
         // Show loading spinner
-        document.getElementById('loadingSpinner').style.display = 'flex';
+        const spinner = document.getElementById('loadingSpinner');
+        if (spinner) {
+            spinner.style.display = 'flex';
+        }
         
         // Submit form
         this.submit();

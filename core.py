@@ -160,63 +160,39 @@ def supabase_delete(table_name, filters):
 # ===============================
 
 def authenticate_user(email, password):
-    """Authenticate user with Supabase (version-agnostic)"""
+    """Authenticate user with Supabase (optimized for version 2.16.0)"""
     try:
-        # Try the modern method first
-        try:
-            response = supabase.auth.sign_in_with_password({
-                "email": email,
-                "password": password
-            })
-        except AttributeError:
-            # Fallback to older method if sign_in_with_password doesn't exist
-            response = supabase.auth.sign_in(email=email, password=password)
+        # Use the modern sign_in_with_password method (available in 2.16.0)
+        response = supabase.auth.sign_in_with_password({
+            "email": email,
+            "password": password
+        })
         
-        # Handle different response structures
-        user = None
-        session_data = None
-        
-        if hasattr(response, 'user') and response.user:
-            user = response.user
-            
-            # Try to get session from response
-            if hasattr(response, 'session') and response.session:
-                session_data = response.session
-            elif hasattr(response, 'data') and hasattr(response.data, 'session'):
-                session_data = response.data.session
-            elif hasattr(user, 'session'):
-                session_data = user.session
-        
-        if user:
+        # Handle the response structure for newer Supabase versions
+        if response.user and response.session:
             # Clear and set up Flask session
             session.clear()
             session.permanent = True
             
-            # Store basic user info
-            session['user_id'] = str(user.id)
-            session['user_email'] = user.email
+            # Store session data
+            session_data = {
+                'access_token': response.session.access_token,
+                'refresh_token': response.session.refresh_token,
+                'user_id': response.user.id
+            }
+            
+            session['supabase_session'] = session_data
             session['created_at'] = datetime.now(UTC).isoformat()
-            
-            # Store session tokens if available
-            if session_data:
-                try:
-                    flask_session_data = {
-                        'access_token': getattr(session_data, 'access_token', None),
-                        'refresh_token': getattr(session_data, 'refresh_token', None),
-                        'user_id': str(user.id)
-                    }
-                    session['supabase_session'] = flask_session_data
-                except Exception as e:
-                    print(f"Warning: Could not store session tokens: {e}")
-            
+            session['user_id'] = response.user.id
+            session['user_email'] = response.user.email
             session.modified = True
             
-            # Create User object
+            # Create User object with proper data structure
             user_dict = {
-                'id': user.id,
-                'email': user.email,
-                'user_metadata': getattr(user, 'user_metadata', {}),
-                'app_metadata': getattr(user, 'app_metadata', {})
+                'id': response.user.id,
+                'email': response.user.email,
+                'user_metadata': getattr(response.user, 'user_metadata', {}),
+                'app_metadata': getattr(response.user, 'app_metadata', {})
             }
             
             return User(user_dict)
@@ -502,9 +478,12 @@ def is_room_available_supabase(room_id, start_time, end_time, exclude_booking_id
 # BOOKING MANAGEMENT
 # ===============================
 
-def extract_booking_form_data(form_data):
+def extract_booking_form_data(form_data, is_update=False):
     """Extract and validate booking data from form submission"""
     try:
+        print(f"🔍 Extracting form data (is_update: {is_update})")
+        print(f"🔍 Available form fields: {list(form_data.keys())}")
+        
         # Required fields validation
         required_fields = {
             'room_id': 'Please select a venue',
@@ -516,26 +495,42 @@ def extract_booking_form_data(form_data):
         }
         
         for field, message in required_fields.items():
-            if not form_data.get(field, '').strip():
+            value = form_data.get(field, '').strip()
+            print(f"🔍 Field {field}: '{value}'")
+            if not value:
+                print(f"❌ Missing required field: {field}")
                 flash(f'❌ {message}', 'danger')
                 return None
         
         # Parse datetime fields
         try:
-            start_time = datetime.strptime(form_data.get('start_time'), '%Y-%m-%d %H:%M')
-            end_time = datetime.strptime(form_data.get('end_time'), '%Y-%m-%d %H:%M')
-        except ValueError:
+            start_time_str = form_data.get('start_time')
+            end_time_str = form_data.get('end_time')
+            print(f"🔍 Parsing datetime - start: '{start_time_str}', end: '{end_time_str}'")
+            
+            start_time = datetime.strptime(start_time_str, '%Y-%m-%d %H:%M')
+            end_time = datetime.strptime(end_time_str, '%Y-%m-%d %H:%M')
+            print(f"✅ Datetime parsing successful")
+        except ValueError as e:
+            print(f"❌ Datetime parsing error: {e}")
             flash('❌ Invalid date/time format', 'danger')
             return None
         
         # Validate time logic
         if end_time <= start_time:
+            print(f"❌ Time validation error: end_time <= start_time")
             flash('❌ End time must be after start time', 'danger')
             return None
         
-        if start_time < datetime.now():
+        # Only check past time for new bookings, not updates
+        if not is_update and start_time < datetime.now():
+            print(f"❌ Past time validation error for new booking")
             flash('❌ Booking cannot be scheduled in the past', 'danger')
             return None
+        elif is_update and start_time < datetime.now():
+            print(f"⚠️ Updating booking with past start time (allowed for updates)")
+        
+        print(f"✅ All validations passed")
         
         # Process pricing items
         pricing_items, total_price = extract_pricing_items_from_form(form_data)
@@ -681,20 +676,29 @@ def validate_booking_business_rules(booking_data, exclude_booking_id=None):
             if booking_data['attendees'] > room_capacity:
                 errors.append(f'❌ Room capacity ({room_capacity}) exceeded')
         
-        # Validate booking duration
-        duration_hours = (booking_data['end_time'] - booking_data['start_time']).total_seconds() / 3600
-        if duration_hours > 12:
-            errors.append('❌ Bookings cannot exceed 12 hours')
+        # Validate booking duration with multi-day support
+        duration = booking_data['end_time'] - booking_data['start_time']
+        duration_days = duration.days
+        duration_hours = duration.total_seconds() / 3600
+        
+        # Allow multi-day bookings (up to 30 days for conferences/events)
+        if duration_days > 30:
+            errors.append('❌ Bookings cannot exceed 30 days')
         
         if duration_hours < 0.5:
             errors.append('❌ Bookings must be at least 30 minutes long')
         
-        # Validate business hours (6 AM to 11 PM)
-        if booking_data['start_time'].hour < 6 or booking_data['start_time'].hour > 22:
-            errors.append('❌ Bookings must start within business hours (6 AM - 10 PM)')
-        
-        if booking_data['end_time'].hour < 6 or booking_data['end_time'].hour > 23:
-            errors.append('❌ Bookings must end within business hours (6 AM - 11 PM)')
+        # For single day bookings, validate business hours
+        if duration_days == 0:
+            if booking_data['start_time'].hour < 6 or booking_data['start_time'].hour > 22:
+                errors.append('❌ Same-day bookings must start within business hours (6 AM - 10 PM)')
+            
+            if booking_data['end_time'].hour < 6 or booking_data['end_time'].hour > 23:
+                errors.append('❌ Same-day bookings must end within business hours (6 AM - 11 PM)')
+            
+            # Remove 12-hour limit to allow all-day events
+            if duration_hours > 24:
+                errors.append('❌ Single-day bookings cannot exceed 24 hours')
         
     except Exception as e:
         print(f"❌ ERROR: Business rule validation failed: {e}")
@@ -1029,13 +1033,13 @@ def calculate_booking_totals(booking, room_rates=None):
         }
 
 def get_booking_calendar_events_supabase():
-    """Get all bookings formatted for calendar display"""
+    """Get all bookings formatted for calendar display with enhanced error handling"""
     try:
         # Get all bookings with related data
         bookings_response = supabase_admin.table('bookings').select("""
             *,
             room:rooms(id, name, capacity),
-            client:clients(id, contact_person, company_name)
+            client:clients(id, contact_person, company_name, email)
         """).neq('status', 'cancelled').execute()
         
         if not bookings_response.data:
@@ -1043,53 +1047,130 @@ def get_booking_calendar_events_supabase():
         
         events = []
         for booking in bookings_response.data:
-            # Get room name
-            room_name = 'Unknown Room'
-            if booking.get('room'):
-                room_name = booking['room'].get('name', 'Unknown Room')
-            
-            # Get client name
-            client_name = 'Unknown Client'
-            if booking.get('client'):
-                client = booking['client']
-                client_name = client.get('company_name') or client.get('contact_person', 'Unknown Client')
-            elif booking.get('client_name'):
-                client_name = booking.get('client_name')
-            
-            # Determine event color based on status
-            status = booking.get('status', 'tentative')
-            color_map = {
-                'tentative': '#FFA500',  # Orange
-                'confirmed': '#28a745',  # Green
-                'cancelled': '#dc3545'   # Red
-            }
-            color = color_map.get(status, '#17a2b8')  # Default: Teal
-            
-            # Create event
-            event_data = {
-                'id': booking['id'],
-                'title': booking.get('title') or f"{booking.get('event_type', 'Event')} - {client_name}",
-                'start': booking.get('start_time'),
-                'end': booking.get('end_time'),
-                'color': color,
-                'extendedProps': {
-                    'room': room_name,
-                    'roomId': booking.get('room_id'),
-                    'client': client_name,
-                    'clientId': booking.get('client_id'),
-                    'attendees': booking.get('attendees', 0),
-                    'total': safe_float_conversion(booking.get('total_price', 0)),
-                    'status': status,
-                    'notes': booking.get('notes', '')
+            try:
+                # Get room name with fallbacks
+                room_name = 'Room Details Loading...'
+                room_id = booking.get('room_id')
+                
+                if booking.get('room') and isinstance(booking['room'], dict):
+                    room_name = (booking['room'].get('name') or '').strip()
+                    if not room_name:
+                        room_name = f"Room {room_id}" if room_id else 'Room Details Loading...'
+                elif booking.get('room_name'):
+                    room_name = (booking.get('room_name') or '').strip()
+                    if not room_name:
+                        room_name = f"Room {room_id}" if room_id else 'Room Details Loading...'
+                
+                # Get client name with fallbacks
+                client_name = 'Client Details Loading...'
+                client_id = booking.get('client_id')
+                
+                if booking.get('client') and isinstance(booking['client'], dict):
+                    client = booking['client']
+                    company_name = (client.get('company_name') or '').strip()
+                    contact_person = (client.get('contact_person') or '').strip()
+                    
+                    if company_name:
+                        client_name = company_name
+                    elif contact_person:
+                        client_name = contact_person
+                    else:
+                        client_name = f"Client {client_id}" if client_id else 'Client Details Loading...'
+                elif booking.get('client_name'):
+                    client_name = (booking.get('client_name') or '').strip()
+                    if not client_name:
+                        client_name = f"Client {client_id}" if client_id else 'Client Details Loading...'
+                
+                # Determine event color based on status
+                status = booking.get('status', 'tentative')
+                color_map = {
+                    'tentative': '#FFA500',    # Orange
+                    'confirmed': '#28a745',    # Green
+                    'cancelled': '#dc3545',    # Red
+                    'completed': '#17a2b8'     # Teal
                 }
-            }
-            
-            events.append(event_data)
+                color = color_map.get(status, '#6c757d')  # Default: Gray
+                
+                # Create meaningful title
+                event_title = booking.get('title', '').strip()
+                if not event_title:
+                    event_type = booking.get('event_type', 'Conference').replace('_', ' ').title()
+                    if event_type == 'Other' and booking.get('custom_event_type'):
+                        event_type = booking.get('custom_event_type').strip()
+                    event_title = f"{event_type} - {client_name}"
+                
+                # Calculate duration for display
+                duration_display = 'Duration TBD'
+                try:
+                    if booking.get('start_time') and booking.get('end_time'):
+                        start_time = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00'))
+                        end_time = datetime.fromisoformat(booking['end_time'].replace('Z', '+00:00'))
+                        duration = end_time - start_time
+                        
+                        if duration.days > 0:
+                            duration_display = f"{duration.days}d {duration.seconds//3600}h"
+                        else:
+                            hours = duration.seconds // 3600
+                            minutes = (duration.seconds % 3600) // 60
+                            if hours > 0:
+                                duration_display = f"{hours}h {minutes}m" if minutes > 0 else f"{hours}h"
+                            else:
+                                duration_display = f"{minutes}m"
+                except Exception:
+                    pass
+                
+                # Create event with comprehensive data
+                event_data = {
+                    'id': booking['id'],
+                    'title': event_title,
+                    'start': booking.get('start_time'),
+                    'end': booking.get('end_time'),
+                    'color': color,
+                    'borderColor': color,
+                    'textColor': '#ffffff',
+                    'extendedProps': {
+                        'room': room_name,
+                        'roomId': room_id,
+                        'client': client_name,
+                        'clientId': client_id,
+                        'attendees': booking.get('attendees', 0),
+                        'total': safe_float_conversion(booking.get('total_price', 0)),
+                        'status': status.replace('_', ' ').title(),
+                        'statusRaw': status,
+                        'notes': booking.get('notes', ''),
+                        'duration': duration_display,
+                        'event_type': booking.get('event_type', 'conference'),
+                        'description': f"{room_name} • {client_name} • {booking.get('attendees', 0)} attendees"
+                    }
+                }
+                
+                events.append(event_data)
+                
+            except Exception as e:
+                print(f"⚠️ Error processing booking {booking.get('id')} for calendar: {e}")
+                # Create minimal event for problematic bookings
+                events.append({
+                    'id': booking.get('id', 'unknown'),
+                    'title': f"Booking {booking.get('id', 'Unknown')} - Data Loading...",
+                    'start': booking.get('start_time'),
+                    'end': booking.get('end_time'),
+                    'color': '#6c757d',
+                    'extendedProps': {
+                        'room': 'Room Details Loading...',
+                        'client': 'Client Details Loading...',
+                        'status': 'Loading...',
+                        'attendees': 0,
+                        'total': 0
+                    }
+                })
         
+        print(f"✅ Generated {len(events)} calendar events")
         return events
         
     except Exception as e:
         print(f"❌ Calendar events error: {e}")
+        import traceback
+        traceback.print_exc()
         return []
 
 def format_booking_success_message(booking_data):
@@ -1187,18 +1268,25 @@ def handle_booking_update(booking_id, form_data, existing_booking, rooms_for_tem
     try:
         from flask import render_template
         
+        print(f"🔍 Starting booking update for ID: {booking_id}")
+        print(f"🔍 Form data keys: {list(form_data.keys())}")
+        
         # Extract and validate form data
-        booking_data = extract_booking_form_data(form_data)
+        booking_data = extract_booking_form_data(form_data, is_update=True)
         if not booking_data:
+            print("❌ Failed to extract booking data")
             return render_template('bookings/form.html', 
                                   title='Edit Booking', 
                                   form=BookingForm(), 
                                   booking=existing_booking,
                                   rooms=rooms_for_template)
         
+        print(f"✅ Booking data extracted successfully")
+        
         # Validate business rules
         validation_errors = validate_booking_business_rules(booking_data, exclude_booking_id=booking_id)
         if validation_errors:
+            print(f"❌ Validation errors: {validation_errors}")
             for error in validation_errors:
                 flash(error, 'danger')
             return render_template('bookings/form.html', 
@@ -1207,10 +1295,13 @@ def handle_booking_update(booking_id, form_data, existing_booking, rooms_for_tem
                                   booking=existing_booking,
                                   rooms=rooms_for_template)
         
+        print(f"✅ Business rules validation passed")
+        
         # Update booking
         success = update_complete_booking(booking_id, booking_data, existing_booking)
         
         if success:
+            print(f"✅ Booking updated successfully")
             safe_log_user_activity(
                 ActivityTypes.UPDATE_BOOKING,
                 f"Updated booking for {booking_data.get('client_name')}",
@@ -1221,6 +1312,7 @@ def handle_booking_update(booking_id, form_data, existing_booking, rooms_for_tem
             flash('✅ Booking updated successfully!', 'success')
             return redirect(url_for('bookings.view_booking', id=booking_id))
         else:
+            print(f"❌ Failed to update booking in database")
             flash('❌ Error updating booking', 'danger')
             return render_template('bookings/form.html', 
                                   title='Edit Booking', 
@@ -1606,38 +1698,88 @@ def get_dashboard_stats():
         }
 
 def get_recent_bookings(limit=10):
-    """Get recent bookings for dashboard with enhanced formatting"""
+    """Get recent bookings for dashboard with enhanced formatting and error handling"""
     try:
         response = supabase_admin.table('bookings').select("""
             *,
-            room:rooms(id, name),
-            client:clients(id, contact_person, company_name)
+            room:rooms(id, name, capacity),
+            client:clients(id, contact_person, company_name, email)
         """).order('created_at', desc=True).limit(limit).execute()
         
         if response.data:
             # Convert datetime strings for template compatibility
             bookings = convert_datetime_strings(response.data)
             
-            # Enhance booking data for display
+            # Enhance booking data for display with better error handling
             for booking in bookings:
-                # Ensure client name is available
-                if booking.get('client'):
+                # Ensure client name is available with multiple fallbacks
+                if booking.get('client') and isinstance(booking['client'], dict):
                     client = booking['client']
-                    booking['client_name'] = client.get('company_name') or client.get('contact_person', 'Unknown Client')
+                    company_name = (client.get('company_name') or '').strip()
+                    contact_person = (client.get('contact_person') or '').strip()
+                    
+                    # Priority: company_name > contact_person > fallback
+                    if company_name:
+                        booking['client_name'] = company_name
+                    elif contact_person:
+                        booking['client_name'] = contact_person
+                    else:
+                        booking['client_name'] = 'Client Details Loading...'
+                    
                     booking['client_display_name'] = booking['client_name']
+                    booking['client_email'] = client.get('email', '')
                 else:
-                    booking['client_name'] = booking.get('client_name', 'Unknown Client')
+                    # Fallback to booking-level client data
+                    booking['client_name'] = booking.get('client_name', 'Client Details Loading...')
                     booking['client_display_name'] = booking['client_name']
+                    booking['client_email'] = booking.get('client_email', '')
                 
-                # Ensure room name is available
-                if booking.get('room'):
-                    booking['room_name'] = booking['room'].get('name', 'Unknown Room')
+                # Ensure room name is available with better error handling
+                if booking.get('room') and isinstance(booking['room'], dict):
+                    room = booking['room']
+                    room_name = (room.get('name') or '').strip()
+                    booking['room_name'] = room_name if room_name else 'Room Details Loading...'
+                    booking['room_capacity'] = room.get('capacity')
                 else:
-                    booking['room_name'] = 'Unknown Room'
+                    # Fallback to booking-level room data
+                    booking['room_name'] = booking.get('room_name', 'Room Details Loading...')
+                    booking['room_capacity'] = booking.get('room_capacity')
                 
                 # Format status for display
                 status = booking.get('status', 'tentative')
                 booking['status_display'] = status.replace('_', ' ').title()
+                
+                # Calculate duration for display
+                try:
+                    from datetime import datetime, UTC
+                    if booking.get('start_time') and booking.get('end_time'):
+                        if isinstance(booking['start_time'], str):
+                            start_time = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00'))
+                        else:
+                            start_time = booking['start_time']
+                        
+                        if isinstance(booking['end_time'], str):
+                            end_time = datetime.fromisoformat(booking['end_time'].replace('Z', '+00:00'))
+                        else:
+                            end_time = booking['end_time']
+                        
+                        duration = end_time - start_time
+                        duration_hours = duration.total_seconds() / 3600
+                        duration_days = duration.days
+                        
+                        if duration_days > 0:
+                            booking['duration_display'] = f"{duration_days} day{'s' if duration_days != 1 else ''}, {duration_hours % 24:.1f} hours"
+                        else:
+                            booking['duration_display'] = f"{duration_hours:.1f} hours"
+                            
+                        booking['duration_hours'] = duration_hours
+                    else:
+                        booking['duration_display'] = 'Duration TBD'
+                        booking['duration_hours'] = 0
+                except Exception as e:
+                    print(f"⚠️ Error calculating duration for booking {booking.get('id')}: {e}")
+                    booking['duration_display'] = 'Duration TBD'
+                    booking['duration_hours'] = 0
                 
                 # Safe total price
                 booking['total_price'] = safe_float_conversion(booking.get('total_price', 0))
@@ -1691,42 +1833,90 @@ def get_recent_bookings(limit=10):
         return []
 
 def get_upcoming_bookings(limit=10):
-    """Get upcoming bookings for dashboard with enhanced formatting"""
+    """Get upcoming bookings for dashboard with enhanced formatting and error handling"""
     try:
         from datetime import datetime, UTC, timedelta
+        from utils.timezone_utils import get_cat_now, convert_utc_to_cat
         
-        # Get bookings starting from now
-        now = datetime.now(UTC)
+        # Get bookings starting from now (in CAT)
+        now = get_cat_now()
+        now_utc = now.astimezone(UTC)
         
         response = supabase_admin.table('bookings').select("""
             *,
             room:rooms(id, name, capacity),
-            client:clients(id, contact_person, company_name)
-        """).gte('start_time', now.isoformat()).neq('status', 'cancelled').order('start_time', desc=False).limit(limit).execute()
+            client:clients(id, contact_person, company_name, email)
+        """).gte('start_time', now_utc.isoformat()).neq('status', 'cancelled').order('start_time', desc=False).limit(limit).execute()
         
         if response.data:
             # Convert datetime strings for template compatibility
             bookings = convert_datetime_strings(response.data)
             
-            # Enhance booking data for display
+            # Enhance booking data for display with better error handling
             for booking in bookings:
-                # Ensure client name is available
-                if booking.get('client'):
+                # Ensure client name is available with multiple fallbacks
+                if booking.get('client') and isinstance(booking['client'], dict):
                     client = booking['client']
-                    booking['client_name'] = client.get('company_name') or client.get('contact_person', 'Unknown Client')
+                    company_name = (client.get('company_name') or '').strip()
+                    contact_person = (client.get('contact_person') or '').strip()
+                    
+                    # Priority: company_name > contact_person > fallback
+                    if company_name:
+                        booking['client_name'] = company_name
+                    elif contact_person:
+                        booking['client_name'] = contact_person
+                    else:
+                        booking['client_name'] = 'Client Details Loading...'
+                    
                     booking['client_display_name'] = booking['client_name']
+                    booking['client_email'] = client.get('email', '')
                 else:
-                    booking['client_name'] = booking.get('client_name', 'Unknown Client')
+                    # Fallback to booking-level client data
+                    booking['client_name'] = booking.get('client_name', 'Client Details Loading...')
                     booking['client_display_name'] = booking['client_name']
+                    booking['client_email'] = booking.get('client_email', '')
                 
-                # Ensure room name and details are available
-                if booking.get('room'):
+                # Ensure room name and details are available with better error handling
+                if booking.get('room') and isinstance(booking['room'], dict):
                     room = booking['room']
-                    booking['room_name'] = room.get('name', 'Unknown Room')
+                    room_name = (room.get('name') or '').strip()
+                    booking['room_name'] = room_name if room_name else 'Room Details Loading...'
                     booking['room_capacity'] = room.get('capacity')
                 else:
-                    booking['room_name'] = 'Unknown Room'
-                    booking['room_capacity'] = None
+                    # Fallback to booking-level room data
+                    booking['room_name'] = booking.get('room_name', 'Room Details Loading...')
+                    booking['room_capacity'] = booking.get('room_capacity')
+                
+                # Format status for display
+                status = booking.get('status', 'tentative')
+                booking['status_display'] = status.replace('_', ' ').title()
+                
+                # Calculate time until booking (in CAT timezone)
+                try:
+                    if booking.get('start_time'):
+                        if isinstance(booking['start_time'], str):
+                            start_time_utc = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00'))
+                        else:
+                            start_time_utc = booking['start_time']
+                        
+                        # Convert to CAT for time calculation
+                        start_time_cat = convert_utc_to_cat(start_time_utc)
+                        time_until = start_time_cat - now
+                        
+                        if time_until.days > 0:
+                            booking['time_until'] = f"in {time_until.days} day{'s' if time_until.days != 1 else ''}"
+                        elif time_until.seconds > 3600:
+                            hours = time_until.seconds // 3600
+                            booking['time_until'] = f"in {hours} hour{'s' if hours != 1 else ''}"
+                        else:
+                            minutes = time_until.seconds // 60
+                            booking['time_until'] = f"in {minutes} minute{'s' if minutes != 1 else ''}"
+                    else:
+                        booking['time_until'] = 'Time TBD'
+                except Exception as e:
+                    print(f"⚠️ Error calculating time until booking {booking.get('id')}: {e}")
+                    booking['time_until'] = 'Time TBD'
+                    booking['time_until'] = 'Time TBD'
                 
                 # Format status for display
                 status = booking.get('status', 'tentative')

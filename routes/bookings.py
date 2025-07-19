@@ -284,6 +284,8 @@ def view_booking(id):
 @login_required
 def edit_booking(id):
     """Edit an existing booking"""
+    print(f"🔍 Edit booking route called for ID: {id}, method: {request.method}")
+    
     form = BookingForm()
     
     try:
@@ -298,6 +300,8 @@ def edit_booking(id):
             return redirect(url_for('bookings.bookings'))
         
         if request.method == 'POST':
+            print(f"🔍 Processing POST request with form data")
+            print(f"🔍 Form data keys: {list(request.form.keys())}")
             result = handle_booking_update(id, request.form, booking, rooms)
             if hasattr(result, 'status_code') and result.status_code in [301, 302]:
                 return result
@@ -660,22 +664,86 @@ def download_quotation(id):
 @bookings_bp.route('/bookings/<int:id>/invoice')
 @login_required
 def generate_invoice(id):
-    """Generate invoice for booking"""
+    """Generate invoice for booking with improved error handling"""
     try:
         from datetime import datetime, timedelta
         import pytz
 
-        booking = get_booking_with_details(id)
-        if not booking:
+        # Get booking data with all related information
+        booking_response = supabase_admin.table('bookings').select("""
+            *,
+            room:rooms(*),
+            client:clients(*),
+            event_type:event_types(*)
+        """).eq('id', id).execute()
+
+        if not booking_response.data:
             flash('❌ Booking not found', 'danger')
             return redirect(url_for('bookings.bookings'))
 
-        # Debug: Print booking structure
-        print(f"🔍 Booking type: {type(booking)}")
-        print(f"🔍 Has client: {'client' in booking}")
-        print(f"🔍 Client type: {type(booking.get('client'))}")
-        print(f"🔍 Has room: {'room' in booking}")
-        print(f"🔍 Room type: {type(booking.get('room'))}")
+        booking = booking_response.data[0]
+
+        # Get custom addons
+        addons_response = supabase_admin.table('booking_custom_addons').select('*').eq('booking_id', id).execute()
+        booking['custom_addons'] = addons_response.data if addons_response.data else []
+
+        # Ensure all required data structures exist with safe fallbacks
+        if not booking.get('client') or not isinstance(booking['client'], dict):
+            # Try to get client data separately if join failed
+            if booking.get('client_id'):
+                client_response = supabase_admin.table('clients').select('*').eq('id', booking['client_id']).execute()
+                if client_response.data:
+                    booking['client'] = client_response.data[0]
+                else:
+                    # Create fallback client data
+                    booking['client'] = {
+                        'id': booking.get('client_id'),
+                        'contact_person': booking.get('client_name', 'Unknown Client'),
+                        'company_name': booking.get('company_name', ''),
+                        'email': booking.get('client_email', ''),
+                        'phone': booking.get('client_phone', ''),
+                        'address': booking.get('client_address', '')
+                    }
+            else:
+                # Create minimal fallback client data
+                booking['client'] = {
+                    'id': None,
+                    'contact_person': booking.get('client_name', 'Unknown Client'),
+                    'company_name': booking.get('company_name', ''),
+                    'email': booking.get('client_email', ''),
+                    'phone': '',
+                    'address': ''
+                }
+
+        if not booking.get('room') or not isinstance(booking['room'], dict):
+            # Try to get room data separately if join failed
+            if booking.get('room_id'):
+                room_response = supabase_admin.table('rooms').select('*').eq('id', booking['room_id']).execute()
+                if room_response.data:
+                    booking['room'] = room_response.data[0]
+                else:
+                    # Create fallback room data
+                    booking['room'] = {
+                        'id': booking.get('room_id'),
+                        'name': booking.get('room_name', 'Unknown Room'),
+                        'capacity': booking.get('room_capacity', 'Unknown'),
+                        'description': '',
+                        'hourly_rate': booking.get('hourly_rate', 0)
+                    }
+            else:
+                # Create minimal fallback room data
+                booking['room'] = {
+                    'id': None,
+                    'name': booking.get('room_name', 'Unknown Room'),
+                    'capacity': 'Unknown',
+                    'description': '',
+                    'hourly_rate': 0
+                }
+
+        # Debug logging for troubleshooting
+        print(f"🔍 Invoice generation for booking {id}")
+        print(f"🔍 Client data available: {bool(booking.get('client'))}")
+        print(f"🔍 Room data available: {bool(booking.get('room'))}")
 
         # Get current time in CAT timezone
         tz = pytz.timezone('Africa/Harare')
@@ -684,20 +752,103 @@ def generate_invoice(id):
 
         # Calculate totals if not present
         if not booking.get('total_price'):
-            booking['total_price'] = sum(
-                float(addon.get('total_price', 0)) 
-                for addon in booking.get('custom_addons', [])
-            )
+            booking['total_price'] = sum([
+                float(booking.get('room_cost', 0) or 0),
+                float(booking.get('catering_cost', 0) or 0),
+                float(booking.get('equipment_cost', 0) or 0),
+                float(booking.get('additional_services_cost', 0) or 0)
+            ])
 
-        # Format dates for template
-        if isinstance(booking.get('start_time'), str):
-            booking['start_time'] = datetime.fromisoformat(
-                booking['start_time'].replace('Z', '+00:00')
-            ).astimezone(tz)
-        if isinstance(booking.get('end_time'), str):
-            booking['end_time'] = datetime.fromisoformat(
-                booking['end_time'].replace('Z', '+00:00')
-            ).astimezone(tz)
+        # Prepare safe data for template with detailed cost breakdown
+        safe_booking = {
+            'id': booking.get('id'),
+            'title': booking.get('title', 'Conference Booking'),
+            'start_time': booking.get('start_time'),
+            'end_time': booking.get('end_time'),
+            'attendees': booking.get('attendees', 0),
+            'status': booking.get('status', 'confirmed'),
+            'total_price': booking.get('total_price', 0),
+            'room_cost': booking.get('room_cost', 0),
+            'catering_cost': booking.get('catering_cost', 0),
+            'equipment_cost': booking.get('equipment_cost', 0),
+            'additional_services_cost': booking.get('additional_services_cost', 0),
+            'notes': booking.get('notes', ''),
+            'custom_addons': booking.get('custom_addons', []),
+            'client': booking['client'],
+            'room': booking['room']
+        }
+
+        # Create detailed line items for invoice
+        line_items = []
+        
+        # Room hire cost
+        if safe_booking['room_cost'] > 0:
+            line_items.append({
+                'description': f"Conference Room Hire - {booking['room']['name']}",
+                'quantity': 1,
+                'unit_price': safe_booking['room_cost'],
+                'total': safe_booking['room_cost'],
+                'category': 'room'
+            })
+        
+        # Catering cost
+        if safe_booking['catering_cost'] > 0:
+            line_items.append({
+                'description': 'Catering Services',
+                'quantity': safe_booking['attendees'],
+                'unit_price': safe_booking['catering_cost'] / max(safe_booking['attendees'], 1),
+                'total': safe_booking['catering_cost'],
+                'category': 'catering'
+            })
+        
+        # Equipment cost
+        if safe_booking['equipment_cost'] > 0:
+            line_items.append({
+                'description': 'Audio Visual Equipment',
+                'quantity': 1,
+                'unit_price': safe_booking['equipment_cost'],
+                'total': safe_booking['equipment_cost'],
+                'category': 'equipment'
+            })
+        
+        # Additional services
+        if safe_booking['additional_services_cost'] > 0:
+            line_items.append({
+                'description': 'Additional Services',
+                'quantity': 1,
+                'unit_price': safe_booking['additional_services_cost'],
+                'total': safe_booking['additional_services_cost'],
+                'category': 'services'
+            })
+        
+        # Custom addons - these contain the specific addon descriptions
+        for addon in safe_booking['custom_addons']:
+            if addon.get('total_price', 0) > 0:
+                line_items.append({
+                    'description': addon.get('description', 'Additional Service'),
+                    'quantity': addon.get('quantity', 1),
+                    'unit_price': addon.get('unit_price', addon.get('total_price', 0)),
+                    'total': addon.get('total_price', 0),
+                    'category': 'addon'
+                })
+        
+        safe_booking['line_items'] = line_items
+        
+        # Also create addon_items for template compatibility
+        safe_booking['addon_items'] = []
+        for addon in safe_booking['custom_addons']:
+            safe_booking['addon_items'].append({
+                'name': addon.get('description', 'Additional Service'),
+                'quantity': addon.get('quantity', 1),
+                'price': addon.get('unit_price', addon.get('total_price', 0)),
+                'total': addon.get('total_price', 0)
+            })
+
+        # Calculate tax and totals
+        safe_booking['subtotal'] = safe_booking['total_price']
+        safe_booking['tax_rate'] = 0.15  # 15% VAT
+        safe_booking['tax_amount'] = safe_booking['subtotal'] * safe_booking['tax_rate']
+        safe_booking['total_amount'] = safe_booking['subtotal'] + safe_booking['tax_amount']
 
         # Log activity
         safe_log_user_activity(
@@ -707,23 +858,18 @@ def generate_invoice(id):
             resource_id=id
         )
 
-        print(f"🔍 About to render template with booking ID: {booking.get('id')}")
-        
-        return render_template(
-            'bookings/invoice.html',
-            booking=booking,
-            current_date=current_date,
-            due_date=due_date,
-            invoice_number=f"INV-{booking['id']}-{current_date.strftime('%Y%m')}",
-            title=f"Invoice - {booking.get('title', 'Booking')}"
-        )
+        return render_template('bookings/invoice.html',
+                             booking=safe_booking,
+                             current_date=current_date,
+                             due_date=due_date,
+                             title=f"Invoice - {safe_booking['title']}")
 
     except Exception as e:
-        import traceback
         print(f"❌ ERROR: Failed to generate invoice: {e}")
-        print(f"❌ Full traceback: {traceback.format_exc()}")
-        flash('❌ Error generating invoice', 'danger')
-        return redirect(url_for('bookings.view_booking', id=id))
+        import traceback
+        traceback.print_exc()
+        flash(f'❌ Failed to generate invoice: {str(e)}', 'danger')
+        return redirect(url_for('bookings.bookings'))
 
 @bookings_bp.route('/bookings/<int:id>/send-quotation', methods=['POST'])
 @login_required

@@ -32,7 +32,7 @@ def convert_datetime_strings(data, datetime_fields=['start_time', 'end_time', 'c
     return data
 
 def validate_booking_times(start_time, end_time):
-    """Validate booking start and end times."""
+    """Validate booking start and end times with multi-day support."""
     errors = []
     try:
         if end_time <= start_time:
@@ -42,13 +42,30 @@ def validate_booking_times(start_time, end_time):
         max_future = datetime.now(UTC) + timedelta(days=365)
         if start_time > max_future:
             errors.append("Booking cannot be scheduled more than 1 year in advance")
-        if start_time.hour < 6 or start_time.hour > 22:
-            errors.append("Bookings must be within business hours (6 AM - 10 PM)")
-        if end_time.hour < 6 or end_time.hour > 23:
-            errors.append("Bookings must end within business hours (6 AM - 11 PM)")
-        duration_hours = (end_time - start_time).total_seconds() / 3600
-        if duration_hours > 12:
-            errors.append("Bookings cannot exceed 12 hours")
+        
+        # Calculate duration in days and hours
+        duration = end_time - start_time
+        duration_days = duration.days
+        duration_hours = duration.total_seconds() / 3600
+        
+        # Allow multi-day bookings (up to 30 days for conferences/events)
+        if duration_days > 30:
+            errors.append("Bookings cannot exceed 30 days")
+        
+        # For single day bookings, still check business hours
+        if duration_days == 0:
+            if start_time.hour < 6 or start_time.hour > 22:
+                errors.append("Same-day bookings must start within business hours (6 AM - 10 PM)")
+            if end_time.hour < 6 or end_time.hour > 23:
+                errors.append("Same-day bookings must end within business hours (6 AM - 11 PM)")
+            # Remove 12-hour limit for single day bookings to allow all-day events
+            if duration_hours > 24:
+                errors.append("Single-day bookings cannot exceed 24 hours")
+        
+        # Minimum duration check
+        if duration_hours < 0.5:
+            errors.append("Bookings must be at least 30 minutes long")
+            
     except Exception:
         errors.append("Invalid date/time values")
     return errors

@@ -10,11 +10,16 @@ Rainbow Towers{% endblock %} {% block extra_css %}
   :root {
     --primary-color: #1e40af;
     --primary-light: #3b82f6;
+    --primary-dark: #1e3a8a;
     --secondary-color: #64748b;
     --success-color: #059669;
+    --success-light: #10b981;
     --warning-color: #d97706;
+    --warning-light: #f59e0b;
     --danger-color: #dc2626;
+    --danger-light: #ef4444;
     --info-color: #0ea5e9;
+    --info-light: #06b6d4;
     --light-bg: #f8fafc;
     --white: #ffffff;
     --gray-50: #f9fafb;
@@ -32,8 +37,29 @@ Rainbow Towers{% endblock %} {% block extra_css %}
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
     --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1);
+    --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
     --airport-blue: #003d82;
     --airport-yellow: #fbbf24;
+    --gradient-primary: linear-gradient(
+      135deg,
+      var(--primary-color) 0%,
+      var(--primary-light) 100%
+    );
+    --gradient-success: linear-gradient(
+      135deg,
+      var(--success-color) 0%,
+      var(--success-light) 100%
+    );
+    --gradient-warning: linear-gradient(
+      135deg,
+      var(--warning-color) 0%,
+      var(--warning-light) 100%
+    );
+    --gradient-dark: linear-gradient(
+      135deg,
+      var(--gray-800) 0%,
+      var(--gray-700) 100%
+    );
     --cat-timezone: "Africa/Harare";
   }
 
@@ -45,22 +71,19 @@ Rainbow Towers{% endblock %} {% block extra_css %}
   /* Main Container */
   .calendar-container {
     background: var(--white);
-    border-radius: 16px;
-    box-shadow: var(--shadow-xl);
+    border-radius: 20px;
+    box-shadow: var(--shadow-2xl);
     overflow: hidden;
     margin: 20px 0;
     border: 1px solid var(--border-color);
+    backdrop-filter: blur(10px);
   }
 
   /* Header */
   .calendar-header {
-    background: linear-gradient(
-      135deg,
-      var(--primary-color) 0%,
-      var(--primary-light) 100%
-    );
+    background: var(--gradient-primary);
     color: var(--white);
-    padding: 2rem;
+    padding: 2.5rem;
     position: relative;
     overflow: hidden;
   }
@@ -68,11 +91,27 @@ Rainbow Towers{% endblock %} {% block extra_css %}
   .calendar-header::before {
     content: "";
     position: absolute;
+    top: -50%;
+    right: -20%;
+    width: 40%;
+    height: 200%;
+    background: radial-gradient(
+      circle,
+      rgba(255, 255, 255, 0.1) 0%,
+      transparent 70%
+    );
+    transform: rotate(15deg);
+    pointer-events: none;
+  }
+
+  .calendar-header::after {
+    content: "";
+    position: absolute;
     top: 0;
+    left: 0;
     right: 0;
-    width: 100%;
-    height: 100%;
-    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none"><circle cx="90" cy="10" r="30" fill="rgba(255,255,255,0.1)"/><circle cx="10" cy="90" r="20" fill="rgba(255,255,255,0.05)"/></svg>');
+    bottom: 0;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none"><circle cx="90" cy="10" r="25" fill="rgba(255,255,255,0.08)"/><circle cx="10" cy="90" r="15" fill="rgba(255,255,255,0.05)"/><circle cx="70" cy="70" r="10" fill="rgba(255,255,255,0.03)"/></svg>');
     pointer-events: none;
   }
 
@@ -85,53 +124,91 @@ Rainbow Towers{% endblock %} {% block extra_css %}
   .stats-panel {
     background: linear-gradient(135deg, var(--gray-50) 0%, var(--white) 100%);
     border-bottom: 1px solid var(--border-color);
-    padding: 2rem;
+    padding: 2.5rem;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 2rem;
   }
 
   .stat-item {
     text-align: center;
-    padding: 1.5rem;
+    padding: 2rem 1.5rem;
     background: var(--white);
-    border-radius: 16px;
-    box-shadow: var(--shadow-md);
-    border: 2px solid var(--gray-200);
-    transition: all 0.3s ease;
+    border-radius: 20px;
+    box-shadow: var(--shadow-lg);
+    border: 2px solid transparent;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-item::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--gradient-primary);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
   }
 
   .stat-item:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-lg);
+    transform: translateY(-8px);
+    box-shadow: var(--shadow-2xl);
+    border-color: var(--primary-light);
+  }
+
+  .stat-item:hover::before {
+    transform: scaleX(1);
   }
 
   .stat-number {
-    font-size: 2.5rem;
+    font-size: 3rem;
     font-weight: 900;
-    margin-bottom: 0.5rem;
+    margin-bottom: 0.75rem;
     line-height: 1;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   .stat-label {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
+    letter-spacing: 0.15em;
     color: var(--gray-600);
     font-weight: 700;
   }
 
   .stat-tentative .stat-number {
-    color: var(--warning-color);
+    background: var(--gradient-warning);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
+
   .stat-confirmed .stat-number {
-    color: var(--success-color);
+    background: var(--gradient-success);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
+
   .stat-total .stat-number {
-    color: var(--primary-color);
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
+
   .stat-revenue .stat-number {
-    color: var(--gray-700);
+    background: var(--gradient-dark);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   /* Main Toolbar */
@@ -150,35 +227,64 @@ Rainbow Towers{% endblock %} {% block extra_css %}
   .view-toggle {
     display: flex;
     background: var(--gray-100);
-    border-radius: 12px;
-    padding: 4px;
-    gap: 2px;
+    border-radius: 16px;
+    padding: 6px;
+    gap: 4px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
   }
 
   .view-btn {
-    padding: 0.75rem 1.5rem;
+    padding: 1rem 2rem;
     border: none;
     background: transparent;
     color: var(--gray-600);
-    font-size: 0.875rem;
+    font-size: 0.9rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s ease;
-    border-radius: 8px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    border-radius: 12px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .view-btn::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.4),
+      transparent
+    );
+    transition: left 0.5s;
   }
 
   .view-btn:hover {
     background: var(--white);
     color: var(--gray-800);
-    box-shadow: var(--shadow-sm);
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+  }
+
+  .view-btn:hover::before {
+    left: 100%;
   }
 
   .view-btn.active {
-    background: var(--primary-color);
+    background: var(--gradient-primary);
     color: var(--white);
-    box-shadow: var(--shadow-md);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+  }
+
+  .view-btn.active::before {
+    display: none;
   }
 
   /* Control Groups */
@@ -224,21 +330,39 @@ Rainbow Towers{% endblock %} {% block extra_css %}
 
   /* Action Buttons */
   .action-btn {
-    padding: 0.75rem 1.5rem;
+    padding: 1rem 2rem;
     border: 2px solid var(--gray-200);
-    border-radius: 10px;
+    border-radius: 16px;
     background: var(--white);
     color: var(--gray-700);
-    font-size: 0.875rem;
+    font-size: 0.9rem;
     font-weight: 700;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     text-decoration: none;
     display: inline-flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .action-btn::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
+    transition: left 0.6s;
   }
 
   .action-btn:hover {
@@ -246,30 +370,40 @@ Rainbow Towers{% endblock %} {% block extra_css %}
     border-color: var(--primary-color);
     color: var(--primary-color);
     text-decoration: none;
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-xl);
+  }
+
+  .action-btn:hover::before {
+    left: 100%;
   }
 
   .action-btn.primary {
-    background: var(--primary-color);
+    background: var(--gradient-primary);
     border-color: var(--primary-color);
     color: var(--white);
+    box-shadow: var(--shadow-lg);
   }
 
   .action-btn.primary:hover {
-    background: var(--primary-light);
+    background: var(--primary-dark);
     color: var(--white);
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: var(--shadow-2xl);
   }
 
   .action-btn.success {
-    background: var(--success-color);
+    background: var(--gradient-success);
     border-color: var(--success-color);
     color: var(--white);
+    box-shadow: var(--shadow-lg);
   }
 
   .action-btn.success:hover {
     background: #047857;
     color: var(--white);
+    transform: translateY(-4px) scale(1.05);
+    box-shadow: var(--shadow-2xl);
   }
 
   /* TODAY VIEW - Airport Style Board */
@@ -428,105 +562,131 @@ Rainbow Towers{% endblock %} {% block extra_css %}
   .week-navigation {
     display: flex;
     align-items: center;
-    gap: 1.5rem;
-    background: var(--gray-50);
-    padding: 1.5rem 2rem;
+    gap: 2rem;
+    background: linear-gradient(135deg, var(--gray-50) 0%, var(--white) 100%);
+    padding: 2rem;
     border-bottom: 1px solid var(--border-color);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
   }
 
   .week-title {
-    font-size: 1.5rem;
+    font-size: 1.75rem;
     font-weight: 900;
     color: var(--gray-800);
     flex: 1;
     text-transform: uppercase;
     letter-spacing: 1px;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
   }
 
   .nav-btn {
     background: var(--white);
     border: 2px solid var(--gray-200);
-    border-radius: 10px;
-    padding: 0.75rem 1rem;
+    border-radius: 16px;
+    padding: 1rem 1.5rem;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     color: var(--gray-600);
     font-weight: 700;
+    font-size: 1.1rem;
+    box-shadow: var(--shadow-sm);
   }
 
   .nav-btn:hover {
     border-color: var(--primary-color);
     color: var(--primary-color);
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: var(--shadow-lg);
+    background: var(--gradient-primary);
+    color: var(--white);
   }
 
   /* Schedule Table */
   .schedule-view {
     padding: 0;
     overflow-x: auto;
+    background: var(--white);
   }
 
   .schedule-table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0;
-    font-size: 0.875rem;
+    font-size: 0.9rem;
+    box-shadow: var(--shadow-lg);
+    border-radius: 16px;
+    overflow: hidden;
   }
 
   .schedule-table th {
-    background: linear-gradient(
-      135deg,
-      var(--gray-800) 0%,
-      var(--gray-700) 100%
-    );
+    background: var(--gradient-dark);
     color: var(--white);
-    padding: 1.5rem 1rem;
+    padding: 2rem 1.5rem;
     text-align: center;
     font-weight: 900;
-    font-size: 0.9rem;
+    font-size: 1rem;
     text-transform: uppercase;
     letter-spacing: 1px;
     position: sticky;
     top: 0;
     z-index: 10;
+    border-bottom: 3px solid var(--primary-color);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
 
   .schedule-table th:first-child {
     text-align: left;
-    min-width: 180px;
-    background: linear-gradient(
-      135deg,
-      var(--primary-color) 0%,
-      var(--primary-light) 100%
-    );
+    min-width: 220px;
+    background: var(--gradient-primary);
+    border-right: 2px solid var(--primary-light);
   }
 
   .schedule-table th.today {
-    background: linear-gradient(135deg, var(--warning-color) 0%, #f59e0b 100%);
+    background: var(--gradient-warning);
     position: relative;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%,
+    100% {
+      box-shadow: 0 0 0 0 rgba(251, 191, 36, 0.7);
+    }
+    50% {
+      box-shadow: 0 0 0 10px rgba(251, 191, 36, 0);
+    }
   }
 
   .schedule-table th.today::after {
     content: "TODAY";
     position: absolute;
-    bottom: -15px;
+    bottom: -18px;
     left: 50%;
     transform: translateX(-50%);
     background: var(--warning-color);
     color: var(--white);
-    padding: 2px 8px;
-    border-radius: 4px;
-    font-size: 0.7rem;
+    padding: 4px 12px;
+    border-radius: 8px;
+    font-size: 0.75rem;
     font-weight: 900;
+    box-shadow: var(--shadow-md);
   }
 
   .schedule-table td {
     border: 1px solid var(--gray-200);
     padding: 0;
     vertical-align: top;
-    min-height: 140px;
+    min-height: 160px;
     position: relative;
+    transition: all 0.3s ease;
+  }
+
+  .schedule-table td:hover {
+    background: var(--gray-50);
+    box-shadow: inset 0 0 0 2px var(--primary-light);
   }
 
   .room-cell {
@@ -535,63 +695,125 @@ Rainbow Towers{% endblock %} {% block extra_css %}
       var(--gray-100) 0%,
       var(--gray-50) 100%
     );
-    padding: 1.5rem;
+    padding: 2rem 1.5rem;
     font-weight: 900;
     color: var(--gray-800);
     border-right: 4px solid var(--primary-color);
     position: sticky;
     left: 0;
     z-index: 5;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.1);
   }
 
   .room-name {
-    font-size: 1rem;
-    margin-bottom: 0.5rem;
+    font-size: 1.1rem;
+    margin-bottom: 0.75rem;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    color: var(--primary-color);
   }
 
   .room-capacity {
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     color: var(--gray-600);
     font-weight: 600;
+    background: var(--gray-200);
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    display: inline-block;
   }
 
   .day-cell {
     background: var(--white);
-    min-height: 140px;
-    padding: 0.75rem;
-    transition: background-color 0.2s ease;
+    min-height: 160px;
+    padding: 1rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
   }
 
   .day-cell:hover {
-    background: var(--gray-50);
+    background: linear-gradient(135deg, var(--gray-50) 0%, var(--white) 100%);
+    transform: scale(1.02);
   }
 
   .day-cell.today {
     background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    box-shadow: inset 0 0 0 3px var(--warning-color);
   }
 
   .day-cell.weekend {
-    background: var(--gray-50);
+    background: linear-gradient(
+      135deg,
+      var(--gray-50) 0%,
+      var(--gray-100) 100%
+    );
   }
 
   /* Event Blocks */
   .event-block {
-    background: var(--white);
-    border: 2px solid var(--gray-200);
-    border-radius: 10px;
-    padding: 1rem;
-    margin-bottom: 0.75rem;
+    background: var(--gradient-primary);
+    color: var(--white);
+    border: none;
+    border-radius: 16px;
+    padding: 1.25rem 1rem;
+    margin-bottom: 1rem;
     cursor: pointer;
-    transition: all 0.3s ease;
-    box-shadow: var(--shadow-sm);
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: var(--shadow-lg);
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    border-left: 6px solid var(--primary-light);
+  }
+
+  .event-block::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: var(--gradient-accent);
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.4s ease;
+  }
+
+  .event-block::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 4px;
+    height: 100%;
+    background: linear-gradient(
+      180deg,
+      transparent 0%,
+      rgba(255, 255, 255, 0.3) 50%,
+      transparent 100%
+    );
+    opacity: 0;
+    transition: opacity 0.3s ease;
   }
 
   .event-block:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-lg);
-    border-color: var(--primary-color);
+    transform: translateY(-6px) scale(1.05);
+    box-shadow: var(--shadow-2xl);
+    background: var(--gradient-accent);
+    border-left-color: var(--success-color);
+  }
+
+  .event-block:hover::before {
+    transform: scaleX(1);
+  }
+
+  .event-block:hover::after {
+    opacity: 1;
+  }
+
+  .event-block:active {
+    transform: translateY(-2px) scale(1.02);
+    transition: all 0.1s ease;
   }
 
   .event-block:last-child {
@@ -599,67 +821,102 @@ Rainbow Towers{% endblock %} {% block extra_css %}
   }
 
   .event-block.tentative {
-    border-left: 6px solid var(--warning-color);
-    background: linear-gradient(135deg, #fef3c7 0%, var(--white) 100%);
+    background: var(--gradient-warning);
+    border-left-color: var(--warning-light);
+    color: var(--gray-800);
+  }
+
+  .event-block.tentative:hover {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: var(--white);
   }
 
   .event-block.confirmed {
-    border-left: 6px solid var(--success-color);
-    background: linear-gradient(135deg, #dcfce7 0%, var(--white) 100%);
+    background: var(--gradient-success);
+    border-left-color: var(--success-light);
+  }
+
+  .event-block.confirmed:hover {
+    background: linear-gradient(135deg, #059669 0%, #047857 100%);
   }
 
   .event-block.cancelled {
-    border-left: 6px solid var(--danger-color);
-    background: linear-gradient(135deg, #fee2e2 0%, var(--white) 100%);
-    opacity: 0.7;
+    background: var(--gradient-danger);
+    border-left-color: var(--danger-light);
+    opacity: 0.85;
+    text-decoration: line-through;
+  }
+
+  .event-block.cancelled:hover {
+    opacity: 1;
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%);
+    text-decoration: line-through;
   }
 
   .event-organization {
     font-weight: 900;
-    color: var(--gray-800);
-    font-size: 0.9rem;
-    margin-bottom: 0.5rem;
-    line-height: 1.2;
+    font-size: 1rem;
+    margin-bottom: 0.75rem;
+    line-height: 1.3;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
   }
 
   .event-details {
     display: grid;
-    gap: 0.25rem;
-    font-size: 0.8rem;
-    color: var(--gray-600);
+    gap: 0.5rem;
+    font-size: 0.85rem;
   }
 
   .event-detail {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
-    font-weight: 600;
+    gap: 0.75rem;
+    font-weight: 700;
+    background: rgba(255, 255, 255, 0.15);
+    padding: 0.5rem 0.75rem;
+    border-radius: 10px;
+    backdrop-filter: blur(5px);
+    transition: all 0.3s ease;
+  }
+
+  .event-detail:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: translateX(4px);
   }
 
   .event-detail i {
-    width: 12px;
-    color: var(--gray-500);
+    width: 16px;
+    font-size: 0.9rem;
+    color: rgba(255, 255, 255, 0.9);
+    text-align: center;
+  }
+
+  .event-block.tentative .event-detail {
+    background: rgba(0, 0, 0, 0.1);
+    color: var(--gray-800);
+  }
+
+  .event-block.tentative .event-detail i {
+    color: var(--gray-700);
   }
 
   .event-block .event-pax {
     font-weight: 900;
-    color: var(--primary-color);
-    font-size: 0.9rem;
+    font-size: 0.95rem;
   }
 
   .event-block .event-time {
     font-weight: 900;
-    color: var(--gray-700);
     font-family: "Courier New", monospace;
-    font-size: 0.9rem;
+    font-size: 0.95rem;
+    letter-spacing: 1px;
   }
 
   .event-block .event-cost {
     font-weight: 900;
-    color: var(--success-color);
-    font-size: 0.9rem;
+    font-size: 0.95rem;
   }
 
   /* Empty cell styling */
@@ -667,13 +924,71 @@ Rainbow Towers{% endblock %} {% block extra_css %}
     display: flex;
     align-items: center;
     justify-content: center;
-    min-height: 140px;
+    min-height: 160px;
     color: var(--gray-400);
-    font-size: 0.8rem;
+    font-size: 0.9rem;
     text-align: center;
-    font-weight: 600;
+    font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 1px;
+    background: linear-gradient(
+      135deg,
+      rgba(59, 130, 246, 0.05) 0%,
+      rgba(147, 197, 253, 0.1) 100%
+    );
+    border-radius: 12px;
+    margin: 0.5rem;
+    transition: all 0.3s ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .empty-cell::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(59, 130, 246, 0.1),
+      transparent
+    );
+    transition: left 0.6s ease;
+  }
+
+  .empty-cell:hover {
+    background: linear-gradient(
+      135deg,
+      rgba(59, 130, 246, 0.1) 0%,
+      rgba(147, 197, 253, 0.15) 100%
+    );
+    color: var(--primary-color);
+    transform: scale(1.02);
+  }
+
+  .empty-cell:hover::before {
+    left: 100%;
+  }
+
+  .day-cell.today .empty-cell {
+    background: linear-gradient(
+      135deg,
+      rgba(251, 191, 36, 0.15) 0%,
+      rgba(245, 158, 11, 0.2) 100%
+    );
+    color: var(--warning-color);
+  }
+
+  .day-cell.weekend .empty-cell {
+    background: linear-gradient(
+      135deg,
+      rgba(107, 114, 128, 0.1) 0%,
+      rgba(156, 163, 175, 0.15) 100%
+    );
+    color: var(--gray-500);
   }
 
   /* Loading States */
@@ -747,26 +1062,73 @@ Rainbow Towers{% endblock %} {% block extra_css %}
       flex-direction: column;
       align-items: stretch;
       gap: 1rem;
+      padding: 1.5rem;
     }
 
     .control-group {
       justify-content: center;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .control-item {
+      justify-content: space-between;
+      width: 100%;
     }
 
     .stats-panel {
       grid-template-columns: repeat(2, 1fr);
       gap: 1rem;
+      padding: 1.5rem;
     }
 
     .board-header,
     .event-row {
       grid-template-columns: 2fr 1fr 1fr;
       gap: 0.5rem;
+      font-size: 0.85rem;
     }
 
     .event-cost,
     .event-status {
       display: none;
+    }
+
+    .schedule-table th {
+      padding: 1.5rem 1rem;
+      font-size: 0.85rem;
+    }
+
+    .schedule-table th:first-child {
+      min-width: 180px;
+    }
+
+    .room-cell {
+      padding: 1.5rem 1rem;
+    }
+
+    .day-cell {
+      min-height: 140px;
+      padding: 0.75rem;
+    }
+
+    .event-block {
+      padding: 1rem 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .event-organization {
+      font-size: 0.9rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .event-details {
+      gap: 0.4rem;
+    }
+
+    .event-detail {
+      padding: 0.4rem 0.6rem;
+      font-size: 0.8rem;
     }
   }
 
@@ -775,12 +1137,36 @@ Rainbow Towers{% endblock %} {% block extra_css %}
       padding: 1.5rem;
     }
 
+    .calendar-header h1 {
+      font-size: 1.5rem;
+    }
+
     .main-toolbar {
       padding: 1rem;
     }
 
+    .view-toggle {
+      flex-direction: column;
+    }
+
+    .view-btn {
+      padding: 0.75rem 1.5rem;
+      text-align: center;
+    }
+
     .week-navigation {
       padding: 1rem;
+      gap: 1rem;
+    }
+
+    .week-title {
+      font-size: 1.25rem;
+      text-align: center;
+    }
+
+    .nav-btn {
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
     }
 
     .today-view {
@@ -804,6 +1190,7 @@ Rainbow Towers{% endblock %} {% block extra_css %}
     .event-row {
       grid-template-columns: 2fr 1fr;
       gap: 0.5rem;
+      padding: 0.75rem 1rem;
     }
 
     .event-pax,
@@ -811,6 +1198,191 @@ Rainbow Towers{% endblock %} {% block extra_css %}
     .event-status {
       display: none;
     }
+
+    .schedule-table {
+      font-size: 0.8rem;
+    }
+
+    .schedule-table th {
+      padding: 1rem 0.75rem;
+      font-size: 0.8rem;
+    }
+
+    .schedule-table th:first-child {
+      min-width: 150px;
+    }
+
+    .room-cell {
+      padding: 1rem 0.75rem;
+    }
+
+    .room-name {
+      font-size: 1rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .room-capacity {
+      font-size: 0.8rem;
+    }
+
+    .day-cell {
+      min-height: 120px;
+      padding: 0.5rem;
+    }
+
+    .event-block {
+      padding: 0.75rem 0.5rem;
+      margin-bottom: 0.5rem;
+      border-radius: 12px;
+    }
+
+    .event-organization {
+      font-size: 0.8rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .event-details {
+      gap: 0.3rem;
+    }
+
+    .event-detail {
+      padding: 0.3rem 0.5rem;
+      font-size: 0.75rem;
+      gap: 0.5rem;
+    }
+
+    .empty-cell {
+      min-height: 120px;
+      font-size: 0.8rem;
+      margin: 0.25rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .calendar-header {
+      padding: 1rem;
+    }
+
+    .calendar-header-content .d-flex {
+      flex-direction: column;
+      gap: 1rem;
+      align-items: stretch;
+    }
+
+    .action-btn {
+      padding: 0.75rem 1.5rem;
+      font-size: 0.85rem;
+      text-align: center;
+    }
+
+    .stats-panel {
+      padding: 0.75rem;
+      gap: 0.75rem;
+    }
+
+    .stat-item {
+      padding: 1rem;
+    }
+
+    .stat-number {
+      font-size: 1.5rem;
+    }
+
+    .stat-label {
+      font-size: 0.75rem;
+    }
+
+    .main-toolbar {
+      padding: 0.75rem;
+    }
+
+    .view-btn {
+      padding: 0.6rem 1rem;
+      font-size: 0.8rem;
+    }
+
+    .control-select {
+      padding: 0.6rem 0.75rem;
+      font-size: 0.8rem;
+      min-width: 120px;
+    }
+
+    .schedule-table th {
+      padding: 0.75rem 0.5rem;
+      font-size: 0.75rem;
+    }
+
+    .schedule-table th:first-child {
+      min-width: 120px;
+    }
+
+    .room-cell {
+      padding: 0.75rem 0.5rem;
+    }
+
+    .room-name {
+      font-size: 0.9rem;
+    }
+
+    .room-capacity {
+      font-size: 0.7rem;
+    }
+
+    .day-cell {
+      min-height: 100px;
+      padding: 0.4rem;
+    }
+
+    .event-block {
+      padding: 0.6rem 0.4rem;
+      margin-bottom: 0.4rem;
+    }
+
+    .event-organization {
+      font-size: 0.75rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .event-detail {
+      padding: 0.25rem 0.4rem;
+      font-size: 0.7rem;
+    }
+
+    .empty-cell {
+      min-height: 100px;
+      font-size: 0.7rem;
+      margin: 0.2rem;
+    }
+  }
+
+  /* Loading and error states enhancements */
+  .loading-overlay {
+    background: linear-gradient(
+      135deg,
+      rgba(255, 255, 255, 0.95) 0%,
+      rgba(249, 250, 251, 0.98) 100%
+    );
+    backdrop-filter: blur(8px);
+  }
+
+  .loading-spinner {
+    width: 60px;
+    height: 60px;
+    border: 5px solid var(--gray-200);
+    border-top: 5px solid var(--primary-color);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    box-shadow: var(--shadow-lg);
+  }
+
+  .error-alert {
+    background: linear-gradient(135deg, #fef2f2 0%, #fee2e2 100%);
+    border: 2px solid #fecaca;
+    color: #dc2626;
+    padding: 1.5rem;
+    border-radius: 16px;
+    margin: 1rem 2rem;
+    box-shadow: var(--shadow-md);
   }
 </style>
 {% endblock %} {% block content %}
@@ -1115,6 +1687,12 @@ Rainbow Towers{% endblock %} {% block extra_css %}
 
       // Update time every second
       setInterval(() => this.updateDateTime(), 1000);
+
+      // Auto-refresh calendar events every 60 seconds
+      setInterval(() => {
+        console.log('🔄 Auto-refreshing calendar events...');
+        this.loadEvents();
+      }, 60000);
     }
 
     // Set date to Monday of current week
@@ -1369,9 +1947,11 @@ Rainbow Towers{% endblock %} {% block extra_css %}
 
     // Update weekly view
     updateWeeklyView() {
+      console.log('📅 Updating weekly view for week starting:', this.currentWeekStart.toISOString().split('T')[0]);
       this.updateWeekTitle();
       this.generateScheduleTable();
       this.populateScheduleTable();
+      console.log('✅ Weekly view updated successfully');
     }
 
     // Update weekly table headers
@@ -1392,12 +1972,17 @@ Rainbow Towers{% endblock %} {% block extra_css %}
     // Generate schedule table structure
     generateScheduleTable() {
       const tbody = document.getElementById('scheduleTableBody');
-      if (!tbody) return;
+      if (!tbody) {
+        console.error('❌ Schedule table body not found');
+        return;
+      }
 
+      console.log(`🏗️ Generating schedule table for ${this.rooms.length} rooms`);
       this.updateTableHeaders();
 
       tbody.innerHTML = '';
-      this.rooms.forEach(room => {
+      this.rooms.forEach((room, index) => {
+        console.log(`🏢 Creating row for room: ${room.name} (ID: ${room.id})`);
         const row = document.createElement('tr');
 
         // Room cell
@@ -1428,6 +2013,8 @@ Rainbow Towers{% endblock %} {% block extra_css %}
 
         tbody.appendChild(row);
       });
+
+      console.log('✅ Schedule table structure generated');
     }
 
     // Update table headers with current week dates
@@ -1460,6 +2047,8 @@ Rainbow Towers{% endblock %} {% block extra_css %}
 
     // Populate schedule table with events
     populateScheduleTable() {
+      console.log(`📊 Populating schedule table with ${this.filteredEvents.length} filtered events`);
+
       // Clear all day cells
       document.querySelectorAll('.day-cell').forEach(cell => {
         cell.innerHTML = '<div class="empty-cell">Available</div>';
@@ -1467,22 +2056,32 @@ Rainbow Towers{% endblock %} {% block extra_css %}
 
       // Group events by room and date
       const eventsByRoomAndDate = {};
+      let eventsProcessed = 0;
 
       this.filteredEvents.forEach(event => {
         const eventDate = this.parseCATDateTime(event.start);
         const eventDateString = eventDate.toISOString().split('T')[0];
         const roomId = event.extendedProps?.roomId;
 
-        if (!roomId) return;
+        console.log(`📝 Processing event: ${event.title} for room ${roomId} on ${eventDateString}`);
+
+        if (!roomId) {
+          console.warn('⚠️ Event missing roomId:', event);
+          return;
+        }
 
         const key = `${roomId}-${eventDateString}`;
         if (!eventsByRoomAndDate[key]) {
           eventsByRoomAndDate[key] = [];
         }
         eventsByRoomAndDate[key].push(event);
+        eventsProcessed++;
       });
 
+      console.log(`📈 Processed ${eventsProcessed} events into ${Object.keys(eventsByRoomAndDate).length} room-date combinations`);
+
       // Populate table cells
+      let cellsPopulated = 0;
       Object.keys(eventsByRoomAndDate).forEach(key => {
         const [roomId, date] = key.split('-');
         const cell = document.querySelector(`[data-room-id="${roomId}"][data-date="${date}"]`);
@@ -1495,8 +2094,14 @@ Rainbow Towers{% endblock %} {% block extra_css %}
             return timeA - timeB;
           });
           cell.innerHTML = events.map(event => this.createEventBlock(event)).join('');
+          cellsPopulated++;
+          console.log(`✅ Populated cell for room ${roomId} on ${date} with ${events.length} events`);
+        } else {
+          console.warn(`⚠️ Cell not found for room ${roomId} on ${date}`);
         }
       });
+
+      console.log(`🎯 Populated ${cellsPopulated} cells with events`);
     }
 
     // Create event block HTML
@@ -1668,6 +2273,7 @@ Rainbow Towers{% endblock %} {% block extra_css %}
 
     // Switch between views
     switchView(view) {
+      console.log(`🔄 Switching to ${view} view`);
       this.currentView = view;
 
       // Hide all view containers
@@ -1680,13 +2286,18 @@ Rainbow Towers{% endblock %} {% block extra_css %}
 
       if (view === 'today') {
         document.getElementById('todayView').classList.add('active');
-        weekNav.style.display = 'none';
+        if (weekNav) weekNav.style.display = 'none';
+        console.log('📅 Today view activated');
       } else if (view === 'weekly') {
         document.getElementById('weeklyView').classList.add('active');
-        weekNav.style.display = 'flex';
+        if (weekNav) weekNav.style.display = 'flex';
+        console.log('📊 Weekly view activated');
+        // Force update to ensure proper rendering
+        setTimeout(() => this.updateWeeklyView(), 100);
       } else if (view === 'monthly') {
         document.getElementById('monthlyView').classList.add('active');
-        weekNav.style.display = 'none';
+        if (weekNav) weekNav.style.display = 'none';
+        console.log('📆 Monthly view activated');
       }
 
       this.updateCurrentView();

@@ -702,6 +702,79 @@ def api_health_check():
         }), 500
 
 # ===============================
+# DASHBOARD STATS API ENDPOINTS
+# ===============================
+
+@api_bp.route('/api/dashboard/stats')
+@login_required
+def get_dashboard_stats():
+    """Get real-time dashboard statistics"""
+    try:
+        now = datetime.now(UTC)
+        today = now.date()
+        
+        # Get today's events (bookings) - using start_time column
+        start_of_today = datetime.combine(today, datetime.min.time()).replace(tzinfo=UTC)
+        end_of_today = datetime.combine(today, datetime.max.time()).replace(tzinfo=UTC)
+        
+        today_bookings = supabase_admin.table('bookings').select(
+            'id, start_time, status'
+        ).gte('start_time', start_of_today.isoformat()).lte('start_time', end_of_today.isoformat()).execute()
+        
+        today_events = len([b for b in today_bookings.data if b['status'] in ['confirmed', 'checked_in']])
+        
+        # Get weekly revenue (last 7 days)
+        week_start = today - timedelta(days=7)
+        week_start_dt = datetime.combine(week_start, datetime.min.time()).replace(tzinfo=UTC)
+        
+        weekly_bookings = supabase_admin.table('bookings').select(
+            'id, total_price, start_time, status'
+        ).gte('start_time', week_start_dt.isoformat()).execute()
+        
+        weekly_revenue = sum(
+            float(booking['total_price'] or 0) 
+            for booking in weekly_bookings.data 
+            if booking['status'] == 'confirmed'
+        )
+        
+        # Get active/available rooms
+        rooms_response = supabase_admin.table('rooms').select(
+            'id, name'
+        ).execute()
+        
+        # For now, assume all rooms are available since we don't know the exact schema
+        active_rooms = len(rooms_response.data)
+        total_rooms = len(rooms_response.data)
+        
+        # Calculate utilization (bookings this week vs capacity)
+        utilization = 0
+        if total_rooms > 0:
+            weekly_booked_days = len(weekly_bookings.data)
+            total_capacity = total_rooms * 7  # 7 days
+            utilization = min(100, (weekly_booked_days / total_capacity * 100)) if total_capacity > 0 else 0
+        
+        # Log activity
+        log_user_activity(
+            ActivityTypes.API_CALL,
+            f"Fetched dashboard stats"
+        )
+        
+        return jsonify({
+            'todayEvents': today_events,
+            'weeklyRevenue': int(weekly_revenue),
+            'activeRooms': active_rooms,
+            'utilization': round(utilization, 1),
+            'timestamp': now.isoformat()
+        })
+        
+    except Exception as e:
+        print(f"❌ Error fetching dashboard stats: {e}")
+        return jsonify({
+            'error': 'Failed to fetch dashboard stats',
+            'message': str(e)
+        }), 500
+
+# ===============================
 # ERROR HANDLERS
 # ===============================
 

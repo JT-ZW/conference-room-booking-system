@@ -474,6 +474,24 @@ def is_room_available_supabase(room_id, start_time, end_time, exclude_booking_id
         print(f"Availability check error: {e}")
         return False
 
+def check_room_conflicts(room_id, start_time, end_time, exclude_booking_id=None):
+    """Get all conflicting bookings for a room and time period"""
+    try:
+        query = supabase_admin.table('bookings').select('id, title, status, start_time, end_time')
+        query = query.eq('room_id', room_id)
+        query = query.neq('status', 'cancelled')
+        query = query.lt('start_time', end_time.isoformat())
+        query = query.gt('end_time', start_time.isoformat())
+        
+        if exclude_booking_id:
+            query = query.neq('id', exclude_booking_id)
+        
+        response = query.execute()
+        return response.data if response.data else []
+    except Exception as e:
+        print(f"Conflict check error: {e}")
+        return []
+
 # ===============================
 # BOOKING MANAGEMENT
 # ===============================
@@ -656,25 +674,88 @@ def calculate_booking_total(room_id, start_time, end_time, addon_ids=None):
 def validate_booking_business_rules(booking_data, exclude_booking_id=None):
     """Validate booking against business rules"""
     errors = []
+    warnings = []
     
     try:
-        # Check room availability
-        is_available = is_room_available_supabase(
+        # Check room availability - Only block if there's a CONFIRMED booking
+        conflicting_bookings = check_room_conflicts(
             booking_data['room_id'],
             booking_data['start_time'],
             booking_data['end_time'],
             exclude_booking_id=exclude_booking_id
         )
         
-        if not is_available:
-            errors.append('❌ Room is not available for the selected time period')
+        # Only error if there are confirmed conflicts
+        confirmed_conflicts = [b for b in conflicting_bookings if b.get('status') == 'confirmed']
+        if confirmed_conflicts:
+            conflict_details = []
+            for conflict in confirmed_conflicts:
+                start_time_str = conflict.get('start_time', 'Unknown time')
+                title = conflict.get('title', 'Untitled event')
+                
+                # Format the time better
+                try:
+                    if start_time_str and start_time_str != 'Unknown time':
+                        # Parse the ISO datetime string
+                        start_time = datetime.fromisoformat(start_time_str.replace('Z', '+00:00'))
+                        formatted_time = start_time.strftime('%Y-%m-%d %H:%M')
+                        conflict_details.append(f"'{title}' on {formatted_time}")
+                    else:
+                        conflict_details.append(f"'{title}' (time unknown)")
+                except Exception:
+                    conflict_details.append(f"'{title}' at {start_time_str}")
+            
+            error_msg = f'❌ Room is not available - confirmed booking(s) exist: {", ".join(conflict_details)}'
+            errors.append(error_msg)
         
-        # Check room capacity
+        # Warn about tentative conflicts
+        tentative_conflicts = [b for b in conflicting_bookings if b.get('status') == 'tentative']
+        if tentative_conflicts:
+            conflict_details = []
+            for conflict in tentative_conflicts:
+                start_time_str = conflict.get('start_time', 'Unknown time')
+                title = conflict.get('title', 'Untitled event')
+                
+                # Format the time better
+                try:
+                    if start_time_str and start_time_str != 'Unknown time':
+                        # Parse the ISO datetime string
+                        start_time = datetime.fromisoformat(start_time_str.replace('Z', '+00:00'))
+                        formatted_time = start_time.strftime('%Y-%m-%d %H:%M')
+                        conflict_details.append(f"'{title}' on {formatted_time}")
+                    else:
+                        conflict_details.append(f"'{title}' (time unknown)")
+                except Exception:
+                    conflict_details.append(f"'{title}' at {start_time_str}")
+            
+            warning_msg = f'⚠️ Warning: Room has tentative booking(s) that may conflict: {", ".join(conflict_details)}'
+            warnings.append(warning_msg)
+            # Store the warning in session so it can be displayed to user (only if in request context)
+            try:
+                from flask import session
+                if 'booking_warnings' not in session:
+                    session['booking_warnings'] = []
+                session['booking_warnings'].append(warning_msg)
+            except RuntimeError:
+                # Not in request context, skip session storage
+                pass
+        
+        # Check room capacity - Allow over capacity but give warning
         room_data = supabase_select('rooms', filters=[('id', 'eq', booking_data['room_id'])])
         if room_data:
             room_capacity = room_data[0].get('capacity', 0)
             if booking_data['attendees'] > room_capacity:
-                errors.append(f'❌ Room capacity ({room_capacity}) exceeded')
+                # Changed from error to warning - allow the booking to proceed
+                warnings.append(f'⚠️ Warning: Attendees ({booking_data["attendees"]}) exceed room capacity ({room_capacity})')
+                # Store the warning in session so it can be displayed to user (only if in request context)
+                try:
+                    from flask import session
+                    if 'booking_warnings' not in session:
+                        session['booking_warnings'] = []
+                    session['booking_warnings'].append(f'Room capacity exceeded: {booking_data["attendees"]} attendees in room with capacity {room_capacity}')
+                except RuntimeError:
+                    # Not in request context, skip session storage
+                    pass
         
         # Validate booking duration with multi-day support
         duration = booking_data['end_time'] - booking_data['start_time']
@@ -704,7 +785,7 @@ def validate_booking_business_rules(booking_data, exclude_booking_id=None):
         print(f"❌ ERROR: Business rule validation failed: {e}")
         errors.append('❌ Error validating booking rules')
     
-    return errors
+    return {'errors': errors, 'warnings': warnings}
 
 def find_or_create_event_type(event_type, custom_event_type=None):
     """Find or create event type"""
@@ -1204,7 +1285,10 @@ def handle_booking_creation(form_data, rooms_for_template):
                                   rooms=rooms_for_template)
         
         # Validate business rules
-        validation_errors = validate_booking_business_rules(booking_data)
+        validation_result = validate_booking_business_rules(booking_data)
+        validation_errors = validation_result.get('errors', [])
+        validation_warnings = validation_result.get('warnings', [])
+        
         if validation_errors:
             for error in validation_errors:
                 flash(error, 'danger')
@@ -1212,6 +1296,10 @@ def handle_booking_creation(form_data, rooms_for_template):
                                   title='New Booking', 
                                   form=BookingForm(), 
                                   rooms=rooms_for_template)
+        
+        # Show warnings if any
+        for warning in validation_warnings:
+            flash(warning, 'warning')
         
         # Find or create client
         client_id = find_or_create_client_enhanced(
@@ -1284,7 +1372,10 @@ def handle_booking_update(booking_id, form_data, existing_booking, rooms_for_tem
         print(f"✅ Booking data extracted successfully")
         
         # Validate business rules
-        validation_errors = validate_booking_business_rules(booking_data, exclude_booking_id=booking_id)
+        validation_result = validate_booking_business_rules(booking_data, exclude_booking_id=booking_id)
+        validation_errors = validation_result.get('errors', [])
+        validation_warnings = validation_result.get('warnings', [])
+        
         if validation_errors:
             print(f"❌ Validation errors: {validation_errors}")
             for error in validation_errors:
@@ -1294,6 +1385,10 @@ def handle_booking_update(booking_id, form_data, existing_booking, rooms_for_tem
                                   form=BookingForm(), 
                                   booking=existing_booking,
                                   rooms=rooms_for_template)
+        
+        # Show warnings if any
+        for warning in validation_warnings:
+            flash(warning, 'warning')
         
         print(f"✅ Business rules validation passed")
         

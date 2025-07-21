@@ -143,7 +143,7 @@ def api_get_client_bookings(client_id):
 @api_bp.route('/api/rooms/availability')
 @login_required
 def api_check_room_availability():
-    """Check room availability for given time period"""
+    """Check room availability for given time period with detailed conflict information"""
     try:
         room_id = request.args.get('room_id', type=int)
         start_time = request.args.get('start_time')
@@ -154,7 +154,7 @@ def api_check_room_availability():
             return jsonify({'error': 'Missing required parameters: room_id, start_time, end_time'}), 400
         
         from datetime import datetime
-        from core import is_room_available_supabase
+        from core import check_room_conflicts
         
         # Parse datetime strings
         try:
@@ -163,29 +163,32 @@ def api_check_room_availability():
         except ValueError:
             return jsonify({'error': 'Invalid datetime format'}), 400
         
-        # Check availability
-        is_available = is_room_available_supabase(room_id, start_dt, end_dt, exclude_booking_id)
+        # Get all conflicting bookings
+        conflicting_bookings = check_room_conflicts(room_id, start_dt, end_dt, exclude_booking_id)
         
-        # Get conflicting bookings if not available
-        conflicting_bookings = []
-        if not is_available:
-            try:
-                conflicts_response = supabase_admin.table('bookings').select(
-                    'id, title, start_time, end_time, status'
-                ).eq('room_id', room_id).neq('status', 'cancelled').lt(
-                    'start_time', end_dt.isoformat()
-                ).gt('end_time', start_dt.isoformat()).execute()
-                
-                conflicting_bookings = conflicts_response.data if conflicts_response.data else []
-            except:
-                pass
+        # Categorize conflicts
+        confirmed_conflicts = [b for b in conflicting_bookings if b.get('status') == 'confirmed']
+        tentative_conflicts = [b for b in conflicting_bookings if b.get('status') == 'tentative']
+        
+        # Room is available if no confirmed conflicts
+        is_available = len(confirmed_conflicts) == 0
+        
+        # Get room info for capacity check
+        room_response = supabase_admin.table('rooms').select('name, capacity').eq('id', room_id).execute()
+        room_info = room_response.data[0] if room_response.data else {}
         
         return jsonify({
             'available': is_available,
             'room_id': room_id,
+            'room_name': room_info.get('name', 'Unknown Room'),
+            'room_capacity': room_info.get('capacity', 0),
             'start_time': start_time,
             'end_time': end_time,
-            'conflicting_bookings': conflicting_bookings
+            'total_conflicts': len(conflicting_bookings),
+            'confirmed_conflicts': len(confirmed_conflicts),
+            'tentative_conflicts': len(tentative_conflicts),
+            'conflicting_bookings': conflicting_bookings,
+            'message': 'Available' if is_available else f'Room unavailable - {len(confirmed_conflicts)} confirmed booking(s) conflict'
         })
         
     except Exception as e:

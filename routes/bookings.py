@@ -171,7 +171,7 @@ def bookings():
 @bookings_bp.route('/bookings/new', methods=['GET', 'POST'])
 @login_required
 def new_booking():
-    """Create a new booking with enhanced validation"""
+    """Create a new booking with enhanced validation and form preservation"""
     form = BookingForm()
     
     try:
@@ -186,26 +186,83 @@ def new_booking():
         # Set form choices
         form.room_id.choices = [(room['id'], f"{room['name']} (Capacity: {room.get('capacity', 'N/A')})") for room in rooms]
         
+        # Check if we have preserved form data from a previous error
+        preserved_data = session.pop('preserved_booking_data', None)
+        
         if request.method == 'POST':
+            # Preserve current form data in case of errors
+            current_form_data = {
+                'room_id': request.form.get('room_id'),
+                'client_name': request.form.get('client_name'),
+                'company_name': request.form.get('company_name'),
+                'client_email': request.form.get('client_email'),
+                'client_phone': request.form.get('client_phone'),
+                'event_type': request.form.get('event_type'),
+                'custom_event_type': request.form.get('custom_event_type'),
+                'title': request.form.get('title'),
+                'description': request.form.get('description'),
+                'attendees': request.form.get('attendees'),
+                'start_date': request.form.get('start_date'),
+                'start_time': request.form.get('start_time'),
+                'end_date': request.form.get('end_date'),
+                'end_time': request.form.get('end_time'),
+                'status': request.form.get('status'),
+                'special_requirements': request.form.get('special_requirements'),
+                'notes': request.form.get('notes'),
+                # Preserve pricing items if any
+                'pricing_items': []
+            }
+            
+            # Extract pricing items from form
+            for key in request.form.keys():
+                if key.startswith('pricing_items[') and key.endswith('][description]'):
+                    index = key.split('[')[1].split(']')[0]
+                    description = request.form.get(f'pricing_items[{index}][description]')
+                    quantity = request.form.get(f'pricing_items[{index}][quantity]')
+                    price = request.form.get(f'pricing_items[{index}][price]')
+                    if description:
+                        current_form_data['pricing_items'].append({
+                            'description': description,
+                            'quantity': quantity,
+                            'price': price
+                        })
+            
             # Validate form data
             if not form.validate_on_submit():
                 for field, errors in form.errors.items():
                     for error in errors:
                         flash(f'❌ {field}: {error}', 'danger')
-                return render_template('bookings/form.html', title='New Booking', form=form, rooms=rooms)
+                # Preserve form data for next load
+                session['preserved_booking_data'] = current_form_data
+                return render_template('bookings/form.html', title='New Booking', form=form, rooms=rooms, preserved_data=current_form_data)
             
             # Extract and validate form data
             booking_data = extract_booking_form_data(request.form)
             if not booking_data:
                 flash('❌ Invalid booking data provided', 'danger')
-                return render_template('bookings/form.html', title='New Booking', form=form, rooms=rooms)
+                session['preserved_booking_data'] = current_form_data
+                return render_template('bookings/form.html', title='New Booking', form=form, rooms=rooms, preserved_data=current_form_data)
             
-            # Validate business rules
-            validation_errors = validate_booking_business_rules(booking_data)
+            # Validate business rules (now allows over-capacity with warnings)
+            validation_result = validate_booking_business_rules(booking_data)
+            validation_errors = validation_result.get('errors', [])
+            validation_warnings = validation_result.get('warnings', [])
+            
+            # Show validation errors
             if validation_errors:
                 for error in validation_errors:
                     flash(error, 'danger')
-                return render_template('bookings/form.html', title='New Booking', form=form, rooms=rooms)
+                session['preserved_booking_data'] = current_form_data
+                return render_template('bookings/form.html', title='New Booking', form=form, rooms=rooms, preserved_data=current_form_data)
+            
+            # Show validation warnings
+            for warning in validation_warnings:
+                flash(warning, 'warning')
+            
+            # Display any additional warnings from validation stored in session
+            if 'booking_warnings' in session:
+                for warning in session.pop('booking_warnings'):
+                    flash(warning, 'warning')
             
             # Find or create client
             client_id = find_or_create_client_enhanced(
@@ -216,7 +273,8 @@ def new_booking():
             
             if not client_id:
                 flash('❌ Error processing client information', 'danger')
-                return render_template('bookings/form.html', title='New Booking', form=form, rooms=rooms)
+                session['preserved_booking_data'] = current_form_data
+                return render_template('bookings/form.html', title='New Booking', form=form, rooms=rooms, preserved_data=current_form_data)
             
             # Find or create event type
             event_type_id = find_or_create_event_type(
@@ -228,6 +286,9 @@ def new_booking():
             booking_id = create_complete_booking(booking_data, client_id, event_type_id)
             
             if booking_id:
+                # Clear any preserved data on success
+                session.pop('preserved_booking_data', None)
+                
                 # Log successful creation
                 safe_log_user_activity(
                     ActivityTypes.CREATE_BOOKING,
@@ -244,13 +305,18 @@ def new_booking():
                 return redirect(url_for('bookings.view_booking', id=booking_id))
             else:
                 flash('❌ Error creating booking', 'danger')
+                session['preserved_booking_data'] = current_form_data
         
-        return render_template('bookings/form.html', title='New Booking', form=form, rooms=rooms)
+        # For GET requests, use preserved data if available
+        return render_template('bookings/form.html', title='New Booking', form=form, rooms=rooms, preserved_data=preserved_data)
         
     except Exception as e:
         print(f"❌ ERROR: Failed to process new booking: {e}")
         flash('Error processing booking', 'danger')
-        return render_template('bookings/form.html', title='New Booking', form=form, rooms=[])
+        # Preserve form data even on exceptions
+        if request.method == 'POST':
+            session['preserved_booking_data'] = current_form_data
+        return render_template('bookings/form.html', title='New Booking', form=form, rooms=[], preserved_data=session.get('preserved_booking_data'))
 
 @bookings_bp.route('/bookings/<int:id>')
 @login_required

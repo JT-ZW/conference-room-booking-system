@@ -305,6 +305,9 @@
             </div>
             <div id="capacityAlert" class="mt-2"></div>
           </div>
+          
+          <!-- Room Availability Alert -->
+          <div id="availabilityAlert" class="mt-3"></div>
 
           <div class="row mb-3">
             <div class="col-md-6">
@@ -830,7 +833,189 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
     
-    // Capacity indicator
+    // Real-time availability checking
+    let availabilityCheckTimeout;
+    
+    function checkRoomAvailability() {
+        const roomSelect = document.getElementById('room_id');
+        const startTimeInput = document.getElementById('start_time');
+        const endTimeInput = document.getElementById('end_time');
+        const availabilityAlert = document.getElementById('availabilityAlert');
+        
+        if (!roomSelect.value || !startTimeInput.value || !endTimeInput.value) {
+            if (availabilityAlert) {
+                availabilityAlert.innerHTML = '';
+            }
+            return;
+        }
+        
+        // Get datetime values directly from the datetime inputs
+        const startDateTime = startTimeInput.value + ':00'; // Add seconds if not present
+        const endDateTime = endTimeInput.value + ':00'; // Add seconds if not present
+        
+        // Show checking status
+        if (availabilityAlert) {
+            availabilityAlert.innerHTML = '<div class="alert alert-info">🔍 Checking availability...</div>';
+        }
+        
+        // Make API call
+        const params = new URLSearchParams({
+            room_id: roomSelect.value,
+            start_time: startDateTime,
+            end_time: endDateTime
+        });
+        
+        fetch(`/api/rooms/availability?${params}`)
+            .then(response => response.json())
+            .then(data => {
+                if (availabilityAlert) {
+                    if (data.available) {
+                        let message = `✅ ${data.room_name} is available for the selected time`;
+                        let alertClass = 'alert-success';
+                        
+                        // Show tentative conflicts as warnings
+                        if (data.tentative_conflicts > 0) {
+                            message = `⚠️ ${data.room_name} is available but has tentative conflicts`;
+                            alertClass = 'alert-warning';
+                            
+                            // Add details about tentative conflicts
+                            if (data.conflicting_bookings && data.conflicting_bookings.length > 0) {
+                                message += '<br><small><strong>Tentative bookings that may conflict:</strong>';
+                                data.conflicting_bookings.forEach(booking => {
+                                    if (booking.status === 'tentative') {
+                                        const startTime = booking.start_time ? new Date(booking.start_time).toLocaleString() : 'Unknown time';
+                                        message += `<br>• ${booking.title || 'Untitled Event'} at ${startTime}`;
+                                    }
+                                });
+                                message += '<br><em>You can still proceed with your booking, but be aware of potential conflicts.</em></small>';
+                            }
+                        }
+                        
+                        availabilityAlert.innerHTML = `<div class="alert ${alertClass}">${message}</div>`;
+                    } else {
+                        // Room not available due to confirmed conflicts
+                        let conflictDetails = '';
+                        if (data.conflicting_bookings && data.conflicting_bookings.length > 0) {
+                            conflictDetails = '<br><small><strong>Confirmed conflicts:</strong>';
+                            data.conflicting_bookings.forEach(booking => {
+                                if (booking.status === 'confirmed') {
+                                    const startTime = booking.start_time ? new Date(booking.start_time).toLocaleString() : 'Unknown time';
+                                    conflictDetails += `<br>• ${booking.title || 'Untitled Event'} at ${startTime}`;
+                                }
+                            });
+                            conflictDetails += '</small>';
+                        }
+                        availabilityAlert.innerHTML = `<div class="alert alert-danger">❌ ${data.message}${conflictDetails}</div>`;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Availability check failed:', error);
+                if (availabilityAlert) {
+                    availabilityAlert.innerHTML = '<div class="alert alert-warning">⚠️ Could not check availability</div>';
+                }
+            });
+    }
+    
+    // Add availability checking to relevant fields
+    ['room_id', 'start_time', 'end_time'].forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('change', () => {
+                clearTimeout(availabilityCheckTimeout);
+                availabilityCheckTimeout = setTimeout(checkRoomAvailability, 500);
+            });
+        }
+    });
+    
+    // Form data preservation - populate fields if preserved data exists
+    {% if preserved_data %}
+    const preservedData = {{ preserved_data|tojson }};
+    
+    // Populate form fields with preserved data
+    Object.keys(preservedData).forEach(key => {
+        const field = document.getElementById(key);
+        if (field && preservedData[key]) {
+            if (field.type === 'select-one') {
+                field.value = preservedData[key];
+            } else if (field.type === 'checkbox') {
+                field.checked = preservedData[key];
+            } else if (field.type === 'radio') {
+                if (field.value === preservedData[key]) {
+                    field.checked = true;
+                }
+            } else {
+                field.value = preservedData[key];
+            }
+            
+            // Trigger change events to update dependent fields
+            field.dispatchEvent(new Event('change'));
+        }
+    });
+    
+    // Restore pricing items if they exist
+    if (preservedData.pricing_items && preservedData.pricing_items.length > 0) {
+        const container = document.getElementById('pricingItems');
+        if (container) {
+            // Clear existing items first
+            container.innerHTML = '';
+            
+            preservedData.pricing_items.forEach((item, index) => {
+                if (item.description) {
+                    const newItem = document.createElement('div');
+                    newItem.className = 'pricing-item';
+                    newItem.dataset.index = index;
+                    
+                    newItem.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-5">
+                                <input type="text" class="form-control item-description" 
+                                       name="pricing_items[${index}][description]" 
+                                       value="${escapeHtml(item.description)}" placeholder="Item description">
+                            </div>
+                            <div class="col-md-2">
+                                <input type="number" class="form-control item-quantity" 
+                                       name="pricing_items[${index}][quantity]" 
+                                       value="${item.quantity || 1}" min="1" placeholder="Qty">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="number" class="form-control item-price" 
+                                       name="pricing_items[${index}][price]" 
+                                       value="${item.price || 0}" min="0" step="0.01" placeholder="Price">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-danger btn-sm remove-pricing-item">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    container.appendChild(newItem);
+                }
+            });
+            
+            // Update pricing index and totals
+            pricingItemIndex = preservedData.pricing_items.length;
+            updateRemoveButtons();
+            calculateTotal();
+        }
+    }
+    
+    // Show preservation message
+    const preservationMessage = document.createElement('div');
+    preservationMessage.className = 'alert alert-info alert-dismissible fade show';
+    preservationMessage.innerHTML = `
+        <i class="fas fa-info-circle"></i> Your previous form data has been restored.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    const form = document.querySelector('.card-body');
+    if (form) {
+        form.insertBefore(preservationMessage, form.firstChild);
+    }
+    {% endif %}
+    
+    // Enhanced capacity checking with better messaging
     function updateCapacityIndicator() {
         const venueSelect = document.getElementById('room_id');
         const attendeesInput = document.getElementById('attendees');
@@ -866,7 +1051,7 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (percentage > 100) {
             bar.classList.add('capacity-danger');
-            alert.innerHTML = `<div class="alert alert-danger">Over capacity! ${attendees} attendees exceeds room limit of ${capacity}.</div>`;
+            alert.innerHTML = `<div class="alert alert-warning">⚠️ Over capacity! ${attendees} attendees exceeds room limit of ${capacity}. The system will allow this booking but please ensure you have adequate space and facilities.</div>`;
         } else if (percentage > 80) {
             bar.classList.add('capacity-warning');
             alert.innerHTML = `<div class="alert alert-warning">Near capacity. Consider a larger venue for comfort.</div>`;
@@ -1068,6 +1253,11 @@ document.addEventListener('DOMContentLoaded', function() {
     updateSummary();
     calculateTotal();
     updateRemoveButtons();
+    
+    // Check availability on page load if form is pre-filled
+    setTimeout(() => {
+        checkRoomAvailability();
+    }, 1000);
 });
 </script>
 {% endblock %}

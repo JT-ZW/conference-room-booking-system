@@ -202,6 +202,7 @@ try:
     
     app.jinja_env.filters['parse_datetime'] = template_filters.parse_datetime_filter
     app.jinja_env.filters['format_datetime'] = template_filters.format_datetime_filter
+    app.jinja_env.filters['format_cat_datetime'] = template_filters.format_cat_datetime_filter
     app.jinja_env.filters['calculate_total'] = template_filters.calculate_total_filter
     app.jinja_env.filters['format_pricing_summary'] = template_filters.format_pricing_summary_filter
     app.jinja_env.filters['money'] = template_filters.money_filter

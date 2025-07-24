@@ -508,7 +508,9 @@ Details' }} | Rainbow Towers Conference Booking{% endblock %} {% block extra_css
                     >
                   </div>
                   <div class="text-end">
-                    <small class="text-muted">{{ record.created_at }}</small>
+                    <small class="text-muted"
+                      >{{ record.created_at | format_cat_datetime }}</small
+                    >
                     <br />
                     <small class="text-success">{{ record.time_ago }}</small>
                   </div>

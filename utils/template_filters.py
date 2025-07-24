@@ -1,4 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+
+# Define CAT timezone
+CAT = timezone(timedelta(hours=2))
 
 def parse_datetime_filter(date_string):
     if isinstance(date_string, str):
@@ -17,6 +20,38 @@ def format_datetime_filter(dt, format='%d %b %Y'):
         return dt
     except Exception:
         return dt
+
+def format_cat_datetime_filter(timestamp_str, format='%d %b %Y at %H:%M'):
+    """Format timestamp in CAT timezone"""
+    try:
+        if isinstance(timestamp_str, str):
+            # Parse the ISO timestamp
+            if 'T' in timestamp_str or '+' in timestamp_str or 'Z' in timestamp_str:
+                # Full ISO format with timezone info
+                dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+            else:
+                # Simple datetime string (likely from database without timezone)
+                dt = datetime.fromisoformat(timestamp_str)
+            
+            # For older records without timezone info, assume they are UTC and convert to CAT
+            if dt.tzinfo is None:
+                # Assume UTC for timezone-naive timestamps and convert to CAT
+                dt = dt.replace(tzinfo=timezone.utc).astimezone(CAT)
+            else:
+                # Convert any timezone-aware timestamp to CAT
+                dt = dt.astimezone(CAT)
+            
+            return dt.strftime(format)
+        elif isinstance(timestamp_str, datetime):
+            if timestamp_str.tzinfo is None:
+                # Assume UTC for timezone-naive datetime objects
+                timestamp_str = timestamp_str.replace(tzinfo=timezone.utc).astimezone(CAT)
+            else:
+                timestamp_str = timestamp_str.astimezone(CAT)
+            return timestamp_str.strftime(format)
+        return timestamp_str
+    except Exception:
+        return str(timestamp_str) if timestamp_str else ""
 
 def calculate_total_filter(room_rate, addons_total):
     try:

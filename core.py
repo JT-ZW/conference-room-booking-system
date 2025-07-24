@@ -553,7 +553,7 @@ def log_booking_change(booking_id, action_type, field_changed=None, old_value=No
             'change_summary': change_summary or f"{action_type.replace('_', ' ').title()} booking",
             'ip_address': ip_address,
             'user_agent': user_agent,
-            'created_at': datetime.now(UTC).isoformat()
+            'created_at': datetime.now(CAT).isoformat()
         }
         
         # Insert audit record
@@ -710,8 +710,18 @@ def get_booking_audit_trail(booking_id, limit=50):
 def get_time_ago(timestamp_str):
     """Get human-readable time ago string"""
     try:
+        # Parse the timestamp - it should be in CAT timezone now
         dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
-        now = datetime.now(UTC)
+        
+        # If the timestamp doesn't have timezone info, assume it's in CAT
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=CAT)
+        
+        # Convert both timestamps to CAT for consistent comparison
+        now = datetime.now(CAT)
+        if dt.tzinfo != CAT:
+            dt = dt.astimezone(CAT)
+        
         diff = now - dt
         
         if diff.days > 0:

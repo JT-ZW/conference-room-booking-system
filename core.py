@@ -2188,7 +2188,11 @@ def get_dashboard_stats():
             'tentative_bookings': 0,
             'cancelled_bookings': 0,
             'total_revenue': 0,
+            'confirmed_revenue': 0,
+            'tentative_revenue': 0,
             'revenue_this_month': 0,
+            'confirmed_revenue_this_month': 0,
+            'tentative_revenue_this_month': 0,
             'average_booking_value': 0,
             'upcoming_bookings': 0,
             'todays_bookings': 0,
@@ -2219,13 +2223,26 @@ def get_dashboard_stats():
         
         # Calculate revenue metrics
         total_revenue = 0
+        confirmed_revenue = 0
+        tentative_revenue = 0
         revenue_this_month = 0
+        confirmed_revenue_this_month = 0
+        tentative_revenue_this_month = 0
         now = datetime.now(UTC)
         current_month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
         
         for booking in non_cancelled_bookings:
             booking_revenue = safe_float_conversion(booking.get('total_price', 0))
+            booking_status = booking.get('status', 'tentative')
+            
+            # Add to total revenue
             total_revenue += booking_revenue
+            
+            # Separate by status
+            if booking_status == 'confirmed':
+                confirmed_revenue += booking_revenue
+            else:  # tentative or any other status
+                tentative_revenue += booking_revenue
             
             # Check if booking is this month
             if booking.get('start_time'):
@@ -2234,11 +2251,19 @@ def get_dashboard_stats():
                     # Ensure both dates are timezone-aware for comparison
                     if booking_date >= current_month_start:
                         revenue_this_month += booking_revenue
+                        if booking_status == 'confirmed':
+                            confirmed_revenue_this_month += booking_revenue
+                        else:
+                            tentative_revenue_this_month += booking_revenue
                 except Exception:
                     pass
         
         stats['total_revenue'] = total_revenue
+        stats['confirmed_revenue'] = confirmed_revenue
+        stats['tentative_revenue'] = tentative_revenue
         stats['revenue_this_month'] = revenue_this_month
+        stats['confirmed_revenue_this_month'] = confirmed_revenue_this_month
+        stats['tentative_revenue_this_month'] = tentative_revenue_this_month
         stats['average_booking_value'] = total_revenue / len(non_cancelled_bookings) if non_cancelled_bookings else 0
         
         # Calculate upcoming bookings (next 30 days)
@@ -2295,30 +2320,30 @@ def get_dashboard_stats():
             print("⚠️ No rooms found for occupancy calculation")
             stats['occupancy_rate'] = 0
         
-        # Calculate revenue growth (this month vs last month)
+        # Calculate revenue growth (this month vs last month) - using confirmed revenue for accuracy
         last_month_start = (current_month_start - timedelta(days=1)).replace(day=1)
-        last_month_revenue = 0
+        last_month_confirmed_revenue = 0
         
         for booking in non_cancelled_bookings:
-            if booking.get('start_time'):
+            if booking.get('start_time') and booking.get('status') == 'confirmed':
                 try:
                     booking_date = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00'))
                     if last_month_start <= booking_date < current_month_start:
-                        last_month_revenue += safe_float_conversion(booking.get('total_price', 0))
+                        last_month_confirmed_revenue += safe_float_conversion(booking.get('total_price', 0))
                 except Exception:
                     pass
         
-        if last_month_revenue > 0:
-            stats['revenue_growth'] = ((revenue_this_month - last_month_revenue) / last_month_revenue) * 100
+        if last_month_confirmed_revenue > 0:
+            stats['revenue_growth'] = ((confirmed_revenue_this_month - last_month_confirmed_revenue) / last_month_confirmed_revenue) * 100
         else:
-            stats['revenue_growth'] = 100 if revenue_this_month > 0 else 0
+            stats['revenue_growth'] = 100 if confirmed_revenue_this_month > 0 else 0
         
-        print(f"✅ Dashboard stats calculated: {stats['total_bookings']} bookings, ${stats['total_revenue']:.2f} total revenue, {stats['occupancy_rate']:.1f}% occupancy")
+        print(f"✅ Dashboard stats calculated: {stats['total_bookings']} bookings, ${stats['total_revenue']:.2f} total revenue (${stats['confirmed_revenue']:.2f} confirmed, ${stats['tentative_revenue']:.2f} tentative), {stats['occupancy_rate']:.1f}% occupancy")
         return stats
         
     except Exception as e:
         print(f"❌ ERROR: Failed to get dashboard stats: {e}")
-        return {
+        error_stats = {
             'total_bookings': 0,
             'total_clients': 0,
             'total_rooms': 0,
@@ -2327,13 +2352,18 @@ def get_dashboard_stats():
             'tentative_bookings': 0,
             'cancelled_bookings': 0,
             'total_revenue': 0,
+            'confirmed_revenue': 0,
+            'tentative_revenue': 0,
             'revenue_this_month': 0,
+            'confirmed_revenue_this_month': 0,
+            'tentative_revenue_this_month': 0,
             'average_booking_value': 0,
             'upcoming_bookings': 0,
             'todays_bookings': 0,
             'occupancy_rate': 0,
             'revenue_growth': 0
         }
+        return error_stats
 
 def get_recent_bookings(limit=10):
     """Get recent bookings for dashboard with enhanced formatting and error handling"""

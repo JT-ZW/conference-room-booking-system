@@ -68,6 +68,69 @@ Details' }} | Rainbow Towers Conference Booking{% endblock %} {% block extra_css
     top: 0.25rem;
   }
 
+  /* Enhanced Audit Trail Styles */
+  .audit-trail {
+    margin-top: 1rem;
+  }
+
+  .timeline-container {
+    position: relative;
+    padding-left: 0;
+  }
+
+  .timeline-container .timeline-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #f1f3f4;
+  }
+
+  .timeline-container .timeline-item:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .timeline-dot {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #f8f9fc;
+    border: 2px solid #e3e6f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: 1rem;
+    font-size: 0.875rem;
+  }
+
+  .timeline-content {
+    flex-grow: 1;
+    min-width: 0;
+  }
+
+  .change-details {
+    font-size: 0.8rem;
+    border-left: 3px solid #e3e6f0 !important;
+  }
+
+  .change-details .col-6:first-child {
+    border-right: 1px solid #e9ecef;
+  }
+
+  /* Alert styles for audit trail warnings */
+  .border-left-warning {
+    border-left: 0.25rem solid #f6c23e !important;
+  }
+
+  .alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffeaa7;
+    color: #856404;
+  }
+
   .addon-badge {
     background-color: #f8f9fc;
     color: #4e73df;
@@ -364,30 +427,156 @@ Details' }} | Rainbow Towers Conference Booking{% endblock %} {% block extra_css
         </div>
         {% endif %}
 
-        <div class="timeline">
+        <div class="audit-trail">
+          <h6 class="text-muted mb-3">
+            <i class="fas fa-history me-2"></i>Activity History
+          </h6>
+
+          {% if audit_trail is none %}
+          <!-- Audit trail table doesn't exist -->
+          <div class="alert alert-warning border-left-warning">
+            <div class="d-flex align-items-center">
+              <i class="fas fa-exclamation-triangle me-2"></i>
+              <div>
+                <strong>Audit Trail Setup Required</strong>
+                <p class="mb-0 small">
+                  The audit trail feature is not yet configured. Please ask your
+                  administrator to set up the database table.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Show basic timeline as fallback -->
           <div class="timeline-item">
-            <span class="small text-muted">
-              {% if booking.created_at %} {{ booking.created_at.strftime('%d %b
-              %Y, %H:%M') }} {% else %} Recently {% endif %}
-            </span>
-            <p class="mb-0">
-              Booking created by {% if booking.created_by_name %}
-              <span class="text-primary">{{ booking.created_by_name }}</span>
-              {% else %}
-              <span class="text-muted">unknown user</span>
-              {% endif %}
-            </p>
+            <div class="timeline-dot">
+              <i class="fas fa-plus-circle text-success"></i>
+            </div>
+            <div class="timeline-content">
+              <span class="small text-muted">
+                {% if booking.created_at %} {{ booking.created_at.strftime('%d
+                %b %Y, %H:%M') }} {% else %} Recently {% endif %}
+              </span>
+              <p class="mb-0">
+                Booking created by {% if booking.created_by_name %}
+                <span class="text-primary">{{ booking.created_by_name }}</span>
+                {% else %}
+                <span class="text-muted">unknown user</span>
+                {% endif %}
+              </p>
+            </div>
           </div>
 
           {% if booking.updated_at and booking.updated_at != booking.created_at
           %}
           <div class="timeline-item">
-            <span class="small text-muted">
-              {{ booking.updated_at.strftime('%d %b %Y, %H:%M') }}
-            </span>
-            <p class="mb-0">Booking last updated</p>
+            <div class="timeline-dot">
+              <i class="fas fa-edit text-primary"></i>
+            </div>
+            <div class="timeline-content">
+              <span class="small text-muted">
+                {{ booking.updated_at.strftime('%d %b %Y, %H:%M') }}
+              </span>
+              <p class="mb-0">Booking last updated</p>
+            </div>
           </div>
-          {% endif %}
+          {% endif %} {% elif audit_trail and audit_trail|length > 0 %}
+          <div class="timeline-container">
+            {% for record in audit_trail %}
+            <div class="timeline-item">
+              <div class="timeline-dot">
+                {% if record.action_type == 'created' %}
+                <i class="fas fa-plus-circle text-success"></i>
+                {% elif record.action_type == 'updated' %}
+                <i class="fas fa-edit text-primary"></i>
+                {% elif record.action_type == 'status_changed' %}
+                <i class="fas fa-exchange-alt text-warning"></i>
+                {% elif record.action_type == 'cancelled' %}
+                <i class="fas fa-times-circle text-danger"></i>
+                {% else %}
+                <i class="fas fa-circle text-secondary"></i>
+                {% endif %}
+              </div>
+              <div class="timeline-content">
+                <div
+                  class="d-flex justify-content-between align-items-start mb-1"
+                >
+                  <div>
+                    <strong>{{ record.user_name }}</strong>
+                    <span class="text-muted small"
+                      >{{ record.action_type.replace('_', ' ').title() }}</span
+                    >
+                  </div>
+                  <div class="text-end">
+                    <small class="text-muted">{{ record.created_at }}</small>
+                    <br />
+                    <small class="text-success">{{ record.time_ago }}</small>
+                  </div>
+                </div>
+
+                <p class="mb-1 text-dark">{{ record.change_summary }}</p>
+
+                {% if record.field_changed and record.old_value and
+                record.new_value %}
+                <div class="change-details small bg-light p-2 rounded mt-2">
+                  <div class="row">
+                    <div class="col-6">
+                      <span class="text-muted">From:</span>
+                      <span class="text-danger">{{ record.old_value }}</span>
+                    </div>
+                    <div class="col-6">
+                      <span class="text-muted">To:</span>
+                      <span class="text-success">{{ record.new_value }}</span>
+                    </div>
+                  </div>
+                </div>
+                {% endif %} {% if record.ip_address %}
+                <small class="text-muted d-block mt-1">
+                  <i class="fas fa-map-marker-alt me-1"></i>{{ record.ip_address
+                  }}
+                </small>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+          {% else %}
+          <div class="timeline-item">
+            <div class="timeline-dot">
+              <i class="fas fa-plus-circle text-success"></i>
+            </div>
+            <div class="timeline-content">
+              <span class="small text-muted">
+                {% if booking.created_at %} {{ booking.created_at.strftime('%d
+                %b %Y, %H:%M') }} {% else %} Recently {% endif %}
+              </span>
+              <p class="mb-0">
+                Booking created by {% if booking.created_by_name %}
+                <span class="text-primary">{{ booking.created_by_name }}</span>
+                {% else %}
+                <span class="text-muted">unknown user</span>
+                {% endif %}
+              </p>
+            </div>
+          </div>
+
+          {% if booking.updated_at and booking.updated_at != booking.created_at
+          %}
+          <div class="timeline-item">
+            <div class="timeline-dot">
+              <i class="fas fa-edit text-primary"></i>
+            </div>
+            <div class="timeline-content">
+              <span class="small text-muted">
+                {{ booking.updated_at.strftime('%d %b %Y, %H:%M') }}
+              </span>
+              <p class="mb-0">Booking last updated</p>
+              <small class="text-muted"
+                >No detailed audit information available</small
+              >
+            </div>
+          </div>
+          {% endif %} {% endif %}
         </div>
       </div>
     </div>

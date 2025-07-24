@@ -508,6 +508,226 @@ def get_booking_details_for_email(booking_id, booking_data):
         }
 
 # ===============================
+# BOOKING AUDIT TRAIL FUNCTIONS
+# ===============================
+
+def log_booking_change(booking_id, action_type, field_changed=None, old_value=None, new_value=None, change_summary=None):
+    """
+    Log a change to a booking for audit trail purposes.
+    
+    Args:
+        booking_id (int): The ID of the booking that was changed
+        action_type (str): Type of action (created, updated, status_changed, cancelled)
+        field_changed (str, optional): Specific field that was changed
+        old_value (str, optional): Previous value
+        new_value (str, optional): New value
+        change_summary (str, optional): Human-readable description of the change
+    """
+    try:
+        from flask import request
+        from flask_login import current_user
+        
+        # Get user information
+        user_id = None
+        user_name = 'System'
+        if hasattr(current_user, 'id') and current_user.is_authenticated:
+            user_id = current_user.id
+            user_name = getattr(current_user, 'username', current_user.id)
+        
+        # Get request information
+        ip_address = None
+        user_agent = None
+        if request:
+            ip_address = request.remote_addr
+            user_agent = request.headers.get('User-Agent', '')[:500]  # Limit length
+        
+        # Prepare audit record
+        audit_record = {
+            'booking_id': booking_id,
+            'user_id': user_id,
+            'user_name': user_name,
+            'action_type': action_type,
+            'field_changed': field_changed,
+            'old_value': str(old_value) if old_value is not None else None,
+            'new_value': str(new_value) if new_value is not None else None,
+            'change_summary': change_summary or f"{action_type.replace('_', ' ').title()} booking",
+            'ip_address': ip_address,
+            'user_agent': user_agent,
+            'created_at': datetime.now(UTC).isoformat()
+        }
+        
+        # Insert audit record
+        result = supabase_admin.table('booking_audit_trail').insert(audit_record).execute()
+        
+        if result.data:
+            print(f"✅ Audit trail logged: {action_type} for booking {booking_id}")
+        else:
+            print(f"⚠️ Failed to log audit trail for booking {booking_id}")
+            
+    except Exception as e:
+        print(f"❌ ERROR: Failed to log booking audit trail: {e}")
+
+def compare_booking_data(old_data, new_data):
+    """
+    Compare old and new booking data to identify changes.
+    
+    Args:
+        old_data (dict): Original booking data
+        new_data (dict): Updated booking data
+        
+    Returns:
+        list: List of changes with field names, old values, and new values
+    """
+    changes = []
+    
+    # Fields to track for changes
+    tracked_fields = {
+        'status': 'Status',
+        'room_id': 'Room',
+        'start_time': 'Start Time',
+        'end_time': 'End Time',
+        'attendees': 'Number of Attendees',
+        'notes': 'Notes',
+        'total_price': 'Total Price',
+        'client_name': 'Client Name',
+        'company_name': 'Company Name',
+        'client_email': 'Client Email',
+        'title': 'Event Title'
+    }
+    
+    for field, display_name in tracked_fields.items():
+        old_value = old_data.get(field)
+        new_value = new_data.get(field)
+        
+        # Handle different data types and formatting
+        if field in ['start_time', 'end_time']:
+            # Format datetime for comparison
+            old_value = safe_format_datetime_for_comparison(old_value)
+            new_value = safe_format_datetime_for_comparison(new_value)
+        elif field == 'total_price':
+            # Format currency for comparison
+            old_value = f"${float(old_value or 0):.2f}"
+            new_value = f"${float(new_value or 0):.2f}"
+        elif field == 'room_id':
+            # Get room names for better readability
+            old_value = get_room_name_by_id(old_value) if old_value else 'None'
+            new_value = get_room_name_by_id(new_value) if new_value else 'None'
+        
+        # Compare values
+        if str(old_value or '').strip() != str(new_value or '').strip():
+            changes.append({
+                'field': field,
+                'field_display': display_name,
+                'old_value': old_value,
+                'new_value': new_value
+            })
+    
+    return changes
+
+def safe_format_datetime_for_comparison(dt_value):
+    """Format datetime for consistent comparison"""
+    if not dt_value:
+        return None
+    
+    try:
+        if isinstance(dt_value, str):
+            dt = datetime.fromisoformat(dt_value.replace('Z', '+00:00'))
+        else:
+            dt = dt_value
+        return dt.strftime('%Y-%m-%d %H:%M')
+    except:
+        return str(dt_value)
+
+def get_room_name_by_id(room_id):
+    """Get room name by ID for audit trail"""
+    try:
+        if not room_id:
+            return None
+        result = supabase_admin.table('rooms').select('name').eq('id', room_id).execute()
+        if result.data:
+            return result.data[0]['name']
+        return f"Room ID: {room_id}"
+    except:
+        return f"Room ID: {room_id}"
+
+def get_booking_audit_trail(booking_id, limit=50):
+    """
+    Get audit trail for a specific booking.
+    
+    Args:
+        booking_id (int): The booking ID
+        limit (int): Maximum number of records to return
+        
+    Returns:
+        list: List of audit trail records
+    """
+    try:
+        result = supabase_admin.table('booking_audit_trail')\
+            .select('*')\
+            .eq('booking_id', booking_id)\
+            .order('created_at', desc=True)\
+            .limit(limit)\
+            .execute()
+        
+        if result.data:
+            # Format the data for display
+            formatted_records = []
+            for record in result.data:
+                # Parse the timestamp
+                try:
+                    created_at = datetime.fromisoformat(record['created_at'].replace('Z', '+00:00'))
+                    formatted_time = created_at.strftime('%Y-%m-%d %H:%M:%S')
+                except:
+                    formatted_time = record['created_at']
+                
+                formatted_record = {
+                    'id': record['id'],
+                    'user_name': record['user_name'] or 'System',
+                    'action_type': record['action_type'],
+                    'field_changed': record['field_changed'],
+                    'old_value': record['old_value'],
+                    'new_value': record['new_value'],
+                    'change_summary': record['change_summary'],
+                    'created_at': formatted_time,
+                    'ip_address': record.get('ip_address'),
+                    'time_ago': get_time_ago(record['created_at'])
+                }
+                formatted_records.append(formatted_record)
+            
+            return formatted_records
+        
+        return []
+        
+    except Exception as e:
+        error_msg = str(e)
+        if 'does not exist' in error_msg:
+            print(f"⚠️ WARNING: Booking audit trail table not found. Please create it first.")
+            return None  # Return None to indicate table doesn't exist
+        else:
+            print(f"❌ ERROR: Failed to get booking audit trail: {e}")
+            return []
+
+def get_time_ago(timestamp_str):
+    """Get human-readable time ago string"""
+    try:
+        dt = datetime.fromisoformat(timestamp_str.replace('Z', '+00:00'))
+        now = datetime.now(UTC)
+        diff = now - dt
+        
+        if diff.days > 0:
+            return f"{diff.days} day{'s' if diff.days != 1 else ''} ago"
+        elif diff.seconds > 3600:
+            hours = diff.seconds // 3600
+            return f"{hours} hour{'s' if hours != 1 else ''} ago"
+        elif diff.seconds > 60:
+            minutes = diff.seconds // 60
+            return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+        else:
+            return "Just now"
+    except:
+        return ""
+
+# ===============================
 # UTILITY FUNCTIONS
 # ===============================
 
@@ -1386,6 +1606,17 @@ def create_complete_booking(booking_data, client_id, event_type_id):
                 print(f"⚠️ WARNING: Failed to send confirmation email for booking #{booking_id}: {email_error}")
                 # Don't fail the booking creation if email fails
         
+        # Log booking creation in audit trail
+        try:
+            room_name = get_room_name_by_id(booking_data['room_id'])
+            log_booking_change(
+                booking_id=booking_id,
+                action_type='created',
+                change_summary=f"Created new booking for {booking_data['client_name']} in {room_name} from {booking_data['start_time'].strftime('%Y-%m-%d %H:%M')} to {booking_data['end_time'].strftime('%Y-%m-%d %H:%M')}"
+            )
+        except Exception as audit_error:
+            print(f"⚠️ WARNING: Failed to log booking creation audit: {audit_error}")
+        
         return booking_id
         
     except Exception as e:
@@ -1422,8 +1653,11 @@ def get_complete_booking_details(booking_id):
         return None
 
 def update_complete_booking(booking_id, booking_data, existing_booking):
-    """Update booking with all related data"""
+    """Update booking with all related data and log changes"""
     try:
+        # Compare old and new data to track changes
+        changes = compare_booking_data(existing_booking, booking_data)
+        
         # Find or create client if changed
         client_id = existing_booking.get('client_id')
         if (booking_data['client_name'] != existing_booking.get('client', {}).get('contact_person', '') or
@@ -1492,6 +1726,35 @@ def update_complete_booking(booking_id, booking_data, existing_booking):
             }
             
             supabase_insert('booking_custom_addons', addon_record)
+        
+        # Log audit trail for each change
+        if changes:
+            for change in changes:
+                # Log specific field changes
+                log_booking_change(
+                    booking_id=booking_id,
+                    action_type='updated',
+                    field_changed=change['field'],
+                    old_value=change['old_value'],
+                    new_value=change['new_value'],
+                    change_summary=f"Changed {change['field_display']} from '{change['old_value']}' to '{change['new_value']}'"
+                )
+            
+            # Log general update action
+            change_summary = f"Updated booking with {len(changes)} change{'s' if len(changes) != 1 else ''}: " + \
+                           ", ".join([change['field_display'] for change in changes])
+            log_booking_change(
+                booking_id=booking_id,
+                action_type='updated',
+                change_summary=change_summary
+            )
+        else:
+            # No changes detected, but still log the update attempt
+            log_booking_change(
+                booking_id=booking_id,
+                action_type='updated',
+                change_summary="Booking update attempted with no changes"
+            )
         
         return True
         

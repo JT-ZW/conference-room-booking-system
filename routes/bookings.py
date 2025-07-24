@@ -396,7 +396,7 @@ def new_booking():
 @bookings_bp.route('/bookings/<int:id>')
 @login_required
 def view_booking(id):
-    """View booking details with improved error handling"""
+    """View booking details with improved error handling and audit trail"""
     try:
         booking = get_booking_with_details(id)
         
@@ -424,10 +424,15 @@ def view_booking(id):
                 # If no timezone info, assume UTC
                 booking['updated_at'] = pytz.UTC.localize(booking['updated_at'])
             booking['updated_at'] = booking['updated_at'].astimezone(local_tz)
+        
+        # Get audit trail for this booking
+        from core import get_booking_audit_trail
+        audit_trail = get_booking_audit_trail(id)
             
         return render_template(
             'bookings/view.html',
             booking=booking,
+            audit_trail=audit_trail,
             title=f"Booking - {booking.get('title', '')}",
             pytz=pytz  # Pass pytz to template
         )
@@ -539,11 +544,24 @@ def delete_booking(id):
 @bookings_bp.route('/bookings/<int:id>/status', methods=['POST'])
 @login_required
 def update_booking_status(id):
-    """Update booking status with timestamp tracking"""
+    """Update booking status with timestamp tracking and audit trail"""
     try:
         status = request.form.get('status')
         if not status:
             flash('❌ No status provided', 'danger')
+            return redirect(url_for('bookings.view_booking', id=id))
+
+        # Get current booking to compare status
+        current_booking = supabase_admin.table('bookings').select('status').eq('id', id).execute()
+        if not current_booking.data:
+            flash('❌ Booking not found', 'danger')
+            return redirect(url_for('bookings.bookings'))
+        
+        old_status = current_booking.data[0]['status']
+        
+        # Don't update if status is the same
+        if old_status == status:
+            flash(f'ℹ️ Booking status is already {status}', 'info')
             return redirect(url_for('bookings.view_booking', id=id))
 
         # Prepare update data
@@ -572,6 +590,17 @@ def update_booking_status(id):
                 f"Updated booking #{id} status to {status}",
                 resource_type='booking',
                 resource_id=id
+            )
+            
+            # Log in audit trail
+            from core import log_booking_change
+            log_booking_change(
+                booking_id=id,
+                action_type='status_changed',
+                field_changed='status',
+                old_value=old_status.title(),
+                new_value=status.title(),
+                change_summary=f"Changed booking status from {old_status.title()} to {status.title()}"
             )
         else:
             flash('❌ Failed to update booking status', 'danger')

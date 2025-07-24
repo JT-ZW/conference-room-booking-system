@@ -760,6 +760,13 @@
       originalPrint.call(window);
     };
 
+    {% if is_print_request %}
+    // Auto-trigger print dialog if this is a print request
+    setTimeout(() => {
+      window.print();
+    }, 1000); // Wait 1 second for the page to fully load
+    {% endif %}
+
     console.log(
       "Rainbow Towers proforma invoice loaded for booking #{{ booking.id }}"
     );

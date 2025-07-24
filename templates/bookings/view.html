@@ -2,6 +2,32 @@
 Details' }} | Rainbow Towers Conference Booking{% endblock %} {% block extra_css
 %}
 <style>
+  /* Print styles */
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    body {
+      background-color: white !important;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 100% !important;
+      width: 100% !important;
+      margin: 0;
+      padding: 0;
+    }
+    .card {
+      border: none !important;
+      box-shadow: none !important;
+      margin: 0;
+    }
+    .card-body {
+      padding: 0 !important;
+    }
+  }
+
   .booking-header {
     border-left: 4px solid;
     padding-left: 1rem;
@@ -489,21 +515,22 @@ Details' }} | Rainbow Towers Conference Booking{% endblock %} {% block extra_css
       </a>
       <br />
       {% endif %}
-
-      <a
-        href="{{ url_for('bookings.print_details', id=booking.id) }}"
+      <!--
+      <button
+        type="button"
         class="btn btn-outline-secondary btn-document"
-        target="_blank"
+        onclick="printQuotation()"
       >
         <i class="fas fa-print me-1"></i>Print Details
-      </a>
+      </button>
 
-      <a
-        href="{{ url_for('bookings.download_quotation', id=booking.id) }}"
+      <button
+        type="button"
         class="btn btn-outline-primary btn-document"
+        onclick="downloadQuotation()"
       >
         <i class="fas fa-file-download me-1"></i>Download Quotation
-      </a>
+      </button>
 
       <button
         type="button"
@@ -514,337 +541,424 @@ Details' }} | Rainbow Towers Conference Booking{% endblock %} {% block extra_css
         <i class="fas fa-envelope me-1"></i>Email Client
       </button>
     </div>
+    -->
 
-    <!-- Price Summary -->
-    <div class="card shadow-sm border-0 mb-4">
-      <div class="card-header bg-white">
-        <h5 class="mb-0 text-primary">
-          <i class="fas fa-receipt me-2"></i>Price Summary
-        </h5>
-      </div>
-      <div class="card-body">
-        <!-- Room Charge -->
-        {% if booking.room_rate %}
-        <div class="d-flex justify-content-between mb-2">
-          <div>Room Charge:</div>
-          <div class="fw-bold">${{ "%.2f"|format(booking.room_rate) }}</div>
+      <!-- Price Summary -->
+      <div class="card shadow-sm border-0 mb-4">
+        <div class="card-header bg-white">
+          <h5 class="mb-0 text-primary">
+            <i class="fas fa-receipt me-2"></i>Price Summary
+          </h5>
         </div>
-        {% endif %}
+        <div class="card-body">
+          <!-- Room Charge -->
+          {% if booking.room_rate %}
+          <div class="d-flex justify-content-between mb-2">
+            <div>Room Charge:</div>
+            <div class="fw-bold">${{ "%.2f"|format(booking.room_rate) }}</div>
+          </div>
+          {% endif %}
 
-        <!-- Custom Add-ons -->
-        {% if booking.custom_addons %} {% for addon in booking.custom_addons %}
-        <div class="d-flex justify-content-between mb-2">
-          <div>{{ addon.description }}:</div>
-          <div class="fw-bold">${{ "%.2f"|format(addon.total_price) }}</div>
-        </div>
-        {% endfor %} {% endif %}
+          <!-- Custom Add-ons -->
+          {% if booking.custom_addons %} {% for addon in booking.custom_addons
+          %}
+          <div class="d-flex justify-content-between mb-2">
+            <div>{{ addon.description }}:</div>
+            <div class="fw-bold">${{ "%.2f"|format(addon.total_price) }}</div>
+          </div>
+          {% endfor %} {% endif %}
 
-        <!-- Discount if applicable -->
-        {% if booking.discount and booking.discount > 0 %}
-        <div class="d-flex justify-content-between mb-2">
-          <div>Discount:</div>
-          <div class="fw-bold text-danger">
-            -${{ "%.2f"|format(booking.discount) }}
+          <!-- Discount if applicable -->
+          {% if booking.discount and booking.discount > 0 %}
+          <div class="d-flex justify-content-between mb-2">
+            <div>Discount:</div>
+            <div class="fw-bold text-danger">
+              -${{ "%.2f"|format(booking.discount) }}
+            </div>
+          </div>
+          {% endif %}
+
+          <hr />
+
+          <!-- Total -->
+          <div class="d-flex justify-content-between mb-2">
+            <div class="fw-bold">Total Amount:</div>
+            <div class="fw-bold fs-4 text-primary">
+              ${{ "%.2f"|format(booking.total_price or 0) }}
+            </div>
+          </div>
+
+          <!-- Status Alert -->
+          <div
+            class="alert alert-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'tentative' %}warning{% else %}danger{% endif %} mt-3"
+          >
+            <div class="small">
+              {% if booking.status == 'confirmed' %}
+              <i class="fas fa-check-circle me-1"></i> This booking is confirmed
+              and ready. {% elif booking.status == 'tentative' %}
+              <i class="fas fa-clock me-1"></i> This booking is tentative and
+              awaiting confirmation. {% else %}
+              <i class="fas fa-ban me-1"></i> This booking has been cancelled.
+              {% endif %}
+            </div>
           </div>
         </div>
-        {% endif %}
-
-        <hr />
-
-        <!-- Total -->
-        <div class="d-flex justify-content-between mb-2">
-          <div class="fw-bold">Total Amount:</div>
-          <div class="fw-bold fs-4 text-primary">
-            ${{ "%.2f"|format(booking.total_price or 0) }}
-          </div>
-        </div>
-
-        <!-- Status Alert -->
-        <div
-          class="alert alert-{% if booking.status == 'confirmed' %}success{% elif booking.status == 'tentative' %}warning{% else %}danger{% endif %} mt-3"
-        >
-          <div class="small">
-            {% if booking.status == 'confirmed' %}
-            <i class="fas fa-check-circle me-1"></i> This booking is confirmed
-            and ready. {% elif booking.status == 'tentative' %}
-            <i class="fas fa-clock me-1"></i> This booking is tentative and
-            awaiting confirmation. {% else %}
-            <i class="fas fa-ban me-1"></i> This booking has been cancelled. {%
-            endif %}
-          </div>
-        </div>
       </div>
-    </div>
 
-    <!-- Quick Actions -->
-    <div class="card shadow-sm border-0">
-      <div class="card-header bg-white">
-        <h5 class="mb-0 text-primary">
-          <i class="fas fa-bolt me-2"></i>Quick Actions
-        </h5>
+      <!-- Quick Actions -->
+      <div class="card shadow-sm border-0">
+        <div class="card-header bg-white">
+          <h5 class="mb-0 text-primary">
+            <i class="fas fa-bolt me-2"></i>Quick Actions
+          </h5>
+        </div>
+        <ul class="list-group list-group-flush">
+          <li class="list-group-item">
+            <a
+              href="#"
+              class="text-decoration-none"
+              data-bs-toggle="modal"
+              data-bs-target="#emailClientModal"
+            >
+              <i class="fas fa-envelope me-2 text-primary"></i>Email Client
+            </a>
+          </li>
+          <li class="list-group-item">
+            <a
+              href="{{ url_for('bookings.new_booking') }}?duplicate={{ booking.id }}"
+              class="text-decoration-none"
+            >
+              <i class="fas fa-copy me-2 text-primary"></i>Duplicate Booking
+            </a>
+          </li>
+          {% if booking.client %}
+          <li class="list-group-item">
+            <a
+              href="{{ url_for('clients.view_client', id=booking.client.id) }}"
+              class="text-decoration-none"
+            >
+              <i class="fas fa-user me-2 text-primary"></i>View Client Details
+            </a>
+          </li>
+          {% endif %}
+          <li class="list-group-item">
+            <a
+              href="{{ url_for('bookings.edit_booking', id=booking.id) }}"
+              class="text-decoration-none"
+            >
+              <i class="fas fa-edit me-2 text-primary"></i>Edit Booking
+            </a>
+          </li>
+        </ul>
       </div>
-      <ul class="list-group list-group-flush">
-        <li class="list-group-item">
-          <a
-            href="#"
-            class="text-decoration-none"
-            data-bs-toggle="modal"
-            data-bs-target="#emailClientModal"
-          >
-            <i class="fas fa-envelope me-2 text-primary"></i>Email Client
-          </a>
-        </li>
-        <li class="list-group-item">
-          <a
-            href="{{ url_for('bookings.new_booking') }}?duplicate={{ booking.id }}"
-            class="text-decoration-none"
-          >
-            <i class="fas fa-copy me-2 text-primary"></i>Duplicate Booking
-          </a>
-        </li>
-        {% if booking.client %}
-        <li class="list-group-item">
-          <a
-            href="{{ url_for('clients.view_client', id=booking.client.id) }}"
-            class="text-decoration-none"
-          >
-            <i class="fas fa-user me-2 text-primary"></i>View Client Details
-          </a>
-        </li>
-        {% endif %}
-        <li class="list-group-item">
-          <a
-            href="{{ url_for('bookings.edit_booking', id=booking.id) }}"
-            class="text-decoration-none"
-          >
-            <i class="fas fa-edit me-2 text-primary"></i>Edit Booking
-          </a>
-        </li>
-      </ul>
     </div>
   </div>
-</div>
 
-<!-- Cancel Booking Modal -->
-<div
-  class="modal fade"
-  id="cancelBookingModal"
-  tabindex="-1"
-  aria-labelledby="cancelBookingModalLabel"
-  aria-hidden="true"
->
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header bg-danger text-white">
-        <h5 class="modal-title" id="cancelBookingModalLabel">
-          <i class="fas fa-exclamation-triangle me-2"></i>Cancel Booking
-        </h5>
-        <button
-          type="button"
-          class="btn-close btn-close-white"
-          data-bs-dismiss="modal"
-          aria-label="Close"
-        ></button>
-      </div>
-      <div class="modal-body">
-        <div class="alert alert-warning">
-          <i class="fas fa-exclamation-triangle me-2"></i>
-          <strong>Warning:</strong> This action will cancel the booking and
-          cannot be undone.
+  <!-- Cancel Booking Modal -->
+  <div
+    class="modal fade"
+    id="cancelBookingModal"
+    tabindex="-1"
+    aria-labelledby="cancelBookingModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-danger text-white">
+          <h5 class="modal-title" id="cancelBookingModalLabel">
+            <i class="fas fa-exclamation-triangle me-2"></i>Cancel Booking
+          </h5>
+          <button
+            type="button"
+            class="btn-close btn-close-white"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
         </div>
-        <p>Are you sure you want to cancel this booking?</p>
-        <div class="card bg-light">
-          <div class="card-body">
-            <h6 class="card-title">
-              {{ booking.title or 'Conference Room Booking' }}
-            </h6>
-            <p class="card-text">
-              <strong>Client:</strong>
-              {% if booking.client %} {{ booking.client.company_name or
-              booking.client.contact_person or 'Unknown Client' }} {% else %}
-              Unknown Client {% endif %}
-              <br />
-              <strong>Date:</strong>
-              {% if booking.start_time %} {% if booking.start_time is string %}
-              {{ booking.start_time[:10] }} {% else %} {{
-              booking.start_time.strftime('%d %B %Y') }} {% endif %} {% else %}
-              TBD {% endif %}
-              <br />
-              <strong>Value:</strong> ${{ "%.2f"|format(booking.total_price or
-              0) }}
-            </p>
+        <div class="modal-body">
+          <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            <strong>Warning:</strong> This action will cancel the booking and
+            cannot be undone.
+          </div>
+          <p>Are you sure you want to cancel this booking?</p>
+          <div class="card bg-light">
+            <div class="card-body">
+              <h6 class="card-title">
+                {{ booking.title or 'Conference Room Booking' }}
+              </h6>
+              <p class="card-text">
+                <strong>Client:</strong>
+                {% if booking.client %} {{ booking.client.company_name or
+                booking.client.contact_person or 'Unknown Client' }} {% else %}
+                Unknown Client {% endif %}
+                <br />
+                <strong>Date:</strong>
+                {% if booking.start_time %} {% if booking.start_time is string
+                %} {{ booking.start_time[:10] }} {% else %} {{
+                booking.start_time.strftime('%d %B %Y') }} {% endif %} {% else
+                %} TBD {% endif %}
+                <br />
+                <strong>Value:</strong> ${{ "%.2f"|format(booking.total_price or
+                0) }}
+              </p>
+            </div>
           </div>
         </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            <i class="fas fa-times me-1"></i>Keep Booking
+          </button>
+          <form
+            action="{{ url_for('bookings.delete_booking', id=booking.id) }}"
+            method="POST"
+          >
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+            <button type="submit" class="btn btn-danger">
+              <i class="fas fa-ban me-1"></i>Cancel Booking
+            </button>
+          </form>
+        </div>
       </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          <i class="fas fa-times me-1"></i>Keep Booking
-        </button>
+    </div>
+  </div>
+
+  <!-- Email Client Modal -->
+  <div
+    class="modal fade"
+    id="emailClientModal"
+    tabindex="-1"
+    aria-labelledby="emailClientModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header bg-info text-white">
+          <h5 class="modal-title" id="emailClientModalLabel">
+            <i class="fas fa-envelope me-2"></i>Email Client
+          </h5>
+          <button
+            type="button"
+            class="btn-close btn-close-white"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
+        <div class="modal-body">
+          {% if booking.client and booking.client.email %}
+          <p>Send booking information to:</p>
+          <div class="card bg-light">
+            <div class="card-body">
+              <h6 class="card-title">
+                {{ booking.client.contact_person or 'Client Contact' }}
+              </h6>
+              <p class="card-text">
+                <i class="fas fa-building me-1"></i>{{
+                booking.client.company_name or 'Individual Client' }}<br />
+                <i class="fas fa-envelope me-1"></i>{{ booking.client.email }}
+              </p>
+            </div>
+          </div>
+          <div class="mb-3 mt-3">
+            <label class="form-label">Email Type:</label>
+            <select class="form-select" id="emailType">
+              {% if booking.status == 'tentative' %}
+              <option value="quotation">Send Quotation</option>
+              {% endif %} {% if booking.status == 'confirmed' %}
+              <option value="confirmation">Booking Confirmation</option>
+              {% endif %}
+              <option value="details">Booking Details</option>
+              <option value="reminder">Event Reminder</option>
+            </select>
+          </div>
+          {% else %}
+          <div class="alert alert-warning">
+            <i class="fas fa-exclamation-triangle me-2"></i>
+            Client email not available. Please update client information first.
+          </div>
+          {% endif %}
+        </div>
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn btn-secondary"
+            data-bs-dismiss="modal"
+          >
+            <i class="fas fa-times me-1"></i>Cancel
+          </button>
+          {% if booking.client and booking.client.email %}
+          <button type="button" class="btn btn-info" onclick="sendEmail()">
+            <i class="fas fa-envelope me-1"></i>Send Email
+          </button>
+          {% else %}
+          <a
+            href="{{ url_for('bookings.edit_booking', id=booking.id) }}"
+            class="btn btn-primary"
+          >
+            <i class="fas fa-edit me-1"></i>Update Client Info
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Email Client Modal -->
+  <div
+    class="modal fade"
+    id="emailClientModal"
+    tabindex="-1"
+    aria-labelledby="emailClientModalLabel"
+    aria-hidden="true"
+  >
+    <div class="modal-dialog">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title" id="emailClientModalLabel">
+            <i class="fas fa-envelope me-2"></i>Email to Client
+          </h5>
+          <button
+            type="button"
+            class="btn-close"
+            data-bs-dismiss="modal"
+            aria-label="Close"
+          ></button>
+        </div>
         <form
-          action="{{ url_for('bookings.delete_booking', id=booking.id) }}"
+          action="{{ url_for('bookings.send_quotation_email', id=booking.id) }}"
           method="POST"
         >
-          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-          <button type="submit" class="btn btn-danger">
-            <i class="fas fa-ban me-1"></i>Cancel Booking
-          </button>
+          <div class="modal-body">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
+
+            <div class="mb-3">
+              <label for="email_to" class="form-label">To:</label>
+              <input
+                type="email"
+                class="form-control"
+                id="email_to"
+                name="email_to"
+                value="{{ booking.client.email }}"
+                required
+              />
+            </div>
+
+            <div class="mb-3">
+              <label for="email_subject" class="form-label">Subject:</label>
+              <input
+                type="text"
+                class="form-control"
+                id="email_subject"
+                name="email_subject"
+                value="{% if booking.status == 'confirmed' %}Invoice{% else %}Quotation{% endif %} for Booking #{{ booking.id }}"
+                required
+              />
+            </div>
+
+            <div class="mb-3">
+              <label for="email_message" class="form-label">Message:</label>
+              <textarea
+                class="form-control"
+                id="email_message"
+                name="email_message"
+                rows="4"
+                placeholder="Add a personal message (optional)..."
+              ></textarea>
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              data-bs-dismiss="modal"
+            >
+              Cancel
+            </button>
+            <button type="submit" class="btn btn-primary">
+              <i class="fas fa-paper-plane me-1"></i>Send Email
+            </button>
+          </div>
         </form>
       </div>
     </div>
   </div>
-</div>
 
-<!-- Email Client Modal -->
-<div
-  class="modal fade"
-  id="emailClientModal"
-  tabindex="-1"
-  aria-labelledby="emailClientModalLabel"
-  aria-hidden="true"
->
-  <div class="modal-dialog">
-    <div class="modal-content">
-      <div class="modal-header bg-info text-white">
-        <h5 class="modal-title" id="emailClientModalLabel">
-          <i class="fas fa-envelope me-2"></i>Email Client
-        </h5>
-        <button
-          type="button"
-          class="btn-close btn-close-white"
-          data-bs-dismiss="modal"
-          aria-label="Close"
-        ></button>
-      </div>
-      <div class="modal-body">
-        {% if booking.client and booking.client.email %}
-        <p>Send booking information to:</p>
-        <div class="card bg-light">
-          <div class="card-body">
-            <h6 class="card-title">
-              {{ booking.client.contact_person or 'Client Contact' }}
-            </h6>
-            <p class="card-text">
-              <i class="fas fa-building me-1"></i>{{ booking.client.company_name
-              or 'Individual Client' }}<br />
-              <i class="fas fa-envelope me-1"></i>{{ booking.client.email }}
-            </p>
-          </div>
-        </div>
-        <div class="mb-3 mt-3">
-          <label class="form-label">Email Type:</label>
-          <select class="form-select" id="emailType">
-            {% if booking.status == 'tentative' %}
-            <option value="quotation">Send Quotation</option>
-            {% endif %} {% if booking.status == 'confirmed' %}
-            <option value="confirmation">Booking Confirmation</option>
-            {% endif %}
-            <option value="details">Booking Details</option>
-            <option value="reminder">Event Reminder</option>
-          </select>
-        </div>
-        {% else %}
-        <div class="alert alert-warning">
-          <i class="fas fa-exclamation-triangle me-2"></i>
-          Client email not available. Please update client information first.
-        </div>
-        {% endif %}
-      </div>
-      <div class="modal-footer">
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-          <i class="fas fa-times me-1"></i>Cancel
-        </button>
-        {% if booking.client and booking.client.email %}
-        <button type="button" class="btn btn-info" onclick="sendEmail()">
-          <i class="fas fa-envelope me-1"></i>Send Email
-        </button>
-        {% else %}
-        <a
-          href="{{ url_for('bookings.edit_booking', id=booking.id) }}"
-          class="btn btn-primary"
-        >
-          <i class="fas fa-edit me-1"></i>Update Client Info
-        </a>
-        {% endif %}
-      </div>
-    </div>
-  </div>
-</div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  <script>
+    // Print quotation function - opens the invoice page in a new window for printing
+    function printQuotation() {
+      const printUrl = "{{ url_for('bookings.generate_invoice', id=booking.id) }}?print=true";
+      const printWindow = window.open(printUrl, '_blank', 'width=800,height=600');
 
-<form
-  action="{{ url_for('bookings.send_quotation_email', id=booking.id) }}"
-  method="POST"
->
-  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}" />
-  <button type="submit" class="btn btn-primary">
-    <i class="fas fa-envelope"></i> Send Quotation Email
-  </button>
-</form>
-
-<script>
-  function sendEmail() {
-    const emailType = document.getElementById('emailType').value;
-    let url = '';
-
-    switch (emailType) {
-      case 'quotation':
-        url = "{{ url_for('bookings.send_quotation_email', id=booking.id) }}";
-        break;
-      case 'confirmation':
-      case 'details':
-      case 'reminder':
-        // Implement these routes as needed
-        alert('Email functionality will be implemented soon!');
-        return;
+      // Wait for the window to load then trigger print
+      printWindow.onload = function() {
+        setTimeout(() => {
+          printWindow.print();
+        }, 500);
+      };
     }
 
-    if (url) {
-      // Create a form and submit it
-      const form = document.createElement('form');
-      form.method = 'POST';
-      form.action = url;
+    // Download quotation function - uses the existing download route
+    function downloadQuotation() {
+      // Show loading state on button if it exists
+      const downloadBtn = event.target;
+      const originalText = downloadBtn.innerHTML;
+      downloadBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Generating PDF...';
+      downloadBtn.disabled = true;
 
-      const csrfToken = document.createElement('input');
-      csrfToken.type = 'hidden';
-      csrfToken.name = 'csrf_token';
-      csrfToken.value = "{{ csrf_token() }}";
-      form.appendChild(csrfToken);
+      // Use the existing download route
+      const downloadUrl = "{{ url_for('bookings.download_quotation', id=booking.id) }}";
 
-      document.body.appendChild(form);
-      form.submit();
+      // Create a temporary link to trigger download
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = 'booking-{{ booking.id }}-{% if booking.status == "confirmed" %}invoice{% else %}quotation{% endif %}.pdf';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      // Reset button state after a short delay
+      setTimeout(() => {
+        downloadBtn.innerHTML = originalText;
+        downloadBtn.disabled = false;
+      }, 2000);
     }
-  }
 
-  // Auto-redirect to dashboard after some time for new bookings
-  {% if request.args.get('created') == 'true' %}
-  document.addEventListener('DOMContentLoaded', function() {
-    // Show a toast notification
-    const toastHtml = `
-      <div class="toast-container position-fixed top-0 end-0 p-3">
-        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
-          <div class="toast-header bg-success text-white">
-            <i class="fas fa-check-circle me-2"></i>
-            <strong class="me-auto">Booking Created</strong>
-            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="toast" aria-label="Close"></button>
-          </div>
-          <div class="toast-body">
-            Your booking has been created successfully! You can now generate a quotation or manage the booking details.
+    // Auto-redirect to dashboard after some time for new bookings
+    {% if request.args.get('created') == 'true' %}
+    document.addEventListener('DOMContentLoaded', function() {
+      // Show a toast notification
+      const toastHtml = `
+        <div class="toast-container position-fixed top-0 end-0 p-3">
+          <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-success text-white">
+              <i class="fas fa-check-circle me-2"></i>
+              <strong class="me-auto">Booking Created</strong>
+              <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="toast-body">
+              Your booking has been created successfully! You can now generate a quotation or manage the booking details.
+            </div>
           </div>
         </div>
-      </div>
-    `;
+      `;
 
-    document.body.insertAdjacentHTML('beforeend', toastHtml);
+      document.body.insertAdjacentHTML('beforeend', toastHtml);
 
-    // Auto-hide toast after 8 seconds
-    setTimeout(() => {
-      const toast = document.querySelector('.toast');
-      if (toast) {
-        const bsToast = new bootstrap.Toast(toast);
-        bsToast.hide();
-      }
-    }, 8000);
-  });
-  {% endif %}
-</script>
-
-{% endblock %}
+      // Auto-hide toast after 8 seconds
+      setTimeout(() => {
+        const toast = document.querySelector('.toast');
+        if (toast) {
+          const bsToast = new bootstrap.Toast(toast);
+          bsToast.hide();
+        }
+      }, 8000);
+    });
+    {% endif %}
+  </script>
+  {% endblock %}
+</div>

@@ -1,11 +1,18 @@
 import os
 from flask import session, flash, render_template, redirect, url_for
-from datetime import datetime, UTC
+from datetime import datetime, UTC, timedelta, timezone
 from supabase import create_client, Client
 from settings.config import SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_KEY
 from flask_login import UserMixin, current_user
 from utils.validation import convert_datetime_strings, safe_float_conversion, safe_int_conversion
 from decimal import Decimal
+import smtplib
+import ssl
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.mime.base import MIMEBase
+from email import encoders
+import os
 
 # Initialize Supabase clients
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_ANON_KEY)
@@ -13,6 +20,492 @@ if SUPABASE_SERVICE_KEY:
     supabase_admin: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 else:
     supabase_admin = supabase
+
+# ===============================
+# EMAIL CONFIGURATION
+# ===============================
+
+# Email settings - you can add these to your environment variables
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', '587'))
+EMAIL_USER = os.getenv('EMAIL_USER', 'your-email@gmail.com')  # Replace with your email
+EMAIL_PASSWORD = os.getenv('EMAIL_PASSWORD', 'your-app-password')  # Replace with app password
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+
+# Test email address for development
+TEST_EMAIL = os.getenv('TEST_EMAIL', 'your-test-email@gmail.com')  # Replace with your test email
+
+# CAT (Central Africa Time) timezone - UTC+2
+CAT = timezone(timedelta(hours=2))
+
+# ===============================
+# EMAIL FUNCTIONS
+# ===============================
+
+def send_email(to_email, subject, body_html, body_text=None):
+    """
+    Send an email using SMTP with HTML and optional text content.
+    
+    Args:
+        to_email (str): Recipient email address
+        subject (str): Email subject
+        body_html (str): HTML body content
+        body_text (str, optional): Plain text body content
+    
+    Returns:
+        bool: True if email sent successfully, False otherwise
+    """
+    try:
+        # Create message
+        msg = MIMEMultipart('alternative')
+        msg['Subject'] = subject
+        msg['From'] = EMAIL_USER
+        msg['To'] = to_email
+
+        # Create text and HTML parts
+        if body_text:
+            part1 = MIMEText(body_text, 'plain')
+            msg.attach(part1)
+        
+        part2 = MIMEText(body_html, 'html')
+        msg.attach(part2)
+
+        # Create SMTP session
+        server = smtplib.SMTP(EMAIL_HOST, EMAIL_PORT)
+        server.starttls()  # Enable encryption
+        server.login(EMAIL_USER, EMAIL_PASSWORD)
+        
+        # Send email
+        server.send_message(msg)
+        server.quit()
+        
+        print(f"Email sent successfully to {to_email}")
+        return True
+        
+    except Exception as e:
+        print(f"Failed to send email to {to_email}: {str(e)}")
+        return False
+
+def get_booking_confirmation_html(booking_data):
+    """
+    Generate HTML content for booking confirmation email.
+    
+    Args:
+        booking_data (dict): Booking information
+    
+    Returns:
+        str: HTML email content
+    """
+    html_template = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .header {{ background-color: #4CAF50; color: white; padding: 20px; text-align: center; }}
+            .content {{ padding: 20px; }}
+            .booking-details {{ background-color: #f9f9f9; padding: 15px; border-radius: 5px; margin: 20px 0; }}
+            .footer {{ background-color: #f1f1f1; padding: 10px; text-align: center; font-size: 12px; }}
+            .status-confirmed {{ color: #4CAF50; font-weight: bold; }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>🎉 Booking Confirmed!</h1>
+        </div>
+        
+        <div class="content">
+            <p>Dear {booking_data.get('client_name', 'Valued Customer')},</p>
+            
+            <p>Your booking has been <span class="status-confirmed">CONFIRMED</span>! Here are the details:</p>
+            
+            <div class="booking-details">
+                <h3>📋 Booking Details</h3>
+                <p><strong>Booking ID:</strong> #{booking_data.get('id', 'N/A')}</p>
+                <p><strong>Client:</strong> {booking_data.get('client_name', 'N/A')}</p>
+                <p><strong>Room/Venue:</strong> {booking_data.get('room_name', 'N/A')}</p>
+                <p><strong>Start:</strong> {booking_data.get('start_time', 'N/A')}</p>
+                <p><strong>End:</strong> {booking_data.get('end_time', 'N/A')}</p>
+                <p><strong>Purpose:</strong> {booking_data.get('purpose', 'N/A')}</p>
+                <p><strong>Status:</strong> <span class="status-confirmed">Confirmed</span></p>
+                {f"<p><strong>Notes:</strong> {booking_data.get('notes', '')}</p>" if booking_data.get('notes') else ""}
+            </div>
+            
+            <p>If you need to make any changes or have questions, please contact us immediately.</p>
+            
+            <p>Thank you for choosing our venue!</p>
+        </div>
+        
+        <div class="footer">
+            <p>This is an automated message. Please do not reply to this email.</p>
+            <p>Generated on {datetime.now(CAT).strftime('%Y-%m-%d at %H:%M %Z')}</p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return html_template
+
+def send_booking_confirmation_email(booking_data):
+    """
+    Send booking confirmation email for confirmed bookings.
+    
+    Args:
+        booking_data (dict): Booking information including client details
+    
+    Returns:
+        bool: True if email sent successfully
+    """
+    try:
+        # Only send confirmation emails for confirmed bookings
+        if booking_data.get('status') != 'confirmed':
+            print(f"Skipping email for booking {booking_data.get('id')} - status is {booking_data.get('status')}")
+            return False
+        
+        # For now, send to test email only
+        # Later you can modify this to send to client email: booking_data.get('client_email')
+        to_email = TEST_EMAIL
+        
+        subject = f"Booking Confirmation #{booking_data.get('id')} - {booking_data.get('room_name')}"
+        
+        # Generate HTML content
+        html_body = get_booking_confirmation_html(booking_data)
+        
+        # Generate plain text version
+        text_body = f"""
+Booking Confirmed!
+
+Dear {booking_data.get('client_name', 'Valued Customer')},
+
+Your booking has been CONFIRMED! Here are the details:
+
+Booking ID: #{booking_data.get('id', 'N/A')}
+Client: {booking_data.get('client_name', 'N/A')}
+Room/Venue: {booking_data.get('room_name', 'N/A')}
+Start: {booking_data.get('start_time', 'N/A')}
+End: {booking_data.get('end_time', 'N/A')}
+Purpose: {booking_data.get('purpose', 'N/A')}
+Status: Confirmed
+{f"Notes: {booking_data.get('notes', '')}" if booking_data.get('notes') else ""}
+
+If you need to make any changes or have questions, please contact us immediately.
+
+Thank you for choosing our venue!
+
+This is an automated message.
+Generated on {datetime.now(CAT).strftime('%Y-%m-%d at %H:%M %Z')}
+        """
+        
+        return send_email(to_email, subject, html_body, text_body)
+        
+    except Exception as e:
+        print(f"Error sending booking confirmation email: {str(e)}")
+        return False
+
+def get_daily_report_html(report_data):
+    """
+    Generate HTML content for daily booking report.
+    
+    Args:
+        report_data (dict): Report data with bookings and statistics
+    
+    Returns:
+        str: HTML email content
+    """
+    today = datetime.now(CAT).strftime('%Y-%m-%d')
+    
+    html_template = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <style>
+            body {{ font-family: Arial, sans-serif; line-height: 1.6; color: #333; }}
+            .header {{ background-color: #2196F3; color: white; padding: 20px; text-align: center; }}
+            .content {{ padding: 20px; }}
+            .stats {{ display: flex; justify-content: space-around; margin: 20px 0; }}
+            .stat-box {{ background-color: #f0f8ff; padding: 15px; border-radius: 5px; text-align: center; flex: 1; margin: 0 10px; }}
+            .stat-number {{ font-size: 24px; font-weight: bold; color: #2196F3; }}
+            .bookings-table {{ width: 100%; border-collapse: collapse; margin: 20px 0; }}
+            .bookings-table th, .bookings-table td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+            .bookings-table th {{ background-color: #f2f2f2; }}
+            .status-confirmed {{ color: #4CAF50; font-weight: bold; }}
+            .status-tentative {{ color: #FF9800; font-weight: bold; }}
+            .status-cancelled {{ color: #f44336; font-weight: bold; }}
+            .footer {{ background-color: #f1f1f1; padding: 10px; text-align: center; font-size: 12px; }}
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <h1>📊 Daily Booking Report</h1>
+            <h2>{today}</h2>
+        </div>
+        
+        <div class="content">
+            <div class="stats">
+                <div class="stat-box">
+                    <div class="stat-number">{report_data.get('total_bookings', 0)}</div>
+                    <div>Total Bookings</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number">{report_data.get('confirmed_bookings', 0)}</div>
+                    <div>Confirmed</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number">{report_data.get('tentative_bookings', 0)}</div>
+                    <div>Tentative</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-number">{report_data.get('cancelled_bookings', 0)}</div>
+                    <div>Cancelled</div>
+                </div>
+            </div>
+            
+            <h3>📅 Today's Bookings</h3>
+            
+            {get_bookings_table_html(report_data.get('today_bookings', []))}
+            
+            <h3>📈 Tomorrow's Bookings Preview</h3>
+            
+            {get_bookings_table_html(report_data.get('tomorrow_bookings', []))}
+            
+        </div>
+        
+        <div class="footer">
+            <p>Daily report generated automatically at 5:00 PM CAT</p>
+            <p>Generated on {datetime.now(CAT).strftime('%Y-%m-%d at %H:%M %Z')}</p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return html_template
+
+def get_bookings_table_html(bookings):
+    """
+    Generate HTML table for bookings list.
+    
+    Args:
+        bookings (list): List of booking dictionaries
+    
+    Returns:
+        str: HTML table content
+    """
+    if not bookings:
+        return "<p>No bookings scheduled.</p>"
+    
+    table_html = """
+    <table class="bookings-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Client</th>
+                <th>Room</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+                <th>Purpose</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+    """
+    
+    for booking in bookings:
+        status_class = f"status-{booking.get('status', 'tentative')}"
+        table_html += f"""
+        <tr>
+            <td>#{booking.get('id', 'N/A')}</td>
+            <td>{booking.get('client_name', 'N/A')}</td>
+            <td>{booking.get('room_name', 'N/A')}</td>
+            <td>{booking.get('start_time', 'N/A')}</td>
+            <td>{booking.get('end_time', 'N/A')}</td>
+            <td>{booking.get('purpose', 'N/A')}</td>
+            <td><span class="{status_class}">{booking.get('status', 'tentative').title()}</span></td>
+        </tr>
+        """
+    
+    table_html += """
+        </tbody>
+    </table>
+    """
+    
+    return table_html
+
+def generate_daily_report_data():
+    """
+    Generate data for the daily report.
+    
+    Returns:
+        dict: Report data with bookings and statistics
+    """
+    try:
+        today = datetime.now(CAT).date()
+        tomorrow = today + timedelta(days=1)
+        
+        # Get today's bookings
+        today_response = supabase.table("bookings").select(
+            "*, clients(name), rooms(name)"
+        ).gte("start_time", today.isoformat()).lt("start_time", tomorrow.isoformat()).execute()
+        
+        # Get tomorrow's bookings
+        day_after_tomorrow = tomorrow + timedelta(days=1)
+        tomorrow_response = supabase.table("bookings").select(
+            "*, clients(name), rooms(name)"
+        ).gte("start_time", tomorrow.isoformat()).lt("start_time", day_after_tomorrow.isoformat()).execute()
+        
+        # Process today's bookings
+        today_bookings = []
+        confirmed_count = 0
+        tentative_count = 0
+        cancelled_count = 0
+        
+        for booking in today_response.data:
+            booking_data = {
+                'id': booking.get('id'),
+                'client_name': booking.get('clients', {}).get('name') if booking.get('clients') else 'Unknown',
+                'room_name': booking.get('rooms', {}).get('name') if booking.get('rooms') else 'Unknown',
+                'start_time': booking.get('start_time'),
+                'end_time': booking.get('end_time'),
+                'purpose': booking.get('purpose'),
+                'status': booking.get('status', 'tentative')
+            }
+            today_bookings.append(booking_data)
+            
+            # Count by status
+            status = booking.get('status', 'tentative')
+            if status == 'confirmed':
+                confirmed_count += 1
+            elif status == 'cancelled':
+                cancelled_count += 1
+            else:
+                tentative_count += 1
+        
+        # Process tomorrow's bookings
+        tomorrow_bookings = []
+        for booking in tomorrow_response.data:
+            booking_data = {
+                'id': booking.get('id'),
+                'client_name': booking.get('clients', {}).get('name') if booking.get('clients') else 'Unknown',
+                'room_name': booking.get('rooms', {}).get('name') if booking.get('rooms') else 'Unknown',
+                'start_time': booking.get('start_time'),
+                'end_time': booking.get('end_time'),
+                'purpose': booking.get('purpose'),
+                'status': booking.get('status', 'tentative')
+            }
+            tomorrow_bookings.append(booking_data)
+        
+        return {
+            'total_bookings': len(today_bookings),
+            'confirmed_bookings': confirmed_count,
+            'tentative_bookings': tentative_count,
+            'cancelled_bookings': cancelled_count,
+            'today_bookings': today_bookings,
+            'tomorrow_bookings': tomorrow_bookings
+        }
+        
+    except Exception as e:
+        print(f"Error generating daily report data: {str(e)}")
+        return {
+            'total_bookings': 0,
+            'confirmed_bookings': 0,
+            'tentative_bookings': 0,
+            'cancelled_bookings': 0,
+            'today_bookings': [],
+            'tomorrow_bookings': []
+        }
+
+def send_daily_report():
+    """
+    Generate and send the daily booking report.
+    
+    Returns:
+        bool: True if report sent successfully
+    """
+    try:
+        print(f"Generating daily report at {datetime.now(CAT).strftime('%Y-%m-%d %H:%M %Z')}")
+        
+        # Generate report data
+        report_data = generate_daily_report_data()
+        
+        # For now, send to test email only
+        to_email = TEST_EMAIL
+        
+        today = datetime.now(CAT).strftime('%Y-%m-%d')
+        subject = f"Daily Booking Report - {today}"
+        
+        # Generate HTML content
+        html_body = get_daily_report_html(report_data)
+        
+        # Generate plain text version
+        text_body = f"""
+Daily Booking Report - {today}
+
+Statistics:
+- Total Bookings: {report_data.get('total_bookings', 0)}
+- Confirmed: {report_data.get('confirmed_bookings', 0)}
+- Tentative: {report_data.get('tentative_bookings', 0)}
+- Cancelled: {report_data.get('cancelled_bookings', 0)}
+
+Today's Bookings: {len(report_data.get('today_bookings', []))} bookings
+Tomorrow's Bookings: {len(report_data.get('tomorrow_bookings', []))} bookings
+
+Report generated automatically at 5:00 PM CAT
+Generated on {datetime.now(CAT).strftime('%Y-%m-%d at %H:%M %Z')}
+        """
+        
+        return send_email(to_email, subject, html_body, text_body)
+        
+    except Exception as e:
+        print(f"Error sending daily report: {str(e)}")
+        return False
+
+def get_booking_details_for_email(booking_id, booking_data):
+    """
+    Get booking details formatted for email.
+    
+    Args:
+        booking_id (int): Booking ID
+        booking_data (dict): Original booking data
+    
+    Returns:
+        dict: Formatted booking data for email
+    """
+    try:
+        # Get room name
+        room_name = "Unknown Room"
+        if booking_data.get('room_id'):
+            room_response = supabase.table('rooms').select('name').eq('id', booking_data['room_id']).execute()
+            if room_response.data:
+                room_name = room_response.data[0]['name']
+        
+        # Format datetime strings for email
+        start_time_formatted = booking_data['start_time'].strftime('%Y-%m-%d %H:%M') if hasattr(booking_data['start_time'], 'strftime') else str(booking_data['start_time'])
+        end_time_formatted = booking_data['end_time'].strftime('%Y-%m-%d %H:%M') if hasattr(booking_data['end_time'], 'strftime') else str(booking_data['end_time'])
+        
+        return {
+            'id': booking_id,
+            'client_name': booking_data.get('client_name', 'Unknown'),
+            'room_name': room_name,
+            'start_time': start_time_formatted,
+            'end_time': end_time_formatted,
+            'purpose': booking_data.get('event_type', 'Event').replace('_', ' ').title(),
+            'status': booking_data.get('status', 'confirmed'),
+            'notes': booking_data.get('notes', ''),
+            'client_email': booking_data.get('client_email', '')
+        }
+        
+    except Exception as e:
+        print(f"Error formatting booking details for email: {str(e)}")
+        return {
+            'id': booking_id,
+            'client_name': booking_data.get('client_name', 'Unknown'),
+            'room_name': 'Unknown Room',
+            'start_time': str(booking_data.get('start_time', 'Unknown')),
+            'end_time': str(booking_data.get('end_time', 'Unknown')),
+            'purpose': booking_data.get('event_type', 'Event'),
+            'status': booking_data.get('status', 'confirmed'),
+            'notes': booking_data.get('notes', ''),
+            'client_email': booking_data.get('client_email', '')
+        }
 
 # ===============================
 # UTILITY FUNCTIONS
@@ -873,6 +1366,17 @@ def create_complete_booking(booking_data, client_id, event_type_id):
             }
             
             supabase_insert('booking_custom_addons', addon_record)
+        
+        # Send confirmation email for confirmed bookings
+        if booking_data['status'] == 'confirmed':
+            try:
+                # Get complete booking details for email
+                booking_details = get_booking_details_for_email(booking_id, booking_data)
+                send_booking_confirmation_email(booking_details)
+                print(f"✅ Confirmation email sent for booking #{booking_id}")
+            except Exception as email_error:
+                print(f"⚠️ WARNING: Failed to send confirmation email for booking #{booking_id}: {email_error}")
+                # Don't fail the booking creation if email fails
         
         return booking_id
         
@@ -2241,3 +2745,157 @@ def get_revenue_trends():
             'total_revenue': 0,
             'revenue_growth': 0
         }
+
+# ===============================
+# SCHEDULING FUNCTIONS
+# ===============================
+
+def should_send_daily_report():
+    """
+    Check if it's time to send the daily report (5 PM CAT).
+    
+    Returns:
+        bool: True if it's time to send the report
+    """
+    now = datetime.now(CAT)
+    return now.hour == 17 and now.minute == 0  # 5 PM exactly
+
+def run_daily_report_scheduler():
+    """
+    Simple scheduler function to check if daily report should be sent.
+    This can be called from a cron job or scheduled task.
+    
+    You can set up a cron job to run this every minute:
+    * * * * * cd /path/to/your/app && python -c "from core import run_daily_report_scheduler; run_daily_report_scheduler()"
+    
+    Or on Windows Task Scheduler:
+    python -c "from core import run_daily_report_scheduler; run_daily_report_scheduler()"
+    """
+    try:
+        if should_send_daily_report():
+            print("📧 Time to send daily report!")
+            success = send_daily_report()
+            if success:
+                print("✅ Daily report sent successfully")
+            else:
+                print("❌ Failed to send daily report")
+        else:
+            # Uncomment for debugging
+            # print(f"Not time for daily report. Current time: {datetime.now(CAT).strftime('%H:%M')}")
+            pass
+    except Exception as e:
+        print(f"❌ Error in daily report scheduler: {str(e)}")
+
+def test_email_system():
+    """
+    Test function to verify email system is working.
+    Call this function to send a test email.
+    """
+    try:
+        print("🧪 Testing email system...")
+        
+        # Test basic email
+        test_html = """
+        <html>
+        <body>
+            <h2>🧪 Email System Test</h2>
+            <p>This is a test email to verify the email system is working correctly.</p>
+            <p>Time: {}</p>
+            <p>If you receive this, the email system is configured properly!</p>
+        </body>
+        </html>
+        """.format(datetime.now(CAT).strftime('%Y-%m-%d %H:%M %Z'))
+        
+        success = send_email(
+            TEST_EMAIL,
+            "🧪 Email System Test",
+            test_html,
+            "Email System Test - If you receive this, the email system is working!"
+        )
+        
+        if success:
+            print("✅ Test email sent successfully!")
+            return True
+        else:
+            print("❌ Failed to send test email")
+            return False
+            
+    except Exception as e:
+        print(f"❌ Error testing email system: {str(e)}")
+        return False
+
+def test_daily_report():
+    """
+    Test function to send a daily report immediately (for testing).
+    """
+    try:
+        print("🧪 Testing daily report generation...")
+        success = send_daily_report()
+        if success:
+            print("✅ Test daily report sent successfully!")
+            return True
+        else:
+            print("❌ Failed to send test daily report")
+            return False
+    except Exception as e:
+        print(f"❌ Error testing daily report: {str(e)}")
+        return False
+
+# ===============================
+# EMAIL CONFIGURATION HELPERS
+# ===============================
+
+def print_email_configuration_help():
+    """
+    Print instructions for configuring email settings.
+    """
+    print("""
+📧 EMAIL CONFIGURATION SETUP
+
+To enable email notifications, you need to configure the following environment variables:
+
+1. EMAIL_HOST=smtp.gmail.com (or your email provider's SMTP server)
+2. EMAIL_PORT=587 (usually 587 for TLS)
+3. EMAIL_USER=your-email@gmail.com (your email address)
+4. EMAIL_PASSWORD=your-app-password (your email app password - NOT your regular password)
+5. TEST_EMAIL=your-test-email@gmail.com (where test emails will be sent)
+
+FOR GMAIL:
+1. Enable 2-factor authentication on your Google account
+2. Go to Google Account settings > Security > App passwords
+3. Generate an app password for "Mail"
+4. Use this app password in EMAIL_PASSWORD (not your regular password)
+
+ENVIRONMENT VARIABLES SETUP:
+- On Windows: Set environment variables in System Properties or use .env file
+- On Linux/Mac: Add to ~/.bashrc or use .env file
+
+EXAMPLE .env file:
+EMAIL_HOST=smtp.gmail.com
+EMAIL_PORT=587
+EMAIL_USER=mybusiness@gmail.com
+EMAIL_PASSWORD=abcd efgh ijkl mnop
+TEST_EMAIL=mytest@gmail.com
+
+TESTING:
+Run this in Python console to test:
+>>> from core import test_email_system
+>>> test_email_system()
+    """)
+
+if __name__ == "__main__":
+    # This allows you to run email tests directly
+    import sys
+    if len(sys.argv) > 1:
+        if sys.argv[1] == "test-email":
+            test_email_system()
+        elif sys.argv[1] == "test-report":
+            test_daily_report()
+        elif sys.argv[1] == "scheduler":
+            run_daily_report_scheduler()
+        elif sys.argv[1] == "help":
+            print_email_configuration_help()
+        else:
+            print("Available commands: test-email, test-report, scheduler, help")
+    else:
+        print("Usage: python core.py [test-email|test-report|scheduler|help]")

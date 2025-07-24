@@ -924,11 +924,15 @@ def generate_invoice(id):
             resource_id=id
         )
 
+        # Check if this is a print request
+        is_print_request = request.args.get('print') == 'true'
+
         return render_template('bookings/invoice.html',
                              booking=safe_booking,
                              current_date=current_date,
                              due_date=due_date,
-                             title=f"Invoice - {safe_booking['title']}")
+                             title=f"Invoice - {safe_booking['title']}",
+                             is_print_request=is_print_request)
 
     except Exception as e:
         print(f"❌ ERROR: Failed to generate invoice: {e}")

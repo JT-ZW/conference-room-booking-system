@@ -893,7 +893,7 @@ def get_clients_with_booking_counts():
         print(f"❌ ERROR: Failed to get clients with booking counts: {e}")
         return []
 
-def find_or_create_client_enhanced(client_name, company_name=None, email=None):
+def find_or_create_client_enhanced(client_name, company_name=None, email=None, phone=None):
     """Find existing client or create new one"""
     try:
         if not client_name or not client_name.strip():
@@ -902,6 +902,7 @@ def find_or_create_client_enhanced(client_name, company_name=None, email=None):
         client_name = client_name.strip()
         company_name = company_name.strip() if company_name else None
         email = email.strip().lower() if email else None
+        phone = phone.strip() if phone else None
         
         # Search for existing client
         existing_client = None
@@ -925,6 +926,12 @@ def find_or_create_client_enhanced(client_name, company_name=None, email=None):
                 if client['email'].strip().lower() == email:
                     existing_client = client
                     break
+            
+            # Check by phone
+            if phone and client.get('phone'):
+                if client['phone'].strip() == phone:
+                    existing_client = client
+                    break
         
         if existing_client:
             return existing_client['id']
@@ -934,6 +941,7 @@ def find_or_create_client_enhanced(client_name, company_name=None, email=None):
             'contact_person': client_name,
             'company_name': company_name,
             'email': email or f"{client_name.lower().replace(' ', '.')}@example.com",
+            'phone': phone,
             'created_at': datetime.now(UTC).isoformat(),
             'notes': f'Auto-created from booking form'
         }
@@ -1624,7 +1632,7 @@ def get_booking_calendar_events_supabase():
         bookings_response = supabase_admin.table('bookings').select("""
             *,
             room:rooms(id, name, capacity),
-            client:clients(id, contact_person, company_name, email)
+            client:clients(id, contact_person, company_name, email, phone)
         """).neq('status', 'cancelled').execute()
         
         if not bookings_response.data:
@@ -2114,6 +2122,37 @@ def get_booking_with_details(booking_id):
 
         booking = booking_response.data[0]
 
+        # Get user details if created_by is available
+        if booking.get('created_by'):
+            try:
+                user_response = supabase_admin.table('users').select('id, first_name, last_name, username, email').eq('id', booking['created_by']).execute()
+                if user_response.data:
+                    user = user_response.data[0]
+                    # Build full name from first_name and last_name
+                    first_name = user.get('first_name', '').strip()
+                    last_name = user.get('last_name', '').strip()
+                    username = user.get('username', '').strip()
+                    email = user.get('email', '').strip()
+                    
+                    # Prefer full name, then username, then email
+                    if first_name and last_name:
+                        booking['created_by_name'] = f"{first_name} {last_name}"
+                    elif first_name:
+                        booking['created_by_name'] = first_name
+                    elif username:
+                        booking['created_by_name'] = username
+                    elif email:
+                        booking['created_by_name'] = email
+                    else:
+                        booking['created_by_name'] = f"User {booking['created_by']}"
+                else:
+                    booking['created_by_name'] = f"User {booking['created_by']}"
+            except Exception as e:
+                print(f"⚠️ WARNING: Could not fetch user details: {e}")
+                booking['created_by_name'] = f"User {booking['created_by']}"
+        else:
+            booking['created_by_name'] = 'Unknown User'
+
         # Get custom addons
         addons_response = supabase_admin.table('booking_custom_addons').select('*').eq('booking_id', booking_id).execute()
         booking['custom_addons'] = addons_response.data if addons_response.data else []
@@ -2302,7 +2341,7 @@ def get_recent_bookings(limit=10):
         response = supabase_admin.table('bookings').select("""
             *,
             room:rooms(id, name, capacity),
-            client:clients(id, contact_person, company_name, email)
+            client:clients(id, contact_person, company_name, email, phone)
         """).order('created_at', desc=True).limit(limit).execute()
         
         if response.data:
@@ -2444,7 +2483,7 @@ def get_upcoming_bookings(limit=10):
         response = supabase_admin.table('bookings').select("""
             *,
             room:rooms(id, name, capacity),
-            client:clients(id, contact_person, company_name, email)
+            client:clients(id, contact_person, company_name, email, phone)
         """).gte('start_time', now_utc.isoformat()).neq('status', 'cancelled').order('start_time', desc=False).limit(limit).execute()
         
         if response.data:

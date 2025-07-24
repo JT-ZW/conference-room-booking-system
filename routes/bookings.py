@@ -1,7 +1,14 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file, session, Response
 from flask_login import login_required, current_user
 from datetime import datetime, UTC, timedelta, date
 import io
+import tempfile
+import os
+import re
+import pytz
+import traceback
+import time
+import mimetypes
 from core import (
     BookingForm, handle_booking_creation, handle_booking_update,
     get_complete_booking_details, get_booking_with_details, supabase_admin, ActivityTypes,
@@ -12,18 +19,85 @@ from core import (
     format_booking_success_message, safe_str, safe_str_lower
 )
 from httpx import TimeoutException
-import time
 from functools import wraps
-import pytz
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.units import inch
-import tempfile
-import os
 
 bookings_bp = Blueprint('bookings', __name__)
+
+def safe_format_date(date_value, format_type='date'):
+    """Safely format date/time values handling both string and datetime objects"""
+    if not date_value:
+        return None
+    
+    try:
+        # If it's already a datetime object
+        if isinstance(date_value, datetime):
+            if format_type == 'date':
+                return date_value.strftime('%Y-%m-%d')
+            elif format_type == 'time':
+                return date_value.strftime('%H:%M')
+            else:
+                return date_value.strftime('%Y-%m-%d %H:%M')
+        
+        # If it's a string, try to parse it
+        if isinstance(date_value, str):
+            # Handle different string formats
+            clean_date = date_value.replace('Z', '+00:00')
+            dt = datetime.fromisoformat(clean_date)
+            
+            if format_type == 'date':
+                return dt.strftime('%Y-%m-%d')
+            elif format_type == 'time':
+                return dt.strftime('%H:%M')
+            else:
+                return dt.strftime('%Y-%m-%d %H:%M')
+                
+    except (ValueError, AttributeError, TypeError) as e:
+        return None
+    
+    return None
+
+def generate_pdf_filename(booking, document_type="quotation"):
+    """Generate a clean PDF filename with client name and booking number"""
+    try:
+        # Get client name
+        client_name = "Unknown Client"
+        if booking.get('client'):
+            client_data = booking['client']
+            
+            # Try company name first, then contact person
+            if client_data.get('company_name'):
+                client_name = client_data['company_name']
+            elif client_data.get('contact_person'):
+                client_name = client_data['contact_person']
+        
+        # Clean the client name - remove special characters and keep spaces, then replace spaces with hyphens
+        clean_client_name = re.sub(r'[^a-zA-Z0-9\s-]', '', str(client_name))
+        clean_client_name = re.sub(r'\s+', '-', clean_client_name.strip())
+        
+        # Limit length to avoid overly long filenames
+        if len(clean_client_name) > 25:
+            clean_client_name = clean_client_name[:25].rstrip('-')
+        
+        # Get current date in readable format (24-July-2025)
+        current_date = datetime.now().strftime("%d-%B-%Y")
+        
+        # Determine document type - simplified logic
+        doc_type = "Proforma-Invoice"
+        
+        # Generate filename in format: "Client-Name-Proforma-Invoice-24-July-2025.pdf"
+        filename = f"{clean_client_name}-{doc_type}-{current_date}.pdf"
+        
+        return filename
+    except Exception as e:
+        # Fallback to simple format if anything goes wrong
+        current_date = datetime.now().strftime("%d-%B-%Y")
+        fallback_filename = f"Unknown-Client-Proforma-Invoice-{current_date}.pdf"
+        return fallback_filename
 
 # Helper function for safe string conversion
 def retry_on_timeout(max_retries=3, delay=1):
@@ -268,7 +342,8 @@ def new_booking():
             client_id = find_or_create_client_enhanced(
                 booking_data['client_name'], 
                 booking_data.get('company_name'),
-                booking_data.get('client_email')
+                booking_data.get('client_email'),
+                booking_data.get('client_phone')
             )
             
             if not client_id:
@@ -329,16 +404,32 @@ def view_booking(id):
             flash('❌ Booking not found', 'danger')
             return redirect(url_for('bookings.bookings'))
             
-        # Convert datetime strings if needed
+        # Convert datetime strings if needed and fix timezone
         if isinstance(booking.get('created_at'), str):
             booking['created_at'] = datetime.fromisoformat(booking['created_at'].replace('Z', '+00:00'))
         if isinstance(booking.get('updated_at'), str):
             booking['updated_at'] = datetime.fromisoformat(booking['updated_at'].replace('Z', '+00:00'))
             
+        # Convert to local timezone (assuming you're in Zimbabwe/South Africa timezone)
+        local_tz = pytz.timezone('Africa/Harare')
+        
+        if booking.get('created_at'):
+            if booking['created_at'].tzinfo is None:
+                # If no timezone info, assume UTC
+                booking['created_at'] = pytz.UTC.localize(booking['created_at'])
+            booking['created_at'] = booking['created_at'].astimezone(local_tz)
+            
+        if booking.get('updated_at'):
+            if booking['updated_at'].tzinfo is None:
+                # If no timezone info, assume UTC
+                booking['updated_at'] = pytz.UTC.localize(booking['updated_at'])
+            booking['updated_at'] = booking['updated_at'].astimezone(local_tz)
+            
         return render_template(
             'bookings/view.html',
             booking=booking,
-            title=f"Booking - {booking.get('title', '')}"
+            title=f"Booking - {booking.get('title', '')}",
+            pytz=pytz  # Pass pytz to template
         )
         
     except Exception as e:
@@ -589,8 +680,8 @@ def create_quotation_pdf(booking, output_path, current_time, valid_until):
     booking_data = [
         ['Event Title:', booking.get('title', 'Conference Booking')],
         ['Room:', booking.get('room_name', 'Conference Room')],
-        ['Date:', booking.get('start_time', 'TBD')[:10] if booking.get('start_time') else 'TBD'],
-        ['Time:', f"{booking.get('start_time', 'TBD')[11:16] if booking.get('start_time') else 'TBD'} - {booking.get('end_time', 'TBD')[11:16] if booking.get('end_time') else 'TBD'}"],
+        ['Date:', safe_format_date(booking.get('start_time'), 'date') or 'TBD'],
+        ['Time:', f"{safe_format_date(booking.get('start_time'), 'time') or 'TBD'} - {safe_format_date(booking.get('end_time'), 'time') or 'TBD'}"],
         ['Attendees:', str(booking.get('attendees', 'TBD'))],
         ['Duration:', f"{booking.get('duration_hours', 0)} hours" if booking.get('duration_hours') else 'TBD'],
     ]
@@ -676,6 +767,7 @@ def download_quotation(id):
     
     try:
         booking = get_booking_with_details(id)
+        
         if not booking:
             flash('❌ Booking not found', 'danger')
             return redirect(url_for('bookings.bookings'))
@@ -705,17 +797,112 @@ def download_quotation(id):
             resource_id=id
         )
 
-        # Send file with cleanup after sending
-        return send_file(
-            temp_file_path,
-            download_name=f'Quotation-{booking["id"]}-{current_time.strftime("%Y%m%d")}.pdf',
-            as_attachment=True,
-            mimetype='application/pdf'
+        # Generate filename with client name and booking number
+        pdf_filename = generate_pdf_filename(booking, "quotation")
+
+        # Send file with explicit headers to force filename
+        from flask import Response
+        import mimetypes
+        
+        # Read the file content
+        with open(temp_file_path, 'rb') as f:
+            file_content = f.read()
+        
+        # Create response with explicit headers
+        response = Response(
+            file_content,
+            mimetype='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment; filename="{pdf_filename}"',
+                'Content-Type': 'application/pdf',
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
         )
+        
+        return response
 
     except Exception as e:
         error_msg = handle_pdf_generation_error(e)
-        print(f"❌ PDF Generation Error: {error_msg}")
+        flash(f'❌ {error_msg}', 'danger')
+        return redirect(url_for('bookings.view_booking', id=id))
+    
+    finally:
+        # Clean up temporary file
+        if 'temp_file_path' in locals() and os.path.exists(temp_file_path):
+            try:
+                os.unlink(temp_file_path)
+            except Exception as cleanup_error:
+                print(f"⚠️ Warning: Failed to cleanup temp file {temp_file_path}: {cleanup_error}")
+
+@bookings_bp.route('/bookings/<int:id>/invoice/download')
+@login_required
+def download_invoice(id):
+    """Generate and download invoice PDF using ReportLab"""
+    if not check_pdf_dependencies():
+        flash('❌ PDF generation is not available. Please contact system administrator.', 'danger')
+        return redirect(url_for('bookings.view_booking', id=id))
+    
+    try:
+        booking = get_booking_with_details(id)
+        
+        if not booking:
+            flash('❌ Booking not found', 'danger')
+            return redirect(url_for('bookings.bookings'))
+
+        # Get current time in CAT timezone
+        tz = pytz.timezone('Africa/Harare')
+        current_time = datetime.now(tz)
+        valid_until = current_time + timedelta(days=30)
+
+        # Create temporary file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+        temp_file_path = temp_file.name
+        temp_file.close()
+
+        # Generate PDF using ReportLab
+        create_quotation_pdf(booking, temp_file_path, current_time, valid_until)
+        
+        # Verify file was created
+        if not os.path.exists(temp_file_path):
+            raise Exception("PDF file was not created successfully")
+
+        # Log activity
+        safe_log_user_activity(
+            ActivityTypes.GENERATE_REPORT,
+            f"Generated and downloaded invoice PDF for booking #{id}",
+            resource_type='booking',
+            resource_id=id
+        )
+
+        # Generate filename with client name and booking number
+        pdf_filename = generate_pdf_filename(booking, "invoice")
+
+        # Send file with explicit headers to force filename
+        from flask import Response
+        
+        # Read the file content
+        with open(temp_file_path, 'rb') as f:
+            file_content = f.read()
+        
+        # Create response with explicit headers
+        response = Response(
+            file_content,
+            mimetype='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment; filename="{pdf_filename}"',
+                'Content-Type': 'application/pdf',
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        )
+        
+        return response
+
+    except Exception as e:
+        error_msg = handle_pdf_generation_error(e)
         flash(f'❌ {error_msg}', 'danger')
         return redirect(url_for('bookings.view_booking', id=id))
     

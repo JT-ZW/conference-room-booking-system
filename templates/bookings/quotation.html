@@ -486,8 +486,8 @@ or 'Booking' }} | Rainbow Towers{% endblock %} {% block extra_css %}
 
 <script>
   function downloadPDF() {
-      // You can integrate with your existing PDF generation logic
-      window.print();
+      // Navigate to the PDF download route
+      window.location.href = "{{ url_for('bookings.download_quotation', id=booking.id) }}";
   }
 
   function sendEmail() {

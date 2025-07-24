@@ -341,6 +341,13 @@
                      placeholder="Enter client email address">
               <div class="invalid-feedback">Please enter a valid email address.</div>
             </div>
+            <div class="col-md-6">
+              <label class="form-label">Client Phone</label>
+              <input type="tel" class="form-control" id="client_phone" name="client_phone"
+                     value="{{ booking.client.phone if booking and booking.client else '' }}"
+                     placeholder="Enter client phone number">
+              <div class="invalid-feedback">Please enter a valid phone number.</div>
+            </div>
           </div>
         </div>
 

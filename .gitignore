@@ -1,5 +1,27 @@
-# Environment variables
+# Environment Variables and Secrets - CRITICAL
 .env
+.env.local
+.env.production
+.env.test
+*.env
+# Keep .env.example as template
+!.env.example
+
+# Sensitive Configuration Files
+settings/secrets.py
+config/secrets.py
+secrets.json
+secrets.yaml
+secrets.yml
+
+# Instance folder (contains sensitive data)
+instance/
+instance/*
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
 
 # Python
 __pycache__/
@@ -13,10 +35,61 @@ ENV/
 env.bak/
 venv.bak/
 .venv/
+central-reservations/
+reservations/
 
 # Flask
-instance/
 .webassets-cache
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Logs
+*.log
+logs/
+log/
+
+# Temporary files
+*.tmp
+*.temp
+temp/
+tmp/
+
+# Backup files
+*.bak
+*.backup
+*_backup.py
+app_backup*.py
+app_backup_with_errors.py
+
+# Test files with actual data
+test_*.py
+*_test.py
+debug_*.py
+check_*.py
+deployment_check.py
+
+# Coverage reports
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+*.cover
+.hypothesis/
+.pytest_cache/
 
 # IDE
 .vscode/

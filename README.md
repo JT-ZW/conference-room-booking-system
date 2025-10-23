@@ -33,17 +33,20 @@ Professional conference room booking and management system built with Flask and 
 ### Installation
 
 1. **Clone the repository**:
+
 ```bash
 git clone https://github.com/JT-ZW/conference-room-booking-system.git
 cd conference-room-booking-system
 ```
 
 2. **Create virtual environment**:
+
 ```bash
 python -m venv venv
 ```
 
 3. **Activate virtual environment**:
+
 ```bash
 # Windows
 venv\Scripts\activate
@@ -53,11 +56,13 @@ source venv/bin/activate
 ```
 
 4. **Install dependencies**:
+
 ```bash
 pip install -r requirements.txt
 ```
 
 5. **Configure environment variables**:
+
 ```bash
 # Copy the example file
 cp .env.example .env
@@ -66,6 +71,7 @@ cp .env.example .env
 ```
 
 Required environment variables:
+
 ```
 SUPABASE_URL=your_supabase_project_url
 SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -74,6 +80,7 @@ SECRET_KEY=your_secret_key_here
 ```
 
 6. **Run the application**:
+
 ```bash
 python app.py
 ```
@@ -83,6 +90,7 @@ Visit `http://localhost:5000` in your browser.
 ## Database Setup
 
 The application uses Supabase (PostgreSQL). Required tables:
+
 - `users` - User accounts
 - `clients` - Client/organization information
 - `rooms` - Conference rooms/venues
@@ -125,17 +133,20 @@ conference-room-booking-system/
 ## Features in Detail
 
 ### Calendar Views
+
 - **Today View**: Airport-style board showing today's bookings
 - **Weekly View**: Grid view with room availability across the week
 - **Monthly View**: FullCalendar integration with month overview
 
 ### Quotation System
+
 - Professional PDF generation with Rainbow Towers branding
 - Line item breakdown for services and add-ons
 - Currency selection (USD/ZWG)
 - Automatic filename generation
 
 ### Reporting
+
 - Revenue analytics
 - Room utilization statistics
 - Client analysis

@@ -54,8 +54,6 @@ def log_user_activity(
             'user_agent': user_agent,
             'session_id': session_id,
             'timestamp': datetime.now(CAT).isoformat()
-            'session_id': session_id
-            # Note: created_at column has a default value in the database
         }
         if supabase_admin:
             supabase_admin.table('user_activity_log').insert(log_data).execute()
@@ -73,8 +71,6 @@ def log_authentication_activity(activity_type, email, success=True, additional_i
             'success': success,
             'additional_info': additional_info or {},
             'timestamp': datetime.now(CAT).isoformat()
-            'additional_info': additional_info or {}
-            # Note: created_at column has a default value in the database
         }
         if supabase_admin:
             supabase_admin.table('auth_activity_log').insert(log_data).execute()

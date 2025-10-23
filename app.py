@@ -2633,10 +2633,12 @@ def register():
 # ===============================
 
 # Replace your existing dashboard route with this improved version
+# NOTE: This route has been disabled to avoid conflicts with blueprint routes
+# The dashboard is now served by routes/dashboard.py
 
-@app.route('/')
-@login_required
-def dashboard():
+# @app.route('/')
+# @login_required
+def dashboard_legacy():
     """Main dashboard page with enhanced error handling and debugging - NOW WITH ACTIVITY LOGGING"""
     
     # Log page view

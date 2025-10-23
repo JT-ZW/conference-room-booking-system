@@ -1,7 +1,6 @@
-{% extends "layout.html" %} {% block title %}Quotation #{{ quotation_number }} |
-Rainbow Towers{% endblock %} {% block extra_css %}
-{% extends "layout.html" %} {% block title %}Proforma Invoice - {{ booking.title
-or 'Booking' }} | Rainbow Towers{% endblock %} {% block extra_css %}
+{% extends "layout.html" %} 
+{% block title %}Proforma Invoice - {{ booking.title or 'Booking' }} | Rainbow Towers{% endblock %} 
+{% block extra_css %}
 <style>
   /* Print-specific styles */
   @media print {

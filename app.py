@@ -2482,7 +2482,7 @@ def login():
     """User login page with Supabase authentication - NOW WITH ACTIVITY LOGGING"""
     if current_user.is_authenticated:
         print("DEBUG: User already authenticated, redirecting to dashboard")
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard.index'))
     
     form = LoginForm()
     if form.validate_on_submit():
@@ -2517,8 +2517,8 @@ def login():
             flash(f'Welcome back, {user.first_name or user.email}!', 'success')
             session.modified = True
             
-            print(f"DEBUG: About to redirect to: {next_page or url_for('dashboard')}")
-            return redirect(next_page or url_for('dashboard'))
+            print(f"DEBUG: About to redirect to: {next_page or url_for('dashboard.index')}")
+            return redirect(next_page or url_for('dashboard.index'))
         else:
             print("DEBUG: Authentication failed")
             
@@ -2572,7 +2572,7 @@ def register():
     # Redirect if user is already logged in
     if current_user.is_authenticated:
         flash('You are already logged in.', 'info')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard.index'))
     
     form = RegistrationForm()
     
@@ -2606,7 +2606,7 @@ def register():
                 # user = authenticate_user(email, password)
                 # if user:
                 #     login_user(user)
-                #     return redirect(url_for('dashboard'))
+                #     return redirect(url_for('dashboard.index'))
                 
                 # Redirect to login page
                 return redirect(url_for('login'))
@@ -8350,7 +8350,7 @@ def require_admin_or_manager(f):
             return redirect(url_for('login'))
         if current_user.role not in ['admin', 'manager']:
             flash('Access denied. Administrator or Manager privileges required.', 'danger')
-            return redirect(url_for('dashboard'))
+            return redirect(url_for('dashboard.index'))
         return f(*args, **kwargs)
     return decorated_function
 
@@ -8528,7 +8528,7 @@ def activity_logs():
         import traceback
         traceback.print_exc()
         flash('Error loading activity logs. Please try again.', 'danger')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard.index'))
     
 @app.route('/admin/activity-stats')
 @login_required
@@ -8634,7 +8634,7 @@ def activity_stats():
             print(f"Failed to log error: {log_error}")
         
         flash('Error loading activity statistics. Please try again.', 'danger')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard.index'))
 
 
 # Also add this route if you want to support user-specific activity logs for admins
@@ -8761,7 +8761,7 @@ def my_activity():
     except Exception as e:
         print(f"OK: ERROR: Failed to load user's own activity logs: {e}")
         flash('Error loading your activity history', 'danger')
-        return redirect(url_for('dashboard'))
+        return redirect(url_for('dashboard.index'))
 
 # ===============================
 # ADDITIONAL HELPER FUNCTIONS FOR ENHANCED BOOKING SYSTEM

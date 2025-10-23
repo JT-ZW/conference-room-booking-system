@@ -73,7 +73,6 @@ def require_admin_or_manager(f):
         if not current_user.is_authenticated or current_user.role not in ['admin', 'manager']:
             from flask import flash, redirect, url_for
             flash('You do not have permission to access this page.', 'danger')
-            return redirect(url_for('dashboard'))
-            return redirect(url_for('dashboard.dashboard'))
+            return redirect(url_for('dashboard.index'))
         return f(*args, **kwargs)
     return decorated_function 

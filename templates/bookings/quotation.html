@@ -1,10 +1,7 @@
-<<<<<<< HEAD
 {% extends "layout.html" %} {% block title %}Quotation #{{ quotation_number }} |
 Rainbow Towers{% endblock %} {% block extra_css %}
-=======
 {% extends "layout.html" %} {% block title %}Proforma Invoice - {{ booking.title
 or 'Booking' }} | Rainbow Towers{% endblock %} {% block extra_css %}
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
 <style>
   /* Print-specific styles */
   @media print {
@@ -12,7 +9,6 @@ or 'Booking' }} | Rainbow Towers{% endblock %} {% block extra_css %}
       display: none !important;
     }
     body {
-<<<<<<< HEAD
       background-color: white !important;
       margin: 0;
       padding: 0;
@@ -251,7 +247,6 @@ or 'Booking' }} | Rainbow Towers{% endblock %} {% block extra_css %}
   /* Signature Section */
   .signature-section {
     margin-top: 30px;
-=======
       margin: 0;
       padding: 0;
       background: white !important;
@@ -407,12 +402,10 @@ or 'Booking' }} | Rainbow Towers{% endblock %} {% block extra_css %}
     margin-top: 30px;
     padding: 20px;
     border-top: 1px solid #ddd;
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .signature-line {
     display: inline-block;
-<<<<<<< HEAD
     margin-top: 40px;
     font-size: 10px;
   }
@@ -434,7 +427,6 @@ or 'Booking' }} | Rainbow Towers{% endblock %} {% block extra_css %}
     margin-bottom: 20px;
     border: 1px solid #ddd;
     border-radius: 5px;
-=======
     border-bottom: 1px solid #333;
     width: 250px;
     margin: 0 10px;
@@ -489,13 +481,11 @@ or 'Booking' }} | Rainbow Towers{% endblock %} {% block extra_css %}
     .card-header {
       background-color: #f8f9fa !important;
     }
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 </style>
 {% endblock %} {% block content %}
 <!-- Action Buttons (Not Printed) -->
 <div class="action-buttons no-print">
-<<<<<<< HEAD
   <div class="d-flex justify-content-between align-items-center">
     <div>
       <h5 class="mb-0">
@@ -519,7 +509,6 @@ or 'Booking' }} | Rainbow Towers{% endblock %} {% block extra_css %}
       <button type="button" class="btn btn-success btn-sm" id="downloadPdf">
         <i class="fas fa-download me-1"></i>Download PDF
       </button>
-=======
   <a
     href="{{ url_for('bookings.view_booking', id=booking.id) }}"
     class="btn btn-secondary"
@@ -776,12 +765,10 @@ or 'Booking' }} | Rainbow Towers{% endblock %} {% block extra_css %}
       <span>Name </span><span class="signature-line"></span>
       <span> Signature </span><span class="signature-line"></span>
       <span> Date </span><span class="signature-line"></span>
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     </div>
   </div>
 </div>
 
-<<<<<<< HEAD
 <!-- Quotation Document -->
 <div class="card shadow-sm border-0">
   <div class="card-body p-0">
@@ -1211,7 +1198,6 @@ or 'Booking' }} | Rainbow Towers{% endblock %} {% block extra_css %}
           });
       });
   });
-=======
 <script>
   function downloadPDF() {
       // Navigate to the PDF download route
@@ -1232,6 +1218,5 @@ or 'Booking' }} | Rainbow Towers{% endblock %} {% block extra_css %}
 
   // Log activity when quotation is viewed
   console.log('Quotation viewed for booking ID: {{ booking.id }}');
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
 </script>
 {% endblock %}

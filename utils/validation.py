@@ -1,11 +1,8 @@
-<<<<<<< HEAD
 from datetime import datetime, timedelta, timezone
 
 # Central Africa Time (CAT) UTC+2
 CAT = timezone(timedelta(hours=2))
-=======
 from datetime import datetime, timedelta, UTC
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
 
 def safe_float_conversion(value, default=0.0):
     """Safely convert value to float with fallback"""
@@ -39,16 +36,12 @@ def convert_datetime_strings(data, datetime_fields=['start_time', 'end_time', 'c
     return data
 
 def validate_booking_times(start_time, end_time):
-<<<<<<< HEAD
     """Validate booking start and end times."""
-=======
     """Validate booking start and end times with multi-day support."""
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     errors = []
     try:
         if end_time <= start_time:
             errors.append("End time must be after start time")
-<<<<<<< HEAD
         if start_time < datetime.now(CAT):
             errors.append("Booking cannot be scheduled in the past")
         max_future = datetime.now(CAT) + timedelta(days=365)
@@ -61,7 +54,6 @@ def validate_booking_times(start_time, end_time):
         duration_hours = (end_time - start_time).total_seconds() / 3600
         if duration_hours > 12:
             errors.append("Bookings cannot exceed 12 hours")
-=======
         if start_time < datetime.now(UTC):
             errors.append("Booking cannot be scheduled in the past")
         max_future = datetime.now(UTC) + timedelta(days=365)
@@ -91,7 +83,6 @@ def validate_booking_times(start_time, end_time):
         if duration_hours < 0.5:
             errors.append("Bookings must be at least 30 minutes long")
             
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     except Exception:
         errors.append("Invalid date/time values")
     return errors

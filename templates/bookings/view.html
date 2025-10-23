@@ -449,7 +449,6 @@ Details' }} | Rainbow Towers Conference Booking{% endblock %} {% block extra_css
 
           <!-- Show basic timeline as fallback -->
           <div class="timeline-item">
-<<<<<<< HEAD
             <span class="small text-muted"
               >{{ booking.created_at.strftime('%d %b %Y, %H:%M') if
               booking.created_at else 'Recently' }}</span
@@ -458,7 +457,6 @@ Details' }} | Rainbow Towers Conference Booking{% endblock %} {% block extra_css
               Booking created{% if booking.created_by_name %} by {{
               booking.created_by_name }}{% endif %}
             </p>
-=======
             <div class="timeline-dot">
               <i class="fas fa-plus-circle text-success"></i>
             </div>
@@ -475,7 +473,6 @@ Details' }} | Rainbow Towers Conference Booking{% endblock %} {% block extra_css
                 {% endif %}
               </p>
             </div>
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
           </div>
 
           {% if booking.updated_at and booking.updated_at != booking.created_at

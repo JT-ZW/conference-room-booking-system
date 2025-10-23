@@ -1,7 +1,6 @@
 {% extends "layout.html" %} {% block title %}Weekly Summary Report | Rainbow
 Towers Conference Booking{% endblock %} {% block extra_css %}
 <style>
-<<<<<<< HEAD
   .summary-header {
     background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
     color: white;
@@ -146,7 +145,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     overflow-x: auto;
     border-radius: 0.5rem;
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
-=======
   :root {
     --primary-color: #2c5aa0;
     --secondary-color: #4a90a4;
@@ -294,16 +292,12 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     color: var(--primary-color);
     font-weight: 600;
     margin-bottom: 0.5rem;
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .legend {
     display: flex;
-<<<<<<< HEAD
     gap: 1rem;
-=======
     gap: 1.5rem;
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     align-items: center;
     flex-wrap: wrap;
   }
@@ -313,21 +307,16 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     align-items: center;
     gap: 0.5rem;
     font-size: 0.875rem;
-<<<<<<< HEAD
-=======
     color: #64748b;
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .legend-color {
     width: 16px;
     height: 16px;
-<<<<<<< HEAD
     border-radius: 0.25rem;
     border: 1px solid;
   }
 
-=======
     border-radius: 4px;
     border: 1px solid;
   }
@@ -690,27 +679,22 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   }
 
   /* Print Styles */
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   @media print {
     .no-print {
       display: none !important;
     }
-<<<<<<< HEAD
     .weekly-table {
       font-size: 0.75rem;
-=======
     .report-header {
       background: var(--secondary-color) !important;
     }
     .schedule-table {
       font-size: 0.7rem;
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     }
     .event-block {
       padding: 0.25rem;
       margin-bottom: 0.25rem;
     }
-<<<<<<< HEAD
     .summary-header {
       background: #17a2b8 !important;
     }
@@ -725,7 +709,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     .event-block {
       padding: 0.25rem;
       font-size: 0.7rem;
-=======
     .page-break {
       page-break-before: always;
     }
@@ -781,12 +764,10 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     .table-container::before,
     .table-container::after {
       display: none;
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     }
   }
 </style>
 {% endblock %} {% block content %}
-<<<<<<< HEAD
 <!-- Report Header -->
 <div class="summary-header">
   <div class="row align-items-center">
@@ -1089,7 +1070,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Select Week</h5>
-=======
 <div class="report-container">
   <!-- Report Header -->
   <div class="report-header">
@@ -1410,12 +1390,10 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         <h5 class="modal-title" id="weekPickerLabel">
           <i class="fas fa-calendar me-2"></i>Select Week
         </h5>
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
         <button
           type="button"
           class="btn-close"
           data-bs-dismiss="modal"
-<<<<<<< HEAD
         ></button>
       </div>
       <div class="modal-body">
@@ -1429,7 +1407,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         <small class="text-muted"
           >Select any date in the week you want to view</small
         >
-=======
           aria-label="Close"
         ></button>
       </div>
@@ -1453,25 +1430,20 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
           <strong>Tip:</strong> The report will show the full week containing
           your selected date.
         </div>
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
           Cancel
         </button>
         <button type="button" class="btn btn-primary" onclick="goToWeek()">
-<<<<<<< HEAD
           View Week
-=======
           <i class="fas fa-calendar-check me-1"></i>View Week
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
         </button>
       </div>
     </div>
   </div>
 </div>
 
-<<<<<<< HEAD
 {% endblock %} {% block extra_js %}
 <script>
   function downloadExcel() {
@@ -1508,7 +1480,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         tableContainer.style.borderRight = "3px solid #17a2b8";
       }
     }
-=======
 <!-- Event Details Modal -->
 <div
   class="modal fade"
@@ -1768,7 +1739,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   // Mobile scroll handling
   window.addEventListener('resize', function() {
       handleScrollIndicators();
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   });
 </script>
 {% endblock %}

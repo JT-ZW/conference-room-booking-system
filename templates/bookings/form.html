@@ -5,7 +5,6 @@
 {% endblock %}
 
 {% block extra_css %}
-<<<<<<< HEAD
 <!-- Select2 CSS for autofill functionality -->
 <link
   rel="stylesheet"
@@ -25,7 +24,6 @@
   .form-container {
     max-width: 1000px;
     margin: 0 auto;
-=======
 <!-- Flatpickr CSS for date/time picker -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
 
@@ -34,23 +32,19 @@
     max-width: 1200px;
     margin: 0 auto;
     padding: 20px;
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .form-section {
     background: white;
-<<<<<<< HEAD
     border-radius: 12px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     padding: 2rem;
     margin-bottom: 1.5rem;
     border: 1px solid #e9ecef;
-=======
     border-radius: 10px;
     box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
     padding: 2rem;
     margin-bottom: 1.5rem;
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .section-title {
@@ -59,12 +53,9 @@
     margin-bottom: 1.5rem;
     padding-bottom: 0.5rem;
     border-bottom: 2px solid #3498db;
-<<<<<<< HEAD
     display: flex;
     align-items: center;
     gap: 0.5rem;
-=======
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .form-label {
@@ -73,7 +64,6 @@
     margin-bottom: 0.5rem;
   }
 
-<<<<<<< HEAD
   .form-control,
   .form-select {
     border: 2px solid #e9ecef;
@@ -82,7 +72,6 @@
     transition: all 0.3s ease;
   }
 
-=======
   .required-field::after {
     content: " *";
     color: #dc3545;
@@ -96,7 +85,6 @@
     transition: all 0.3s ease;
   }
 
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   .form-control:focus,
   .form-select:focus {
     border-color: #3498db;
@@ -108,23 +96,16 @@
     border-radius: 8px;
     padding: 1rem;
     margin-top: 1rem;
-<<<<<<< HEAD
-=======
     display: none;
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .capacity-progress {
     height: 25px;
-<<<<<<< HEAD
-=======
     background-color: #e9ecef;
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     border-radius: 12px;
     overflow: hidden;
   }
 
-<<<<<<< HEAD
   .capacity-text {
     font-weight: 500;
     margin-bottom: 0.5rem;
@@ -244,7 +225,6 @@
 
   /* Client Autofill Dropdown Styles */
   .client-suggestions {
-=======
   .capacity-bar {
     height: 100%;
     transition: all 0.3s ease;
@@ -261,13 +241,11 @@
 
   /* Client Suggestions Dropdown */
   .suggestions-dropdown {
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     position: absolute;
     top: 100%;
     left: 0;
     right: 0;
     background: white;
-<<<<<<< HEAD
     border: 2px solid #3498db;
     border-top: none;
     border-radius: 0 0 8px 8px;
@@ -294,7 +272,6 @@
   }
 
   .client-suggestion:last-child {
-=======
     border: 1px solid #dee2e6;
     border-top: none;
     border-radius: 0 0 6px 6px;
@@ -318,23 +295,18 @@
   }
 
   .suggestion-item:last-child {
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     border-bottom: none;
   }
 
   .suggestion-name {
     font-weight: 600;
     display: block;
-<<<<<<< HEAD
-=======
     color: #2c3e50;
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .suggestion-company {
     font-size: 0.875rem;
     color: #6c757d;
-<<<<<<< HEAD
     display: block;
   }
 
@@ -383,7 +355,6 @@
     content: " *";
     color: #dc3545;
     font-weight: bold;
-=======
     margin-top: 2px;
     display: block;
   }
@@ -480,7 +451,6 @@
   /* Status select styling */
   #status option {
     padding: 8px;
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 </style>
 {% endblock %} 
@@ -493,7 +463,6 @@
       <i class="fas fa-calendar-plus text-primary me-2"></i>
       {% if booking %}Edit Booking{% else %}Create New Booking{% endif %}
     </h2>
-<<<<<<< HEAD
     <div>
       <a
         href="{{ url_for('bookings') }}"
@@ -657,7 +626,6 @@
             <i class="fas fa-calendar-alt"></i>
             Event Information
           </h4>
-=======
     <a href="{{ url_for('bookings.bookings') }}" class="btn btn-outline-secondary">
       <i class="fas fa-arrow-left me-1"></i>Back to Bookings
     </a>
@@ -716,7 +684,6 @@
               <div class="invalid-feedback">Please enter the number of attendees.</div>
             </div>
           </div>
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
 
           <!-- Capacity Indicator -->
           <div class="capacity-indicator" id="capacityIndicator">
@@ -732,7 +699,6 @@
 
           <div class="row mb-3">
             <div class="col-md-6">
-<<<<<<< HEAD
               <label class="form-label required-field">
                 <i class="fas fa-tag text-primary me-1"></i>
                 Event Type
@@ -771,7 +737,6 @@
                 value="{{ booking.custom_event_type if booking else '' }}"
                 style="{% if not booking or booking.event_type != 'other' %}display: none{% endif %}"
               />
-=======
               <label class="form-label required-field">Client Name</label>
               <div class="position-relative">
                 <input type="text" class="form-control" id="client_name" name="client_name" 
@@ -794,13 +759,11 @@
                        placeholder="Enter company name (optional)">
                 <div id="companySuggestions" class="suggestions-dropdown"></div>
               </div>
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
             </div>
           </div>
 
           <div class="row mb-3">
             <div class="col-md-6">
-<<<<<<< HEAD
               <label class="form-label required-field">
                 <i class="fas fa-calendar text-primary me-1"></i>
                 Start Date & Time
@@ -814,17 +777,14 @@
                 value="{{ booking.start_time.strftime('%Y-%m-%d %H:%M') if booking and booking.start_time else '' }}"
                 required
               />
-=======
               <label class="form-label">Client Email</label>
               <input type="email" class="form-control" id="client_email" name="client_email"
                      value="{{ booking.client.email if booking and booking.client else '' }}"
                      placeholder="Enter client email address">
               <div class="invalid-feedback">Please enter a valid email address.</div>
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
             </div>
 
             <div class="col-md-6">
-<<<<<<< HEAD
               <label class="form-label required-field">
                 <i class="fas fa-calendar-check text-primary me-1"></i>
                 End Date & Time
@@ -838,13 +798,11 @@
                 value="{{ booking.end_time.strftime('%Y-%m-%d %H:%M') if booking and booking.end_time else '' }}"
                 required
               />
-=======
               <label class="form-label">Client Phone</label>
               <input type="tel" class="form-control" id="client_phone" name="client_phone"
                      value="{{ booking.client.phone if booking and booking.client else '' }}"
                      placeholder="Enter client phone number">
               <div class="invalid-feedback">Please enter a valid phone number.</div>
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
             </div>
           </div>
         </div>
@@ -904,7 +862,6 @@
           <div id="availabilityAlert" class="mt-3"></div>
 
           <div class="mb-3">
-<<<<<<< HEAD
             <label class="form-label">
               <i class="fas fa-clipboard-list text-primary me-1"></i>
               Event Requirements / Special Notes
@@ -916,11 +873,9 @@
               rows="4"
               placeholder="Enter any special requirements, setup instructions, catering needs, technical requirements, etc."
             >{{ booking.notes if booking else '' }}</textarea>
-=======
             <label class="form-label">Special Notes / Requirements</label>
             <textarea class="form-control" id="notes" name="notes" rows="3"
                       placeholder="Enter any special requirements or notes...">{{ booking.notes if booking else '' }}</textarea>
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
           </div>
 
           <!-- Booking Status (Only show for existing bookings) -->
@@ -979,22 +934,18 @@
           {% endif %}
         </div>
 
-<<<<<<< HEAD
         <!-- Simplified Pricing -->
         <div class="form-section">
           <h4 class="section-title">
             <i class="fas fa-dollar-sign"></i>
-=======
         <!-- Pricing -->
         <div class="form-section">
           <h4 class="section-title">
             <i class="fas fa-dollar-sign me-2"></i>
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
             Pricing Details
           </h4>
 
           <div id="pricingItems">
-<<<<<<< HEAD
             <!-- Default pricing item -->
             <div class="pricing-item" data-item="0">
               <div class="row align-items-end">
@@ -1061,7 +1012,6 @@
             >
               <i class="fas fa-plus me-1"></i>Add Another Item
             </button>
-=======
             <!-- Pricing items will be added here dynamically -->
             {% if booking and booking.custom_addons %}
               {% for addon in booking.custom_addons %}
@@ -1113,7 +1063,6 @@
                 </div>
               </div>
             {% endif %}
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
           </div>
 
           <button type="button" class="btn btn-sm btn-success mt-2" id="addPricingItem">
@@ -1122,7 +1071,6 @@
         </div>
       </div>
 
-<<<<<<< HEAD
       <!-- Simplified Pricing Summary Column -->
       <div class="col-lg-4">
         <div class="pricing-summary">
@@ -1139,7 +1087,6 @@
 
           <div class="total-amount">
             Total: <span id="summaryTotal">$0.00</span>
-=======
       <!-- Summary Column -->
       <div class="col-lg-4">
         <div class="pricing-summary">
@@ -1164,11 +1111,9 @@
           
           <div class="total-amount">
             Total: $<span id="totalAmount">0.00</span>
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
           </div>
           
           <div class="d-grid gap-2 mt-4">
-<<<<<<< HEAD
             <button type="submit" class="btn btn-primary-custom">
               <i class="fas fa-save me-2"></i>
               {% if booking %}Update Booking{% else %}Create Booking{% endif %}
@@ -1181,14 +1126,12 @@
             {% endif %}
 
             <a href="{{ url_for('bookings') }}" class="btn btn-outline-light">
-=======
             <button type="submit" class="btn btn-primary btn-primary-custom">
               <i class="fas fa-save me-2"></i>
               {% if booking %}Update Booking{% else %}Create Booking{% endif %}
             </button>
             
             <a href="{{ url_for('bookings.bookings') }}" class="btn btn-outline-light">
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
               <i class="fas fa-times me-2"></i>Cancel
             </a>
           </div>
@@ -1197,13 +1140,11 @@
     </div>
   </form>
 </div>
-<<<<<<< HEAD
 {% endblock %} 
 
 {% block extra_js %}
 <!-- Select2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-=======
 
 <!-- Loading Spinner -->
 <div class="loading-spinner" id="loadingSpinner">
@@ -1217,12 +1158,10 @@
 {% endblock %} 
 
 {% block extra_js %}
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
 <!-- Flatpickr JS -->
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <script>
-<<<<<<< HEAD
   document.addEventListener("DOMContentLoaded", function () {
     console.log("🎯 Enhanced booking form loaded with simplified pricing");
     
@@ -1696,7 +1635,6 @@
 
     console.log("🚀 Booking form initialization complete");
   });
-=======
 document.addEventListener('DOMContentLoaded', function() {
     // Initialize date pickers
     flatpickr('#start_time', {
@@ -2371,6 +2309,5 @@ document.addEventListener('DOMContentLoaded', function() {
         checkRoomAvailability();
     }, 1000);
 });
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
 </script>
 {% endblock %}

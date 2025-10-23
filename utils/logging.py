@@ -1,13 +1,10 @@
 from flask import request, session
 from flask_login import current_user
-<<<<<<< HEAD
 from datetime import datetime, timezone, timedelta
 
 # Central Africa Time (CAT) UTC+2
 CAT = timezone(timedelta(hours=2))
-=======
 from datetime import datetime, UTC
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
 from settings.config import SUPABASE_SERVICE_KEY, SUPABASE_URL
 from supabase import create_client
 
@@ -55,13 +52,10 @@ def log_user_activity(
             'metadata': metadata or {},
             'ip_address': ip_address,
             'user_agent': user_agent,
-<<<<<<< HEAD
             'session_id': session_id,
             'timestamp': datetime.now(CAT).isoformat()
-=======
             'session_id': session_id
             # Note: created_at column has a default value in the database
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
         }
         if supabase_admin:
             supabase_admin.table('user_activity_log').insert(log_data).execute()
@@ -77,13 +71,10 @@ def log_authentication_activity(activity_type, email, success=True, additional_i
             'activity_type': activity_type,
             'email': email,
             'success': success,
-<<<<<<< HEAD
             'additional_info': additional_info or {},
             'timestamp': datetime.now(CAT).isoformat()
-=======
             'additional_info': additional_info or {}
             # Note: created_at column has a default value in the database
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
         }
         if supabase_admin:
             supabase_admin.table('auth_activity_log').insert(log_data).execute()

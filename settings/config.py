@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 import os
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
@@ -48,7 +47,6 @@ class Config:
 SUPABASE_URL = os.environ.get('SUPABASE_URL')
 SUPABASE_ANON_KEY = os.environ.get('SUPABASE_ANON_KEY')
 SUPABASE_SERVICE_KEY = os.environ.get('SUPABASE_SERVICE_KEY') 
-=======
 """
 Configuration module for Rainbow Towers Conference Room Booking System.
 
@@ -489,4 +487,3 @@ if __name__ == '__main__':
         print("   ❌ Supabase configuration failed")
     
     print(f"\n🎉 Configuration validation complete!")
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda

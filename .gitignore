@@ -1,8 +1,6 @@
 # Environment Variables and Secrets - CRITICAL
 .env
 .env.local
-<<<<<<< HEAD
-=======
 .env.production
 .env.test
 *.env
@@ -24,7 +22,6 @@ instance/*
 *.db
 *.sqlite
 *.sqlite3
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
 
 # Python
 __pycache__/
@@ -66,9 +63,7 @@ reservations/
 .idea/
 *.swp
 *.swo
-<<<<<<< HEAD
 *.code-workspace
-=======
 *~
 
 # OS
@@ -119,7 +114,6 @@ coverage.xml
 .idea/
 *.swp
 *.swo
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
 
 # OS
 .DS_Store

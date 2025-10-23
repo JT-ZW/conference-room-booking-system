@@ -1,11 +1,8 @@
-<<<<<<< HEAD
 from datetime import datetime
-=======
 from datetime import datetime, timezone, timedelta
 
 # Define CAT timezone
 CAT = timezone(timedelta(hours=2))
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
 
 def parse_datetime_filter(date_string):
     if isinstance(date_string, str):
@@ -25,8 +22,6 @@ def format_datetime_filter(dt, format='%d %b %Y'):
     except Exception:
         return dt
 
-<<<<<<< HEAD
-=======
 def format_cat_datetime_filter(timestamp_str, format='%d %b %Y at %H:%M'):
     """Format timestamp in CAT timezone"""
     try:
@@ -59,7 +54,6 @@ def format_cat_datetime_filter(timestamp_str, format='%d %b %Y at %H:%M'):
     except Exception:
         return str(timestamp_str) if timestamp_str else ""
 
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
 def calculate_total_filter(room_rate, addons_total):
     try:
         return float(room_rate or 0) + float(addons_total or 0)
@@ -147,9 +141,7 @@ def truncate_safe_filter(text, length=100, suffix='...'):
         return ''
 
 def default_if_none_filter(value, default='N/A'):
-<<<<<<< HEAD
     return value if value is not None else default 
-=======
     return value if value is not None else default 
 
 def format_currency_filter(amount):
@@ -247,4 +239,3 @@ def days_until_filter(dt):
             
     except Exception as e:
         return "Unknown"
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda

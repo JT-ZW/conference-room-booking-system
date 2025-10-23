@@ -1,7 +1,6 @@
 {% extends "layout.html" %} {% block title %}Daily Summary Report | Rainbow
 Towers Conference Booking{% endblock %} {% block extra_css %}
 <style>
-<<<<<<< HEAD
   /* Professional Report Styling - Matching Excel Format */
   .report-container {
     background: white;
@@ -22,7 +21,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     font-weight: 700;
     margin-bottom: 0.5rem;
     letter-spacing: 1px;
-=======
   :root {
     --primary-color: #2c5aa0;
     --secondary-color: #4a90a4;
@@ -77,27 +75,22 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   .header-content {
     position: relative;
     z-index: 1;
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .report-title {
     font-size: 2.5rem;
-<<<<<<< HEAD
     font-weight: 900;
     margin-bottom: 1rem;
     text-transform: uppercase;
     letter-spacing: 2px;
-=======
     font-weight: 700;
     margin-bottom: 0.5rem;
     letter-spacing: -0.025em;
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .report-subtitle {
     font-size: 1.2rem;
     opacity: 0.9;
-<<<<<<< HEAD
     margin-bottom: 0.5rem;
   }
 
@@ -121,7 +114,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     border-radius: 0.5rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     margin: 0.5rem;
-=======
     margin-bottom: 1rem;
     font-weight: 400;
   }
@@ -164,13 +156,11 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   .stat-card:hover {
     transform: translateY(-2px);
     box-shadow: var(--hover-shadow);
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .stat-number {
     font-size: 2rem;
     font-weight: 700;
-<<<<<<< HEAD
     color: #1e40af;
     margin-bottom: 0.25rem;
   }
@@ -228,7 +218,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     border-radius: 20px;
     font-size: 0.75rem;
     font-weight: 600;
-=======
     color: var(--primary-color);
     margin-bottom: 0.25rem;
     line-height: 1;
@@ -238,12 +227,10 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     color: #64748b;
     font-size: 0.9rem;
     font-weight: 500;
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
-<<<<<<< HEAD
   .status-confirmed {
     background: #dcfce7;
     color: #166534;
@@ -364,7 +351,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   }
 
   .toolbar-section {
-=======
   /* Export Toolbar */
   .export-toolbar {
     background: white;
@@ -375,7 +361,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   }
 
   .toolbar-content {
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -383,7 +368,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     gap: 1rem;
   }
 
-<<<<<<< HEAD
   .toolbar-left h6 {
     margin: 0 0 0.25rem 0;
     color: #374151;
@@ -470,7 +454,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     .summary-stat {
       margin: 0.25rem;
       padding: 0.75rem;
-=======
   .toolbar-info h6 {
     color: var(--primary-color);
     font-weight: 600;
@@ -797,19 +780,16 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
 
     .stat-card {
       padding: 1rem;
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     }
 
     .stat-number {
       font-size: 1.5rem;
     }
-<<<<<<< HEAD
   }
 
   /* Loading States */
   .loading-shimmer {
     background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
-=======
 
     .toolbar-content {
       flex-direction: column;
@@ -850,7 +830,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   /* Loading States */
   .loading-skeleton {
     background: linear-gradient(90deg, #f0f4f8 25%, #e2e8f0 50%, #f0f4f8 75%);
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     background-size: 200% 100%;
     animation: loading 1.5s infinite;
     border-radius: 4px;
@@ -867,7 +846,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     }
   }
 
-<<<<<<< HEAD
   /* Data Validation Indicators */
   .data-warning {
     background: #fef3c7;
@@ -887,7 +865,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     border-radius: 0.25rem;
     font-size: 0.875rem;
     margin: 1rem 2rem;
-=======
   /* Print Styles */
   @media print {
     .no-print {
@@ -902,14 +879,12 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     .page-break {
       page-break-before: always;
     }
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 </style>
 {% endblock %} {% block content %}
 <div class="report-container">
   <!-- Report Header -->
   <div class="report-header">
-<<<<<<< HEAD
     <div class="container-fluid">
       <div class="row align-items-center">
         <div class="col-md-8">
@@ -970,7 +945,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             </div>
             <div class="stat-label">Total Revenue</div>
           </div>
-=======
     <div class="header-content">
       <div class="row align-items-center">
         <div class="col-md-8">
@@ -1012,13 +986,11 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             <div class="stat-label">Total Day Revenue</div>
           </div>
           {% endif %}
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
         </div>
       </div>
     </div>
   </div>
 
-<<<<<<< HEAD
   <!-- Export Toolbar -->
   <div class="report-toolbar no-print">
     <div class="container-fluid">
@@ -1126,7 +1098,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
       </thead>
       <tbody>
         {% for event in room_events %}
-=======
   <!-- Summary Statistics -->
   {% if daily_data and daily_data.summary %}
   <div class="summary-stats">
@@ -1226,14 +1197,12 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
       </thead>
       <tbody>
         {% for event in events %}
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
         <tr
           onclick="showEventDetails({{ event.id }})"
           data-event-id="{{ event.id }}"
         >
           <!-- Time Column -->
           <td>
-<<<<<<< HEAD
             <div class="event-time">
               {% if event.start_time and event.end_time %} {{
               event.start_time.strftime('%H:%M') }} - {{
@@ -1256,7 +1225,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             </div>
             {% if event.event_type %}
             <div class="text-muted small">{{ event.event_type|title }}</div>
-=======
             {% if event.start_time and event.end_time %}
             <div class="time-display">{{ event.time_display }}</div>
             <div class="duration-info">
@@ -1274,13 +1242,11 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             <div class="event-type">
               {{ event.raw_booking.event_type|replace('_', ' ')|title }}
             </div>
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
             {% endif %}
           </td>
 
           <!-- Client Column -->
           <td>
-<<<<<<< HEAD
             <div class="client-info">
               {% if event.client %} {{ event.client.company_name or
               event.client.contact_person|default('Unknown Client') }} {% else
@@ -1295,7 +1261,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
               {% endif %} {% if event.client.phone %}
               <i class="fas fa-phone me-1"></i>{{ event.client.phone }} {% endif
               %}
-=======
             <div class="client-info">{{ event.client_name }}</div>
             {% if event.raw_booking and event.raw_booking.client %}
             <div class="client-contact">
@@ -1310,7 +1275,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
                 event.raw_booking.client.phone }}</span
               >
               {% endif %}
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
             </div>
             {% endif %}
           </td>
@@ -1319,22 +1283,18 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
           <td>
             {% if event.attendees and event.attendees > 0 %}
             <div class="attendees-count">{{ event.attendees }}</div>
-<<<<<<< HEAD
             {% if event.room and event.room.capacity %}
             <div class="capacity-info">of {{ event.room.capacity }}</div>
-=======
             {% if event.raw_booking and event.raw_booking.room and
             event.raw_booking.room.capacity %}
             <div class="capacity-note">
               of {{ event.raw_booking.room.capacity }} capacity
             </div>
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
             {% endif %} {% else %}
             <span class="text-muted">Not specified</span>
             {% endif %}
           </td>
 
-<<<<<<< HEAD
           <!-- Total Cost Column -->
           <td>
             {% if event.total_price and event.total_price > 0 %}
@@ -1344,7 +1304,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             {% if event.attendees and event.attendees > 0 %}
             <div class="pricing-breakdown">
               ${{ "%.0f"|format(event.total_price / event.attendees) }}/person
-=======
           <!-- Revenue Column -->
           <td>
             {% if event.total_price and event.total_price > 0 %}
@@ -1354,7 +1313,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             {% if event.price_per_person and event.price_per_person > 0 %}
             <div class="per-person-rate">
               ${{ "%.0f"|format(event.price_per_person) }}/person
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
             </div>
             {% endif %} {% else %}
             <span class="text-muted">TBD</span>
@@ -1363,7 +1321,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
 
           <!-- Status Column -->
           <td>
-<<<<<<< HEAD
             <span
               class="status-badge status-{{ event.status|default('tentative') }}"
             >
@@ -1392,7 +1349,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
               <span class="text-muted small">No additional notes</span>
               {% endif %}
             </div>
-=======
             <span class="status-badge status-{{ event.status }}">
               {{ event.status_display }}
             </span>
@@ -1414,13 +1370,11 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             {% endif %} {% else %}
             <span class="text-muted">No additional notes</span>
             {% endif %}
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
           </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
-<<<<<<< HEAD
     {% endfor %} {% else %}
     <!-- No Events State -->
     <div class="no-events-state">
@@ -1458,7 +1412,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             %H:%M CAT') if now else 'Unknown Time' }}
           </small>
         </div>
-=======
   </div>
   {% endfor %} {% else %}
   <!-- No Events State -->
@@ -1516,7 +1469,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
           <i class="fas fa-chevron-right"></i>
         </a>
         {% endif %}
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
       </div>
     </div>
   </div>
@@ -1552,7 +1504,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             type="date"
             class="form-control"
             id="selectedDate"
-<<<<<<< HEAD
             value="{{ report_date.strftime('%Y-%m-%d') if report_date else '' }}"
           />
         </div>
@@ -1560,7 +1511,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
           <i class="fas fa-info-circle me-2"></i>
           <strong>Tip:</strong> For operational planning, select tomorrow's date
           to prepare for the next day's events.
-=======
             value="{{ daily_data.date.strftime('%Y-%m-%d') if daily_data and daily_data.date else '' }}"
           />
         </div>
@@ -1568,7 +1518,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
           <i class="fas fa-lightbulb me-2"></i>
           <strong>Tip:</strong> Select tomorrow's date for operational planning
           and day-ahead preparation.
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
         </div>
       </div>
       <div class="modal-footer">
@@ -1605,11 +1554,8 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         ></button>
       </div>
       <div class="modal-body" id="eventDetailsContent">
-<<<<<<< HEAD
         <!-- Content will be populated by JavaScript -->
-=======
         <!-- Content populated by JavaScript -->
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -1627,7 +1573,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     </div>
   </div>
 </div>
-<<<<<<< HEAD
 
 {% endblock %} {% block extra_js %}
 <script>
@@ -1833,7 +1778,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         }
       });
     }
-=======
 {% endblock %} {% block extra_js %}
 <script>
   document.addEventListener('DOMContentLoaded', function() {
@@ -2023,12 +1967,10 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
               }
           });
       }
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   });
 
   // Print optimization
   window.addEventListener('beforeprint', function() {
-<<<<<<< HEAD
     console.log('🖨️ Preparing report for printing...');
     document.body.classList.add('printing');
   });
@@ -2061,7 +2003,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     // If download buttons are in loading state, restore them
     const downloadButtons = document.querySelectorAll('.btn-export[disabled]');
     downloadButtons.forEach(hideLoadingState);
-=======
       console.log('🖨️ Preparing daily summary for printing...');
       document.body.classList.add('printing');
   });
@@ -2069,7 +2010,6 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   window.addEventListener('afterprint', function() {
       console.log('🖨️ Print job completed');
       document.body.classList.remove('printing');
->>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   });
 </script>
 {% endblock %}

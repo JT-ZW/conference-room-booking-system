@@ -210,8 +210,8 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
               booking.created_at else 'Recently' }}</span
             >
             <p class="mb-0">
-              Booking created{% if booking.created_by %} by {{
-              booking.created_by }}{% endif %}
+              Booking created{% if booking.created_by_name %} by {{
+              booking.created_by_name }}{% endif %}
             </p>
           </div>
 

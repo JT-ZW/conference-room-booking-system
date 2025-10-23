@@ -182,8 +182,38 @@ block extra_css %}
   .status-cancelled {
     background-color: #e74a3b;
   }
+
+  .readonly-notice {
+    background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+    border: 1px solid #90caf9;
+    border-radius: 0.5rem;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .info-badge {
+    background: rgba(52, 152, 219, 0.1);
+    color: #2980b9;
+    border: 1px solid rgba(52, 152, 219, 0.2);
+    border-radius: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 500;
+  }
 </style>
 {% endblock %} {% block content %}
+<!-- Read-Only Notice -->
+<div class="readonly-notice">
+  <div class="d-flex align-items-center">
+    <i class="fas fa-info-circle text-primary me-2"></i>
+    <div>
+      <strong>Client Directory View:</strong> This is a read-only view of client
+      information. Client details are automatically managed through the booking
+      process.
+    </div>
+  </div>
+</div>
+
 <!-- Client Header -->
 <div class="client-header">
   <div class="d-flex justify-content-between align-items-center">
@@ -195,6 +225,7 @@ block extra_css %}
       <div>
         <h1 class="mb-1">
           {{ client.company_name or client.contact_person or 'Unknown Client' }}
+          <span class="info-badge ms-2">Auto-Generated</span>
         </h1>
         {% if client.company_name and client.contact_person %}
         <p class="mb-1 opacity-75">
@@ -220,13 +251,7 @@ block extra_css %}
     <div class="text-end">
       <div class="btn-group">
         <a href="{{ url_for('clients') }}" class="btn btn-outline-light">
-          <i class="fas fa-arrow-left me-1"></i>Back to Clients
-        </a>
-        <a
-          href="{{ url_for('edit_client', id=client.id) }}"
-          class="btn btn-outline-light"
-        >
-          <i class="fas fa-edit me-1"></i>Edit
+          <i class="fas fa-arrow-left me-1"></i>Back to Directory
         </a>
         <a
           href="{{ url_for('new_booking') }}?client={{ client.id }}"
@@ -418,16 +443,16 @@ block extra_css %}
       <div class="card-footer bg-transparent">
         <div class="d-grid gap-2">
           <a
-            href="{{ url_for('edit_client', id=client.id) }}"
-            class="btn btn-outline-warning btn-sm"
-          >
-            <i class="fas fa-edit me-1"></i>Edit Client Information
-          </a>
-          <a
             href="{{ url_for('new_booking') }}?client={{ client.id }}"
             class="btn btn-success btn-sm"
           >
             <i class="fas fa-calendar-plus me-1"></i>Schedule New Booking
+          </a>
+          <a
+            href="{{ url_for('clients') }}"
+            class="btn btn-outline-secondary btn-sm"
+          >
+            <i class="fas fa-arrow-left me-1"></i>Back to Directory
           </a>
         </div>
       </div>
@@ -508,15 +533,6 @@ block extra_css %}
                 >
                   <i class="fas fa-eye"></i>
                 </a>
-                {% if booking.status != 'cancelled' %}
-                <a
-                  href="{{ url_for('edit_booking', id=booking.id) }}"
-                  class="btn btn-sm btn-warning"
-                  title="Edit booking"
-                >
-                  <i class="fas fa-edit"></i>
-                </a>
-                {% endif %}
               </div>
             </div>
 
@@ -711,7 +727,7 @@ block extra_css %}
 {% endif %} {% endblock %} {% block extra_js %}
 <script>
   document.addEventListener("DOMContentLoaded", function () {
-    console.log("📊 Enhanced client view page loaded successfully");
+    console.log("📊 Enhanced client view page loaded successfully (Read-Only Mode)");
 
     // Initialize tooltips
     const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
@@ -727,10 +743,11 @@ block extra_css %}
       clientId: {{ client.id if client else 'null' }},
       totalBookings: {{ bookings|length if bookings else 0 }},
       companyName: "{{ client.company_name or 'None' }}",
-      contactPerson: "{{ client.contact_person or 'None' }}"
+      contactPerson: "{{ client.contact_person or 'None' }}",
+      isReadOnly: true
     };
 
-    console.log("📋 Client Information:", clientData);
+    console.log("📋 Client Information (Read-Only):", clientData);
 
     {% if stats %}
     const clientStats = {
@@ -744,6 +761,9 @@ block extra_css %}
 
     // Initialize keyboard shortcuts
     setupKeyboardShortcuts();
+
+    // Show read-only mode notice
+    console.log("🔒 Client view is in read-only mode - clients are managed through bookings");
   });
 
   function filterBookings(filter) {
@@ -918,19 +938,13 @@ block extra_css %}
 
   function setupKeyboardShortcuts() {
     document.addEventListener('keydown', function(e) {
-      // Ctrl/Cmd + E to edit client
-      if ((e.ctrlKey || e.metaKey) && e.key === 'e') {
-        e.preventDefault();
-        window.location.href = "{{ url_for('edit_client', id=client.id) }}";
-      }
-
       // Ctrl/Cmd + N to create new booking
       if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
         e.preventDefault();
         window.location.href = "{{ url_for('new_booking') }}?client={{ client.id }}";
       }
 
-      // Ctrl/Cmd + B to go back to clients
+      // Ctrl/Cmd + B to go back to clients directory
       if ((e.ctrlKey || e.metaKey) && e.key === 'b') {
         e.preventDefault();
         window.location.href = "{{ url_for('clients') }}";
@@ -944,10 +958,9 @@ block extra_css %}
       }
     });
 
-    console.log("⌨️ Keyboard shortcuts:");
-    console.log("  - Ctrl+E: Edit client");
+    console.log("⌨️ Keyboard shortcuts (Read-Only Mode):");
     console.log("  - Ctrl+N: New booking");
-    console.log("  - Ctrl+B: Back to clients");
+    console.log("  - Ctrl+B: Back to directory");
     console.log("  - 1/2/3: Filter bookings");
   }
 

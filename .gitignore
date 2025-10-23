@@ -1,5 +1,6 @@
 # Environment variables
 .env
+.env.local
 
 # Python
 __pycache__/
@@ -7,12 +8,31 @@ __pycache__/
 *$py.class
 *.so
 .Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual Environments
 env/
 venv/
 ENV/
 env.bak/
 venv.bak/
 .venv/
+central-reservations/
+reservations/
 
 # Flask
 instance/
@@ -23,17 +43,38 @@ instance/
 .idea/
 *.swp
 *.swo
+*.code-workspace
 
 # OS
 .DS_Store
 Thumbs.db
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Desktop.ini
 
 # Logs
 *.log
+logs/
 
 # Database
 *.db
 *.sqlite
+*.sqlite3
 
 # Backup files
 backup_*.json
+*_backup.py
+*_backup_*.py
+*.bak
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+
+# PDF templates (optional - uncomment if you don't want PDFs in repo)
+# *.pdf

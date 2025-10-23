@@ -342,11 +342,13 @@ Conference Booking{% endblock %} {% block extra_css %}
           </div>
           <div class="col-md-3 mb-3">
             <a
-              href="{{ url_for('new_client') }}"
+              href="{{ url_for('new_booking') }}"
               class="btn btn-info w-100 py-3"
+              title="Add clients while creating bookings"
             >
               <i class="fas fa-user-plus fa-2x mb-2"></i>
-              <div>New Client</div>
+              <div>Add Client</div>
+              <small class="text-muted">via Booking</small>
             </a>
           </div>
           <div class="col-md-3 mb-3">

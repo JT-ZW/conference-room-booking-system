@@ -79,7 +79,7 @@
             </li>
             <li class="nav-item">
               <a
-                class="nav-link {% if request.endpoint.startswith('bookings') %}active{% endif %}"
+                class="nav-link {% if request.endpoint and request.endpoint.startswith('bookings') %}active{% endif %}"
                 href="{{ url_for('bookings') }}"
               >
                 <i class="fas fa-book"></i> Bookings
@@ -87,7 +87,7 @@
             </li>
             <li class="nav-item">
               <a
-                class="nav-link {% if request.endpoint.startswith('rooms') %}active{% endif %}"
+                class="nav-link {% if request.endpoint and request.endpoint.startswith('rooms') %}active{% endif %}"
                 href="{{ url_for('rooms') }}"
               >
                 <i class="fas fa-door-open"></i> Rooms
@@ -95,7 +95,7 @@
             </li>
             <li class="nav-item">
               <a
-                class="nav-link {% if request.endpoint.startswith('clients') %}active{% endif %}"
+                class="nav-link {% if request.endpoint and request.endpoint.startswith('clients') %}active{% endif %}"
                 href="{{ url_for('clients') }}"
               >
                 <i class="fas fa-users"></i> Clients
@@ -103,7 +103,7 @@
             </li>
             <li class="nav-item">
               <a
-                class="nav-link {% if request.endpoint.startswith('addons') %}active{% endif %}"
+                class="nav-link {% if request.endpoint and request.endpoint.startswith('addons') %}active{% endif %}"
                 href="{{ url_for('addons') }}"
               >
                 <i class="fas fa-plus-circle"></i> Add-ons
@@ -111,7 +111,7 @@
             </li>
             <li class="nav-item">
               <a
-                class="nav-link {% if request.endpoint.startswith('reports') %}active{% endif %}"
+                class="nav-link {% if request.endpoint and request.endpoint.startswith('reports') %}active{% endif %}"
                 href="{{ url_for('reports') }}"
               >
                 <i class="fas fa-chart-bar"></i> Reports
@@ -122,7 +122,7 @@
             {% if current_user.role in ['admin', 'manager'] %}
             <li class="nav-item dropdown">
               <a
-                class="nav-link dropdown-toggle {% if request.endpoint.startswith('activity_') %}active{% endif %}"
+                class="nav-link dropdown-toggle {% if request.endpoint and request.endpoint.startswith('activity_') %}active{% endif %}"
                 href="#"
                 id="adminDropdown"
                 role="button"

@@ -42,11 +42,11 @@ Rainbow Towers{% endblock %} {% block extra_css %}
 
   /* Base document styles */
   body {
-    font-family: "Arial", "Helvetica", sans-serif;
+    font-family: "Century Gothic", "CenturyGothic", "AppleGothic", sans-serif;
   }
 
   .quotation-document {
-    font-family: "Arial", "Helvetica", sans-serif;
+    font-family: "Century Gothic", "CenturyGothic", "AppleGothic", sans-serif;
     background: white;
     max-width: 210mm;
     margin: 0 auto;
@@ -82,7 +82,7 @@ Rainbow Towers{% endblock %} {% block extra_css %}
     text-align: right;
     font-size: 10px;
     font-weight: bold;
-    margin-bottom: 15px;
+    margin-bottom: 10px;
   }
 
   /* Gold Header Bar */
@@ -90,10 +90,11 @@ Rainbow Towers{% endblock %} {% block extra_css %}
     background-color: #d4a574;
     color: #000;
     text-align: center;
-    padding: 8px;
-    font-size: 14px;
+    padding: 10px;
+    font-size: 16px;
     font-weight: bold;
-    margin-bottom: 20px;
+    letter-spacing: 2px;
+    margin-bottom: 15px;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
   }
@@ -102,51 +103,33 @@ Rainbow Towers{% endblock %} {% block extra_css %}
   .info-columns {
     display: grid;
     grid-template-columns: 1fr 1fr;
-    gap: 40px;
+    gap: 30px;
     margin-bottom: 20px;
     font-size: 10px;
   }
 
   .info-column h3 {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: bold;
     margin-bottom: 8px;
+    text-decoration: underline;
   }
 
   .info-row {
     display: grid;
-    grid-template-columns: 120px 1fr;
-    margin-bottom: 3px;
-    font-size: 10px;
+    grid-template-columns: 100px 1fr;
+    margin-bottom: 4px;
   }
 
   .info-label {
-    font-weight: normal;
-  }
-
-  /* Client Info Section */
-  .client-section {
-    margin: 20px 0;
-    font-size: 10px;
-  }
-
-  .client-section .info-row {
-    display: grid;
-    grid-template-columns: 150px 1fr;
-    margin-bottom: 3px;
+    font-weight: bold;
   }
 
   /* Content Section */
   .content-label {
     font-size: 10px;
     font-weight: bold;
-    margin: 15px 0 10px 0;
-  }
-
-  .hotel-name {
-    font-weight: bold;
-    margin: 10px 0;
-    font-size: 11px;
+    margin: 15px 0 8px 0;
   }
 
   /* Table Styles */
@@ -166,16 +149,14 @@ Rainbow Towers{% endblock %} {% block extra_css %}
   }
 
   .items-table th {
-    padding: 6px 4px;
+    padding: 8px 6px;
     text-align: left;
-    border: 1px solid #000;
-    font-size: 9px;
+    border: 1px solid #999;
   }
 
   .items-table td {
-    padding: 6px 4px;
-    border: 1px solid #000;
-    font-size: 10px;
+    padding: 6px;
+    border: 1px solid #999;
   }
 
   .items-table th.center,
@@ -195,61 +176,55 @@ Rainbow Towers{% endblock %} {% block extra_css %}
     print-color-adjust: exact;
   }
 
-  /* Terms Section */
+  /* Terms Section - Page 2 */
   .terms-section {
     margin-top: 30px;
     font-size: 10px;
-    line-height: 1.6;
+    line-height: 1.5;
   }
 
   .terms-section h2 {
-    font-size: 11px;
+    font-size: 12px;
     font-weight: bold;
     text-decoration: underline;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
   }
 
   .terms-section h3 {
-    font-size: 10px;
+    font-size: 11px;
     font-weight: bold;
-    text-decoration: underline;
     margin-top: 15px;
     margin-bottom: 8px;
   }
 
+  .terms-section ul,
   .terms-section ol {
-    margin: 8px 0;
-    padding-left: 20px;
+    margin: 5px 0;
+    padding-left: 25px;
   }
 
   .terms-section li {
-    margin-bottom: 8px;
+    margin-bottom: 5px;
   }
 
-  .terms-section p {
-    margin: 8px 0;
-  }
-
-  /* Cancellation Policy Table */
-  .cancel-table {
-    width: auto;
-    margin: 10px 0;
-    border-collapse: collapse;
-  }
-
-  .cancel-table td {
-    padding: 3px 15px 3px 0;
-    font-size: 10px;
+  .underline-text {
+    text-decoration: underline;
+    font-weight: bold;
   }
 
   /* Signature Section */
   .signature-section {
-    margin-top: 30px;
+    margin-top: 40px;
+    padding-top: 20px;
   }
 
   .signature-line {
-    display: inline-block;
-    margin-top: 40px;
+    border-top: 1px solid #000;
+    margin: 50px 0 5px 0;
+    padding-top: 5px;
+  }
+
+  .signature-text {
     font-size: 10px;
   }
 
@@ -278,7 +253,7 @@ Rainbow Towers{% endblock %} {% block extra_css %}
   <div class="d-flex justify-content-between align-items-center">
     <div>
       <h5 class="mb-0">
-        <i class="fas fa-file-invoice me-2"></i>Proforma Invoice
+        <i class="fas fa-file-invoice me-2"></i>Proforma Invoice / Quotation
       </h5>
     </div>
     <div>
@@ -308,7 +283,6 @@ Rainbow Towers{% endblock %} {% block extra_css %}
     <div class="quotation-document" id="quotation-content">
       <div class="document-container">
         <!-- Page 1: Invoice Details -->
-
         <!-- Logo and Company Info -->
         <div class="logo-section">
           <img
@@ -332,73 +306,52 @@ Rainbow Towers{% endblock %} {% block extra_css %}
 
         <!-- Two Column Information -->
         <div class="info-columns">
-          <!-- Left Column: Client Info -->
+          <!-- Left Column: Rainbow Towers -->
           <div class="info-column">
+            <h3>Rainbow Towers</h3>
             <div class="info-row">
-              <div class="info-label">Contact Person</div>
-              <div>
-                {% if booking.client %}{{ booking.client.contact_person or ''
-                }}{% endif %}
-              </div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Company</div>
-              <div>
-                {% if booking.client %}{{ booking.client.company_name or '' }}{%
-                endif %}
-              </div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Phone</div>
-              <div>
-                {% if booking.client %}{{ booking.client.phone or '' }}{% endif
-                %}
-              </div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Address</div>
-              <div>
-                {% if booking.client %}{{ booking.client.address or '' }}{%
-                endif %}
-              </div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Email</div>
-              <div>
-                {% if booking.client %}{{ booking.client.email or '' }}{% endif
-                %}
-              </div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Mobile</div>
-              <div>
-                {% if booking.client %}{{ booking.client.mobile or '' }}{% endif
-                %}
-              </div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Website</div>
+              <div class="info-label">Company:</div>
               <div></div>
             </div>
             <div class="info-row">
-              <div class="info-label">Facebook</div>
+              <div class="info-label">Phone:</div>
               <div></div>
             </div>
             <div class="info-row">
-              <div class="info-label">Skype</div>
+              <div class="info-label">Mobile:</div>
               <div></div>
+            </div>
+            <div class="info-row">
+              <div class="info-label">Email:</div>
+              <div>reservations@rtg.co.zw</div>
+            </div>
+            <div class="info-row">
+              <div class="info-label">Facebook:</div>
+              <div></div>
+            </div>
+            <div class="info-row">
+              <div class="info-label">Skype:</div>
+              <div>rtgreservations</div>
             </div>
           </div>
 
-          <!-- Right Column: Rainbow Towers Banking -->
+          <!-- Right Column: VAT Registration & Banking -->
           <div class="info-column">
-            <h3>VAT REG NUMBER</h3>
+            <h3>Reference/Ref No/Yenyunyuro</h3>
             <div class="info-row">
               <div class="info-label"></div>
-              <div>10001189</div>
+              <div>AN OT 2025 - 00034</div>
             </div>
             <br />
-            <h3>BANK DETAILS</h3>
+            <h3 style="margin-top: 10px">VAT REGISTRATION NUMBER</h3>
+            <div class="info-row">
+              <div class="info-label">VAT Number:</div>
+              <div>10001325</div>
+            </div>
+            <div class="info-row">
+              <div class="info-label">BP Number:</div>
+              <div>088950</div>
+            </div>
             <div class="info-row">
               <div class="info-label">Account Name:</div>
               <div>The Rainbow Towers</div>
@@ -409,57 +362,71 @@ Rainbow Towers{% endblock %} {% block extra_css %}
             </div>
             <div class="info-row">
               <div class="info-label">Branch:</div>
-              <div>Nelson Mandela</div>
+              <div>Station Newlands</div>
             </div>
             <div class="info-row">
-              <div class="info-label">Acc Number:</div>
-              <div>9140000892512</div>
+              <div class="info-label">A/c Number:</div>
+              <div>9140008958215</div>
             </div>
             <div class="info-row">
-              <div class="info-label">Nostro FCA</div>
-              <div></div>
-            </div>
-            <br />
-            <div class="info-row">
-              <div class="info-label">Contact Person</div>
-              <div>{{ booking.created_by_name or 'Reservations Team' }}</div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Address</div>
-              <div>1 Pennefather Ave, Harare</div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Phone</div>
-              <div>0242 772633</div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Mobile</div>
-              <div>782705301</div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Website</div>
-              <div>www.rtgafrica.com</div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Facebook</div>
-              <div>rtgreservations</div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Skype</div>
+              <div class="info-label">Nostro FCA:</div>
               <div></div>
             </div>
           </div>
         </div>
 
-        <!-- Event Details -->
-        <div class="content-label">
-          {% if booking.event_name %} {{ booking.event_name }} {% else %} Event
-          {% endif %} {% if booking.start_time %} {% if booking.start_time is
-          string %} {{ booking.start_time[:10] }} {% else %} {{
-          booking.start_time.strftime('%d/%m/%Y') }} {% endif %} {% endif %}
+        <!-- Contact Person -->
+        <div class="info-row" style="margin-bottom: 15px">
+          <div class="info-label">Contact Person:</div>
+          <div>
+            {% if booking.client %} {{ booking.client.contact_person or 'N/A' }}
+            {% else %} N/A {% endif %}
+          </div>
         </div>
 
-        <div class="hotel-name">THE RAINBOW TOWERS HOTEL</div>
+        <div class="info-row" style="margin-bottom: 15px">
+          <div class="info-label">Address:</div>
+          <div>
+            {% if booking.client %} {{ booking.client.address or 'N/A' }} {%
+            else %} N/A {% endif %}
+          </div>
+        </div>
+
+        <div class="info-row" style="margin-bottom: 15px">
+          <div class="info-label">Phone:</div>
+          <div>
+            {% if booking.client %} {{ booking.client.phone or 'N/A' }} {% else
+            %} N/A {% endif %}
+          </div>
+        </div>
+
+        <div class="info-row" style="margin-bottom: 15px">
+          <div class="info-label">Mobile:</div>
+          <div></div>
+        </div>
+
+        <div class="info-row" style="margin-bottom: 15px">
+          <div class="info-label">Email:</div>
+          <div>
+            {% if booking.client %} {{ booking.client.email or 'N/A' }} {% else
+            %} N/A {% endif %}
+          </div>
+        </div>
+
+        <!-- AN OT Content -->
+        <div class="content-label">
+          AN OT Content:
+          <span style="font-weight: normal">
+            {% if booking.start_time %} {% if booking.start_time is string %} {{
+            booking.start_time[:10] }} {% else %} {{
+            booking.start_time.strftime('%d/%m/%Y') }} {% endif %} {% else %}
+            TBC {% endif %}
+          </span>
+        </div>
+
+        <div style="font-weight: bold; margin: 10px 0">
+          THE RAINBOW TOWERS HOTEL
+        </div>
 
         <!-- Items Table -->
         <table class="items-table">
@@ -470,42 +437,34 @@ Rainbow Towers{% endblock %} {% block extra_css %}
               <th class="center">NO. OF ROOMS</th>
               <th class="right">UNIT PRICE/PER PERSON</th>
               <th class="center">NO. OF DAYS</th>
-              <th class="right">
-                TOTAL AMOUNT {{ booking.currency or 'US$' }}
-              </th>
+              <th class="right">TOTAL AMOUNT</th>
+              <th class="right">US$</th>
             </tr>
           </thead>
           <tbody>
-            <!-- Venue Name Header Row (No Pricing) -->
-            {% if booking.room %}
-            <tr style="background-color: #f8f9fa">
-              <td colspan="6" style="font-weight: bold; padding: 8px">
-                {{ booking.room.name }} - Conference Room
-              </td>
-            </tr>
-            {% endif %}
+            {% set total_amount = 0 %}
 
-            <!-- Custom Addons Line Items -->
+            <!-- Custom Addons -->
             {% if booking.custom_addons %} {% for item in booking.custom_addons
             %}
             <tr>
               <td>{{ item.description or 'Service Item' }}</td>
               <td class="center">
-                {% if item.pax %} {{ item.pax }} {% elif 'pax' in
-                (item.description or '').lower() or 'person' in
-                (item.description or '').lower() %} {{ booking.attendees or
-                item.quantity or '-' }} {% else %} - {% endif %}
+                {% if 'pax' in item.description.lower() or 'person' in
+                item.description.lower() %} {{ booking.attendees or
+                item.quantity }} {% else %} - {% endif %}
               </td>
               <td class="center">
-                {% if item.rooms %} {{ item.rooms }} {% elif 'room' in
-                (item.description or '').lower() %} {{ item.quantity or 1 }} {%
-                else %} - {% endif %}
+                {% if 'room' in item.description.lower() %} {{ item.quantity or
+                1 }} {% else %} - {% endif %}
               </td>
               <td class="right">{{ "%.2f"|format(item.unit_price or 0) }}</td>
               <td class="center">{{ item.quantity or 1 }}</td>
               <td class="right">{{ "%.2f"|format(item.total_price or 0) }}</td>
+              <td class="right"></td>
             </tr>
-            {% endfor %}
+            {% set total_amount = total_amount + (item.total_price or 0) %} {%
+            endfor %}
 
             <!-- Fallback to pricing_details -->
             {% elif booking.pricing_details %} {% if booking.pricing_details is
@@ -515,19 +474,24 @@ Rainbow Towers{% endblock %} {% block extra_css %}
             pricing_data.items %}
             <tr>
               <td>{{ item.description or 'Service Item' }}</td>
-              <td class="center">{{ booking.attendees or '' }}</td>
-              <td class="center"></td>
+              <td class="center">{{ booking.attendees or '-' }}</td>
+              <td class="center">-</td>
               <td class="right">{{ "%.2f"|format(item.unit_price or 0) }}</td>
               <td class="center">{{ item.quantity or 1 }}</td>
               <td class="right">{{ "%.2f"|format(item.total or 0) }}</td>
+              <td class="right"></td>
             </tr>
-            {% endfor %} {% endif %}
+            {% set total_amount = total_amount + (item.total or 0) %} {% endfor
+            %} {% endif %} {% endif %}
 
-            <!-- Fallback to total_price ONLY if no custom_addons or pricing_details -->
-            {% elif booking.total_price %}
+            <!-- Fallback to total_price -->
+            {% if total_amount == 0 and booking.total_price %}
             <tr>
-              <td>Conference Room Booking</td>
-              <td class="center">{{ booking.attendees or '' }}</td>
+              <td>
+                {% if booking.room %} {{ booking.room.name }} - Conference Room
+                {% else %} Conference Room Booking {% endif %}
+              </td>
+              <td class="center">{{ booking.attendees or '-' }}</td>
               <td class="center">1</td>
               <td class="right">
                 {{ "%.2f"|format(booking.total_price or 0) }}
@@ -536,24 +500,17 @@ Rainbow Towers{% endblock %} {% block extra_css %}
               <td class="right">
                 {{ "%.2f"|format(booking.total_price or 0) }}
               </td>
+              <td class="right"></td>
             </tr>
-            {% endif %}
+            {% set total_amount = booking.total_price or 0 %} {% endif %}
 
-            <!-- Total Row - Use booking.total_price directly -->
+            <!-- Total Row -->
             <tr class="total-row">
-              <td
-                colspan="5"
-                style="
-                  text-align: right;
-                  padding-right: 10px;
-                  font-weight: bold;
-                "
-              >
-                TOTAL {{ booking.currency or 'US$' }}
+              <td colspan="5" style="text-align: right; padding-right: 10px">
+                TOTAL US$
               </td>
-              <td class="right" style="font-weight: bold">
-                {{ "%.2f"|format(booking.total_price or 0) }}
-              </td>
+              <td class="right">{{ "%.2f"|format(total_amount) }}</td>
+              <td></td>
             </tr>
           </tbody>
         </table>
@@ -573,7 +530,7 @@ Rainbow Towers{% endblock %} {% block extra_css %}
             <li>
               The hotel shall not allow clients to bring own equipment as this
               is a service provided by the hotel. Equipment shall include but
-              not limited to PA systems, screens, translation equipment…………
+              not limited to PA systems, screens, translation equipment………….
             </li>
             <li>
               All Equipment needs to be communicated at the point of making a
@@ -584,80 +541,75 @@ Rainbow Towers{% endblock %} {% block extra_css %}
               making an enquiry to guarantee your booking.
             </li>
             <li>Full payment is required for confirmation of the booking.</li>
-            <li>Rates are subject to change without notice</li>
+            <li>Rates are subject to change without notice.</li>
           </ol>
 
-          <h3>AIRPORT TRANSFERS AND ACTIVITIES</h3>
+          <h3 class="underline-text">AIRPORT TRANSFERS AND ACTIVITIES</h3>
           <p>
-            The hotel through it's subsidiary Heritage Expeditions Africa (
-            HExA) provides the following ground handling services
+            <span class="underline-text"
+              >The hotel through it's subsidiary Heritage Expeditions Africa
+              (HExA) provides the following ground handling services:</span
+            >
           </p>
           <p>
-            Shuttle Services<br />
+            Shuttle Service:<br />
             City Tours<br />
             Day Trips<br />
             Various Activities
           </p>
 
-          <h3>CANCELLATION POLICY</h3>
+          <h3 class="underline-text">CANCELLATION POLICY</h3>
           <p>
             Accommodation and conference rooms booked are subject to the
-            following policy.
+            following policy:
           </p>
-          <table class="cancel-table">
+          <table style="width: 50%; margin-left: 0; font-size: 10px">
             <tr>
-              <td>15 - 29 Days</td>
-              <td>50% refund is made</td>
+              <td>15 + Days</td>
+              <td style="padding-left: 20px">50% refund is made</td>
             </tr>
             <tr>
               <td>8 - 14 Days</td>
-              <td>25% refund is made</td>
+              <td style="padding-left: 20px">25% refund is made</td>
             </tr>
             <tr>
               <td>0 - 7 Days</td>
-              <td>No refund</td>
+              <td style="padding-left: 20px">No refund</td>
             </tr>
           </table>
 
-          <h3>PAYMENT</h3>
+          <h3 class="underline-text">PAYMENT</h3>
           <p>
             We require confirmation of payment 2 weeks before arrival to secure
-            your booking. Payment can be a purchase order, cash or bank tranfer.
-          </p>
-          <p>
+            your booking. Payment can be a purchase order, cash or bank
+            transfer.<br />
             Please note that we hold the right to cancel your reservation if we
-            have not received your full payment,an order or letter of commitment
-            to pay
-          </p>
-          <p>
-            This quotation does not constitute an undertaking by RTG to provide
-            the requested services.
-          </p>
-          <p>
+            have not received your full payment on order or letter of commitment
+            to pay from government/corporate organisations if on credit or the
+            booking has not been confirmed by a RTGH payment before the above
+            stated booking.<br />
             It will only remain a quotation and may only constitute an
             undertaking to provide services after both payment has been made and
             the booking confirmed.
           </p>
 
-          <h3>INCREASE IN NUMBERS OR ADDITIONAL SERVICES</h3>
+          <h3 class="underline-text">
+            INCREASE IN NUMBERS OR ADDITIONAL SERVICES
+          </h3>
           <p>
             Day conferences – numbers to be communicated by 0900hrs<br />
             Lunch Bookings – numbers to be communicated by 0900hrs<br />
-            Dinner/ Cocktail bookings – numbers to be communicated by 1200hrs
-          </p>
-          <p>
+            Dinner/ Cocktail bookings – numbers to be communicated by 1200hrs<br />
             Please note that if there is no communication regarding the
             reduction of numbers, the hotel will charge as per original booking
-            numbers.
-          </p>
-          <p>
+            numbers.<br />
             In the event of an increase in numbers for either conferencing or
             accommodation bookings, the hotel will charge accordingly and your
-            organisation will be required to provide order, commitment letter or
-            payment within 24 hours.
+            organisation will be required to provide order, written confirmation
+            of payment within 24 hours.
           </p>
 
-          <h3>NO SHOWS</h3>
+          <h3 class="underline-text">NO SHOWS</h3>
           <p>
             Guests with a valid room reservation who do not arrive on the day of
             the reservation will be considered no-shows and the applicable room
@@ -666,16 +618,27 @@ Rainbow Towers{% endblock %} {% block extra_css %}
 
           <!-- Signature Section -->
           <div class="signature-section">
-            <p style="font-weight: bold; margin-top: 30px">
+            <p style="font-weight: bold; margin-bottom: 30px">
               If in agreement, please sign and return copy to certify
               confirmation
             </p>
 
-            <div class="signature-line">
-              Name
-              ………………………..............................................Signature
-              …………………………………................................
-              Date………………………………................
+            <div
+              style="display: grid; grid-template-columns: 1fr 1fr; gap: 50px"
+            >
+              <div>
+                <div class="signature-line">
+                  <span class="signature-text"
+                    >Name ………………………………………………………… Signature
+                    …………………………………………………………………</span
+                  >
+                </div>
+              </div>
+              <div>
+                <div class="signature-line">
+                  <span class="signature-text">Date……………………………………………</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -701,12 +664,9 @@ Rainbow Towers{% endblock %} {% block extra_css %}
           '<i class="fas fa-spinner fa-spin me-1"></i>Generating...';
         button.disabled = true;
 
-        // Use pre-processed filename from server
-        const filename = "{{ pdf_filename }}.pdf";
-
         const options = {
           margin: 15,
-          filename: filename,
+          filename: "proforma-invoice-{{ quotation_number }}.pdf",
           image: { type: "jpeg", quality: 0.98 },
           html2canvas: { scale: 2, useCORS: true, letterRendering: true },
           jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },

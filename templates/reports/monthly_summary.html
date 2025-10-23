@@ -3,6 +3,7 @@
 
 {% block extra_css %}
 <style>
+<<<<<<< HEAD
   .summary-header {
     background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
     color: white;
@@ -39,10 +40,303 @@
   }
 
   .metric-change {
+=======
+  :root {
+    --primary-color: #2c5aa0;
+    --secondary-color: #4a90a4;
+    --accent-color: #7fb069;
+    --warning-color: #f4a261;
+    --danger-color: #e76f51;
+    --light-bg: #f8fafb;
+    --card-shadow: 0 2px 10px rgba(44, 90, 160, 0.08);
+    --hover-shadow: 0 4px 20px rgba(44, 90, 160, 0.15);
+    --border-radius: 12px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  body {
+    background-color: var(--light-bg);
+    font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  .report-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+
+  /* Header Section */
+  .report-header {
+    background: linear-gradient(
+      135deg,
+      var(--warning-color) 0%,
+      #fd7e14 100%
+    );
+    color: white;
+    border-radius: var(--border-radius);
+    padding: 2.5rem 2rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .report-header::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>')
+      repeat;
+    opacity: 0.3;
+  }
+
+  .header-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .report-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.025em;
+  }
+
+  .report-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    margin-bottom: 1rem;
+    font-weight: 400;
+  }
+
+  .report-meta {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    font-size: 0.9rem;
+    opacity: 0.8;
+    flex-wrap: wrap;
+  }
+
+  .report-meta .badge {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.375rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+
+  /* Summary Statistics */
+  .summary-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    transition: var(--transition);
+    border-left: 4px solid var(--warning-color);
+    position: relative;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--hover-shadow);
+  }
+
+  .stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+    line-height: 1;
+  }
+
+  .stat-label {
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-trend {
+    font-size: 0.8rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .trend-positive {
+    color: var(--accent-color);
+  }
+  .trend-neutral {
+    color: #64748b;
+  }
+  .trend-negative {
+    color: var(--danger-color);
+  }
+
+  /* Export Toolbar */
+  .export-toolbar {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 2rem;
+  }
+
+  .toolbar-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .toolbar-info h6 {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .toolbar-info p {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  .toolbar-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-export {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.625rem 1rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: var(--transition);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-export:hover {
+    background: #1e3a8a;
+    color: white;
+    transform: translateY(-1px);
+  }
+
+  .btn-export.secondary {
+    background: rgba(44, 90, 160, 0.1);
+    color: var(--primary-color);
+    border: 1px solid rgba(44, 90, 160, 0.2);
+  }
+
+  .btn-export.secondary:hover {
+    background: rgba(44, 90, 160, 0.15);
+    color: var(--primary-color);
+  }
+
+  /* Executive Summary */
+  .executive-summary {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-left: 5px solid var(--warning-color);
+    box-shadow: var(--card-shadow);
+  }
+
+  .executive-summary h5 {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+
+  /* Content Sections */
+  .content-section {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 2rem;
+  }
+
+  .section-title {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  /* Performance Grids */
+  .performance-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .performance-card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    border-top: 4px solid var(--secondary-color);
+    transition: var(--transition);
+  }
+
+  .performance-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--hover-shadow);
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: between;
+    align-items: start;
+    margin-bottom: 1rem;
+  }
+
+  .card-title {
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+  }
+
+  .card-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--secondary-color);
+  }
+
+  .card-meta {
+    color: #64748b;
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     font-size: 0.875rem;
     margin-top: 0.5rem;
   }
 
+<<<<<<< HEAD
   .metric-change.positive {
     color: #28a745;
   }
@@ -114,6 +408,9 @@
     border-top: 4px solid #17a2b8;
   }
 
+=======
+  /* Progress Bars */
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   .progress-bar-custom {
     height: 0.5rem;
     background-color: #e9ecef;
@@ -124,11 +421,16 @@
 
   .progress-fill {
     height: 100%;
+<<<<<<< HEAD
     background: linear-gradient(90deg, #28a745 0%, #20c997 100%);
+=======
+    background: linear-gradient(90deg, var(--accent-color) 0%, var(--secondary-color) 100%);
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     border-radius: 0.25rem;
     transition: width 0.3s ease;
   }
 
+<<<<<<< HEAD
   .trend-indicator {
     display: inline-flex;
     align-items: center;
@@ -198,11 +500,236 @@
   @media (max-width: 768px) {
     .metric-value { font-size: 1.5rem; }
     .room-performance-grid { grid-template-columns: 1fr; }
+=======
+  /* Tables */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+  }
+
+  .data-table th {
+    background: #f8fafb;
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  .data-table td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: top;
+  }
+
+  .data-table tbody tr:hover {
+    background-color: #f8fafb;
+  }
+
+  /* Weekly Breakdown */
+  .weekly-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+  }
+
+  .week-card {
+    background: #f8fafb;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+    border: 1px solid #e2e8f0;
+    transition: var(--transition);
+  }
+
+  .week-card:hover {
+    background: #f1f5f9;
+    transform: translateY(-1px);
+  }
+
+  .week-title {
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+  }
+
+  .week-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: #64748b;
+  }
+
+  /* Navigation */
+  .navigation-footer {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    margin-top: 2rem;
+  }
+
+  .nav-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .nav-info {
+    color: #64748b;
+    font-size: 0.9rem;
+  }
+
+  .nav-actions {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  /* Insights Section */
+  .insights-section {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 2rem;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 2rem;
+  }
+
+  .insight-item {
+    border-left: 3px solid var(--accent-color);
+    padding-left: 1rem;
+    margin-bottom: 1rem;
+    color: #475569;
+    line-height: 1.5;
+  }
+
+  .insight-item.warning {
+    border-left-color: var(--warning-color);
+  }
+
+  /* Status Badges */
+  .status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .status-excellent {
+    background: rgba(127, 176, 105, 0.15);
+    color: var(--accent-color);
+  }
+
+  .status-good {
+    background: rgba(74, 144, 164, 0.15);
+    color: var(--secondary-color);
+  }
+
+  .status-moderate {
+    background: rgba(244, 162, 97, 0.15);
+    color: var(--warning-color);
+  }
+
+  .status-poor {
+    background: rgba(231, 111, 81, 0.15);
+    color: var(--danger-color);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .report-container {
+      padding: 1rem;
+    }
+
+    .report-title {
+      font-size: 1.75rem;
+    }
+
+    .summary-stats {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .performance-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .toolbar-content {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .toolbar-actions {
+      justify-content: center;
+    }
+
+    .nav-content {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .weekly-breakdown {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+
+  @media (max-width: 480px) {
+    .summary-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .weekly-breakdown {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  /* Print Styles */
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    .report-header {
+      background: var(--warning-color) !important;
+    }
+    .page-break {
+      page-break-before: always;
+    }
+  }
+
+  /* Loading States */
+  .loading-skeleton {
+    background: linear-gradient(90deg, #f0f4f8 25%, #e2e8f0 50%, #f0f4f8 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 4px;
+    height: 1rem;
+    margin: 0.25rem 0;
+  }
+
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 </style>
 {% endblock %}
 
 {% block content %}
+<<<<<<< HEAD
 <!-- Report Header -->
 <div class="summary-header">
   <div class="row align-items-center">
@@ -638,54 +1165,504 @@
         Next Month<i class="fas fa-chevron-right ms-1"></i>
       </a>
       {% endif %}
+=======
+<div class="report-container">
+  <!-- Report Header -->
+  <div class="report-header">
+    <div class="header-content">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <h1 class="report-title">
+            <i class="fas fa-calendar-alt me-2"></i>Monthly Performance Report
+          </h1>
+          <p class="report-subtitle">
+            {{ monthly_data.month_name if monthly_data and monthly_data.month_name else 'Monthly Analysis' }}
+          </p>
+          <div class="report-meta">
+            <div class="d-flex align-items-center">
+              <i class="fas fa-clock me-2"></i>
+              <span>Generated: {{ moment().strftime('%A, %B %d, %Y at %I:%M %p') if moment else 'Unknown Time' }}</span>
+            </div>
+            <div class="badge">
+              <i class="fas fa-chart-line me-1"></i>
+              Performance Analytics
+            </div>
+            {% if monthly_data and monthly_data.summary %}
+            <div class="d-flex align-items-center">
+              <i class="fas fa-calendar-check me-2"></i>
+              <span>{{ monthly_data.summary.total_events }} Total Events</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-md-4 text-md-end">
+          {% if monthly_data and monthly_data.summary %}
+          <div class="stat-card mb-0">
+            <div class="stat-number">
+              ${{ "%.0f"|format(monthly_data.summary.total_revenue|default(0)) }}
+            </div>
+            <div class="stat-label">Monthly Revenue</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Toolbar -->
+  <div class="export-toolbar no-print">
+    <div class="toolbar-content">
+      <div class="toolbar-info">
+        <h6><i class="fas fa-download me-2"></i>Export & Analysis</h6>
+        <p>Comprehensive monthly analytics and performance insights for operational planning</p>
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn-export" onclick="downloadExcel()">
+          <i class="fas fa-file-excel"></i>
+          Excel
+        </button>
+        <button class="btn-export" onclick="downloadPDF()">
+          <i class="fas fa-file-pdf"></i>
+          PDF
+        </button>
+        <button class="btn-export" onclick="window.print()">
+          <i class="fas fa-print"></i>
+          Print
+        </button>
+        <button class="btn-export secondary" onclick="showMonthPicker()">
+          <i class="fas fa-calendar"></i>
+          Select Month
+        </button>
+        <a href="{{ url_for('reports.reports') }}" class="btn-export secondary">
+          <i class="fas fa-arrow-left"></i>
+          Back to Reports
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Executive Summary -->
+  {% if monthly_data and monthly_data.summary %}
+  <div class="executive-summary">
+    <h5 class="mb-3">
+      <i class="fas fa-chart-line me-2"></i>Executive Summary
+    </h5>
+    <div class="row">
+      <div class="col-md-8">
+        <p class="mb-2">
+          <strong>{{ monthly_data.month_name if monthly_data.month_name else 'This month' }}</strong> showed 
+          <strong>{{ monthly_data.summary.total_events }} events</strong> generating 
+          <strong>${{ "%.0f"|format(monthly_data.summary.total_revenue) }}</strong> in total revenue.
+        </p>
+        
+        <ul class="mb-0">
+          <li>Revenue conversion rate of {{ "%.1f"|format(monthly_data.summary.conversion_rate|default(0)) }}% from confirmed bookings</li>
+          <li>Average booking value of ${{ "%.0f"|format(monthly_data.summary.average_event_value|default(0)) }} indicates {{ 'strong' if monthly_data.summary.average_event_value|default(0) >= 500 else 'moderate' if monthly_data.summary.average_event_value|default(0) >= 250 else 'developing' }} pricing performance</li>
+          <li>{{ monthly_data.summary.total_attendees|default(0) }} total attendees across {{ monthly_data.summary.days_in_month|default(30) }} days</li>
+          {% if monthly_data.top_rooms and monthly_data.top_rooms|length > 0 %}
+          <li>Top performer: {{ monthly_data.top_rooms[0][0] }} with ${{ "%.0f"|format(monthly_data.top_rooms[0][1].revenue) }} revenue</li>
+          {% endif %}
+        </ul>
+      </div>
+      <div class="col-md-4">
+        <div class="text-center">
+          <div class="h4 mb-1">{{ "%.1f"|format(monthly_data.summary.conversion_rate|default(0)) }}%</div>
+          <div class="small text-muted">Conversion Rate</div>
+          <div class="status-badge {{ 'status-excellent' if monthly_data.summary.conversion_rate|default(0) >= 80 else 'status-good' if monthly_data.summary.conversion_rate|default(0) >= 60 else 'status-moderate' if monthly_data.summary.conversion_rate|default(0) >= 40 else 'status-poor' }}">
+            {{ 'Excellent' if monthly_data.summary.conversion_rate|default(0) >= 80 else 'Good' if monthly_data.summary.conversion_rate|default(0) >= 60 else 'Moderate' if monthly_data.summary.conversion_rate|default(0) >= 40 else 'Needs Attention' }}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Summary Statistics -->
+  {% if monthly_data and monthly_data.summary %}
+  <div class="summary-stats">
+    <div class="stat-card">
+      <div class="stat-number">{{ monthly_data.summary.total_events|default(0) }}</div>
+      <div class="stat-label">Total Events</div>
+      <div class="stat-trend neutral">
+        <i class="fas fa-calendar me-1"></i>
+        {{ monthly_data.summary.days_in_month|default(30) }} days period
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-number">{{ monthly_data.summary.confirmed_events|default(0) }}</div>
+      <div class="stat-label">Confirmed Events</div>
+      <div class="stat-trend {{ 'trend-positive' if monthly_data.summary.conversion_rate|default(0) >= 70 else 'trend-neutral' }}">
+        <i class="fas fa-check-circle me-1"></i>
+        {{ "%.1f"|format(monthly_data.summary.conversion_rate|default(0)) }}% conversion
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-number">${{ "%.0f"|format(monthly_data.summary.average_event_value|default(0)) }}</div>
+      <div class="stat-label">Avg Event Value</div>
+      <div class="stat-trend neutral">
+        <i class="fas fa-dollar-sign me-1"></i>
+        Per confirmed booking
+      </div>
+    </div>
+    
+    <div class="stat-card">
+      <div class="stat-number">{{ monthly_data.summary.total_attendees|default(0) }}</div>
+      <div class="stat-label">Total Attendees</div>
+      <div class="stat-trend neutral">
+        <i class="fas fa-users me-1"></i>
+        {{ "%.0f"|format((monthly_data.summary.total_attendees|default(0) / monthly_data.summary.confirmed_events) if monthly_data.summary.confirmed_events|default(0) > 0 else 0) }} avg per event
+      </div>
+    </div>
+    
+    {% if monthly_data.summary.tentative_events|default(0) > 0 %}
+    <div class="stat-card">
+      <div class="stat-number">{{ monthly_data.summary.tentative_events|default(0) }}</div>
+      <div class="stat-label">Tentative Events</div>
+      <div class="stat-trend neutral">
+        <i class="fas fa-clock me-1"></i>
+        Pending confirmation
+      </div>
+    </div>
+    {% endif %}
+    
+    {% if monthly_data.summary.cancelled_events|default(0) > 0 %}
+    <div class="stat-card">
+      <div class="stat-number">{{ monthly_data.summary.cancelled_events|default(0) }}</div>
+      <div class="stat-label">Cancelled Events</div>
+      <div class="stat-trend trend-negative">
+        <i class="fas fa-times-circle me-1"></i>
+        Cancellation rate
+      </div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Weekly Breakdown -->
+  {% if monthly_data and monthly_data.weekly_summaries %}
+  <div class="content-section">
+    <h5 class="section-title">
+      <i class="fas fa-chart-bar"></i>
+      Weekly Performance Breakdown
+    </h5>
+    
+    <div class="weekly-breakdown">
+      {% for week_name, week_data in monthly_data.weekly_summaries.items() %}
+      <div class="week-card">
+        <div class="week-title">{{ week_name }}</div>
+        <div class="week-stats">
+          <div>
+            <strong>{{ week_data.events|default(0) }}</strong>
+            <small>Events</small>
+          </div>
+          <div>
+            <strong>${{ "%.0f"|format(week_data.revenue|default(0)) }}</strong>
+            <small>Revenue</small>
+          </div>
+          <div>
+            <strong>{{ week_data.confirmed|default(0) }}</strong>
+            <small>Confirmed</small>
+          </div>
+          <div>
+            <strong>{{ week_data.attendees|default(0) }}</strong>
+            <small>Attendees</small>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Performance Analysis -->
+  <div class="performance-grid">
+    <!-- Top Rooms -->
+    <div class="performance-card">
+      <h6 class="section-title">
+        <i class="fas fa-door-open"></i>
+        Top Performing Rooms
+      </h6>
+      
+      {% if monthly_data and monthly_data.top_rooms and monthly_data.top_rooms|length > 0 %}
+      {% for room_name, room_data in monthly_data.top_rooms[:5] %}
+      <div class="card-item mb-3">
+        <div class="card-header">
+          <div>
+            <div class="card-title">{{ room_name }}</div>
+            <div class="card-meta">{{ room_data.events|default(0) }} events</div>
+          </div>
+          <div class="text-end">
+            <div class="card-value">${{ "%.0f"|format(room_data.revenue|default(0)) }}</div>
+          </div>
+        </div>
+        
+        {% set utilization = (room_data.confirmed|default(0) / room_data.events|default(1)) * 100 if room_data.events|default(0) > 0 else 0 %}
+        <div class="progress-bar-custom">
+          <div class="progress-fill" style="width: {{ utilization }}%"></div>
+        </div>
+        
+        <div class="card-meta">
+          {{ room_data.confirmed|default(0) }} confirmed ({{ "%.0f"|format(utilization) }}%)
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="text-center text-muted py-3">
+        <i class="fas fa-door-open fa-2x mb-2"></i>
+        <p>No room performance data available for this month.</p>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Top Clients -->
+    <div class="performance-card">
+      <h6 class="section-title">
+        <i class="fas fa-users"></i>
+        Top Clients by Revenue
+      </h6>
+      
+      {% if monthly_data and monthly_data.top_clients and monthly_data.top_clients|length > 0 %}
+      {% for client_name, client_data in monthly_data.top_clients[:5] %}
+      <div class="card-item mb-3">
+        <div class="card-header">
+          <div>
+            <div class="card-title">{{ client_name }}</div>
+            <div class="card-meta">{{ client_data.events|default(0) }} events</div>
+          </div>
+          <div class="text-end">
+            <div class="card-value">${{ "%.0f"|format(client_data.revenue|default(0)) }}</div>
+          </div>
+        </div>
+        
+        {% set client_conversion = (client_data.confirmed|default(0) / client_data.events|default(1)) * 100 if client_data.events|default(0) > 0 else 0 %}
+        <div class="progress-bar-custom">
+          <div class="progress-fill" style="width: {{ client_conversion }}%"></div>
+        </div>
+        
+        <div class="card-meta">
+          {{ client_data.confirmed|default(0) }} confirmed ({{ "%.0f"|format(client_conversion) }}%)
+        </div>
+      </div>
+      {% endfor %}
+      {% else %}
+      <div class="text-center text-muted py-3">
+        <i class="fas fa-users fa-2x mb-2"></i>
+        <p>No client performance data available for this month.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Insights and Recommendations -->
+  {% if monthly_data and monthly_data.summary %}
+  <div class="insights-section">
+    <h5 class="section-title">
+      <i class="fas fa-lightbulb"></i>
+      Insights & Recommendations
+    </h5>
+    
+    <div class="row">
+      <div class="col-md-6">
+        <h6 class="text-success mb-3">Opportunities</h6>
+        
+        {% if monthly_data.summary.conversion_rate|default(0) >= 70 %}
+        <div class="insight-item">
+          <i class="fas fa-arrow-up text-success me-2"></i>Excellent conversion rate of {{ "%.1f"|format(monthly_data.summary.conversion_rate) }}% demonstrates strong sales process
+        </div>
+        {% endif %}
+        
+        {% if monthly_data.summary.average_event_value|default(0) >= 500 %}
+        <div class="insight-item">
+          <i class="fas fa-dollar-sign text-success me-2"></i>Strong average event value of ${{ "%.0f"|format(monthly_data.summary.average_event_value) }} indicates premium market positioning
+        </div>
+        {% endif %}
+        
+        {% if monthly_data.summary.total_events|default(0) > 0 %}
+        <div class="insight-item">
+          <i class="fas fa-calendar text-success me-2"></i>{{ monthly_data.summary.total_events }} events across {{ monthly_data.summary.days_in_month|default(30) }} days shows consistent activity
+        </div>
+        {% endif %}
+        
+        {% if monthly_data.top_rooms and monthly_data.top_rooms|length >= 3 %}
+        <div class="insight-item">
+          <i class="fas fa-building text-success me-2"></i>Diverse room utilization across multiple facilities reduces dependency risk
+        </div>
+        {% endif %}
+      </div>
+      
+      <div class="col-md-6">
+        <h6 class="text-warning mb-3">Areas for Improvement</h6>
+        
+        {% if monthly_data.summary.conversion_rate|default(0) < 50 %}
+        <div class="insight-item warning">
+          <i class="fas fa-exclamation-triangle text-warning me-2"></i>Low conversion rate of {{ "%.1f"|format(monthly_data.summary.conversion_rate) }}% suggests need for improved follow-up processes
+        </div>
+        {% endif %}
+        
+        {% if monthly_data.summary.tentative_events|default(0) > monthly_data.summary.confirmed_events|default(0) %}
+        <div class="insight-item warning">
+          <i class="fas fa-clock text-warning me-2"></i>High number of tentative bookings - focus on converting pending events
+        </div>
+        {% endif %}
+        
+        {% if monthly_data.summary.cancelled_events|default(0) > 0 %}
+        <div class="insight-item warning">
+          <i class="fas fa-times-circle text-warning me-2"></i>{{ monthly_data.summary.cancelled_events }} cancelled events - review cancellation policies and client communication
+        </div>
+        {% endif %}
+        
+        <div class="insight-item warning">
+          <i class="fas fa-marketing text-warning me-2"></i>Consider targeted marketing for underperforming time periods
+        </div>
+        
+        <div class="insight-item warning">
+          <i class="fas fa-handshake text-warning me-2"></i>Develop client retention programs for repeat business opportunities
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Navigation Footer -->
+  <div class="navigation-footer no-print">
+    <div class="nav-content">
+      <div class="nav-info">
+        <small>
+          <i class="fas fa-info-circle me-1"></i>
+          This report analyzes events that occurred during the selected month
+        </small>
+      </div>
+      <div class="nav-actions">
+        {% if monthly_data and monthly_data.start_date %}
+        {% set current_month = monthly_data.start_date %}
+        {% set prev_month = (current_month.replace(day=1) - timedelta(days=1)).replace(day=1) %}
+        {% set next_month_start = current_month.replace(day=1) + timedelta(days=32) %}
+        {% set next_month = next_month_start.replace(day=1) %}
+        
+        <a
+          href="{{ url_for('reports.monthly_summary_report', year=prev_month.year, month=prev_month.month) }}"
+          class="btn-export secondary"
+        >
+          <i class="fas fa-chevron-left"></i>
+          Previous Month
+        </a>
+        
+        <a
+          href="{{ url_for('reports.monthly_summary_report', year=next_month.year, month=next_month.month) }}"
+          class="btn-export secondary"
+        >
+          Next Month
+          <i class="fas fa-chevron-right"></i>
+        </a>
+        {% endif %}
+      </div>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     </div>
   </div>
 </div>
 
 <!-- Month Picker Modal -->
+<<<<<<< HEAD
 <div class="modal fade" id="monthPicker" tabindex="-1">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Select Month</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+=======
+<div
+  class="modal fade"
+  id="monthPicker"
+  tabindex="-1"
+  aria-labelledby="monthPickerLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="monthPickerLabel">
+          <i class="fas fa-calendar me-2"></i>Select Month
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
       </div>
       <div class="modal-body">
         <div class="row">
           <div class="col-6">
+<<<<<<< HEAD
             <label class="form-label">Month:</label>
             <select class="form-control" id="selectedMonth">
               {% for i in range(1, 13) %}
               <option value="{{ i }}" {% if report_month and report_month.month == i %}selected{% endif %}>
                 {{ (report_month.replace(month=i) if report_month else now.replace(month=i)).strftime('%B') }}
+=======
+            <label for="selectedMonth" class="form-label">Month</label>
+            <select class="form-control" id="selectedMonth">
+              {% for i in range(1, 13) %}
+              <option value="{{ i }}" {% if monthly_data and monthly_data.start_date and monthly_data.start_date.month == i %}selected{% endif %}>
+                {{ ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'][i-1] }}
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
               </option>
               {% endfor %}
             </select>
           </div>
           <div class="col-6">
+<<<<<<< HEAD
             <label class="form-label">Year:</label>
             <select class="form-control" id="selectedYear">
               {% for year in range(2023, 2030) %}
               <option value="{{ year }}" {% if report_month and report_month.year == year %}selected{% elif not report_month and now.year == year %}selected{% endif %}>
+=======
+            <label for="selectedYear" class="form-label">Year</label>
+            <select class="form-control" id="selectedYear">
+              {% for year in range(2023, 2030) %}
+              <option value="{{ year }}" {% if monthly_data and monthly_data.start_date and monthly_data.start_date.year == year %}selected{% endif %}>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
                 {{ year }}
               </option>
               {% endfor %}
             </select>
           </div>
         </div>
+<<<<<<< HEAD
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
         <button type="button" class="btn btn-primary" onclick="goToMonth()">View Report</button>
+=======
+        <div class="alert alert-info mt-3">
+          <i class="fas fa-lightbulb me-2"></i>
+          <strong>Tip:</strong> Select any month to view its complete performance analysis.
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Cancel
+        </button>
+        <button type="button" class="btn btn-primary" onclick="goToMonth()">
+          <i class="fas fa-calendar-check me-1"></i>View Report
+        </button>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
       </div>
     </div>
   </div>
 </div>
+<<<<<<< HEAD
 
+=======
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
 {% endblock %}
 
 {% block extra_js %}
 <script>
+<<<<<<< HEAD
   function downloadExcel() {
     const date = "{{ report_month.strftime('%Y-%m-%d') if report_month else '' }}";
     window.location.href = `/reports/monthly-report/download?format=excel&start_date=${date}`;
@@ -713,6 +1690,17 @@
   // Animate metric cards on load
   document.addEventListener('DOMContentLoaded', function() {
     const metricCards = document.querySelectorAll('.metric-card');
+=======
+  document.addEventListener('DOMContentLoaded', function() {
+    console.log('📊 Monthly Summary Report loaded');
+
+    // Initialize data for JavaScript access
+    const monthlyData = {{ monthly_data|tojson if monthly_data else '{}' }};
+    console.log('📈 Monthly data loaded:', monthlyData);
+
+    // Animate metric cards on load
+    const metricCards = document.querySelectorAll('.stat-card');
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     metricCards.forEach((card, index) => {
       card.style.opacity = '0';
       card.style.transform = 'translateY(20px)';
@@ -723,6 +1711,7 @@
       }, index * 100);
     });
 
+<<<<<<< HEAD
     // Add some debug info to console
     console.log('📊 Monthly Report Debug Info:', {
       reportMonth: "{{ report_month.strftime('%B %Y') if report_month else 'N/A' }}",
@@ -732,6 +1721,95 @@
       activeClients: {{ active_clients|default(0) }},
       roomsUtilized: {{ rooms_utilized|default(0) }}
     });
+=======
+    console.log('✅ Monthly summary initialization complete');
+  });
+
+  function downloadExcel() {
+    const year = "{{ monthly_data.start_date.year if monthly_data and monthly_data.start_date else '' }}";
+    const month = "{{ monthly_data.start_date.month if monthly_data and monthly_data.start_date else '' }}";
+    
+    console.log('📊 Downloading Excel for month:', year, month);
+    
+    if (!year || !month) {
+      alert('Unable to download: Month data not available');
+      return;
+    }
+
+    showLoadingButton(event.target, 'Generating Excel...');
+    window.location.href = `{{ url_for('reports.export_monthly_summary') }}?format=excel&year=${year}&month=${month}`;
+
+    setTimeout(() => hideLoadingButton(event.target), 2000);
+  }
+
+  function downloadPDF() {
+    const year = "{{ monthly_data.start_date.year if monthly_data and monthly_data.start_date else '' }}";
+    const month = "{{ monthly_data.start_date.month if monthly_data and monthly_data.start_date else '' }}";
+    
+    console.log('📄 Downloading PDF for month:', year, month);
+    
+    if (!year || !month) {
+      alert('Unable to download: Month data not available');
+      return;
+    }
+
+    showLoadingButton(event.target, 'Generating PDF...');
+    window.location.href = `{{ url_for('reports.export_monthly_summary') }}?format=pdf&year=${year}&month=${month}`;
+
+    setTimeout(() => hideLoadingButton(event.target), 2000);
+  }
+
+  function showMonthPicker() {
+    const modal = new bootstrap.Modal(document.getElementById('monthPicker'));
+    modal.show();
+  }
+
+  function goToMonth() {
+    const month = document.getElementById('selectedMonth').value;
+    const year = document.getElementById('selectedYear').value;
+    
+    if (!month || !year) {
+      alert('Please select both month and year');
+      return;
+    }
+
+    console.log('📅 Navigating to month:', year, month);
+
+    const modal = bootstrap.Modal.getInstance(document.getElementById('monthPicker'));
+    modal.hide();
+
+    // Show loading state
+    document.body.style.cursor = 'wait';
+
+    window.location.href = `{{ url_for('reports.monthly_summary_report') }}?year=${year}&month=${month}`;
+  }
+
+  function showLoadingButton(button, text) {
+    if (button) {
+      button.dataset.originalText = button.innerHTML;
+      button.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i>${text}`;
+      button.disabled = true;
+    }
+  }
+
+  function hideLoadingButton(button) {
+    if (button && button.dataset.originalText) {
+      button.innerHTML = button.dataset.originalText;
+      button.disabled = false;
+      delete button.dataset.originalText;
+    }
+  }
+
+  // Print optimization
+  window.addEventListener('beforeprint', function() {
+    console.log('🖨️ Preparing monthly summary for printing...');
+    document.body.classList.add('printing');
+  });
+
+  window.addEventListener('afterprint', function() {
+    console.log('🖨️ Print job completed');
+    document.body.classList.remove('printing');
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   });
 </script>
 {% endblock %}

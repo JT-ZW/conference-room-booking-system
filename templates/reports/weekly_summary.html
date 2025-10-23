@@ -1,6 +1,7 @@
 {% extends "layout.html" %} {% block title %}Weekly Summary Report | Rainbow
 Towers Conference Booking{% endblock %} {% block extra_css %}
 <style>
+<<<<<<< HEAD
   .summary-header {
     background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
     color: white;
@@ -145,11 +146,164 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     overflow-x: auto;
     border-radius: 0.5rem;
     box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+=======
+  :root {
+    --primary-color: #2c5aa0;
+    --secondary-color: #4a90a4;
+    --accent-color: #7fb069;
+    --warning-color: #f4a261;
+    --danger-color: #e76f51;
+    --light-bg: #f8fafb;
+    --card-shadow: 0 2px 10px rgba(44, 90, 160, 0.08);
+    --hover-shadow: 0 4px 20px rgba(44, 90, 160, 0.15);
+    --border-radius: 12px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  body {
+    background-color: var(--light-bg);
+    font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  .report-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+
+  /* Header Section */
+  .report-header {
+    background: linear-gradient(
+      135deg,
+      var(--secondary-color) 0%,
+      var(--primary-color) 100%
+    );
+    color: white;
+    border-radius: var(--border-radius);
+    padding: 2.5rem 2rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .report-header::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>')
+      repeat;
+    opacity: 0.3;
+  }
+
+  .header-content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .report-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.025em;
+  }
+
+  .report-subtitle {
+    font-size: 1.2rem;
+    opacity: 0.9;
+    margin-bottom: 1rem;
+    font-weight: 400;
+  }
+
+  .report-meta {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    font-size: 0.9rem;
+    opacity: 0.8;
+    flex-wrap: wrap;
+  }
+
+  .report-meta .badge {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.375rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+
+  /* Summary Statistics */
+  .summary-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    transition: var(--transition);
+    border-left: 4px solid var(--secondary-color);
+    position: relative;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--hover-shadow);
+  }
+
+  .stat-number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+    line-height: 1;
+  }
+
+  .stat-label {
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  /* Export Toolbar */
+  .export-toolbar {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 2rem;
+  }
+
+  .toolbar-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .toolbar-info h6 {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .legend {
     display: flex;
+<<<<<<< HEAD
     gap: 1rem;
+=======
+    gap: 1.5rem;
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     align-items: center;
     flex-wrap: wrap;
   }
@@ -159,26 +313,404 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     align-items: center;
     gap: 0.5rem;
     font-size: 0.875rem;
+<<<<<<< HEAD
+=======
+    color: #64748b;
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .legend-color {
     width: 16px;
     height: 16px;
+<<<<<<< HEAD
     border-radius: 0.25rem;
     border: 1px solid;
   }
 
+=======
+    border-radius: 4px;
+    border: 1px solid;
+  }
+
+  .toolbar-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-export {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.625rem 1rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: var(--transition);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-export:hover {
+    background: #1e3a8a;
+    color: white;
+    transform: translateY(-1px);
+  }
+
+  .btn-export.secondary {
+    background: rgba(44, 90, 160, 0.1);
+    color: var(--primary-color);
+    border: 1px solid rgba(44, 90, 160, 0.2);
+  }
+
+  .btn-export.secondary:hover {
+    background: rgba(44, 90, 160, 0.15);
+    color: var(--primary-color);
+  }
+
+  /* Weekly Schedule Table */
+  .table-container {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+
+  .schedule-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    margin: 0;
+    font-size: 0.85rem;
+  }
+
+  .schedule-table thead {
+    background: var(--primary-color);
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+  }
+
+  .schedule-table th {
+    padding: 1rem 0.75rem;
+    text-align: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+    vertical-align: middle;
+  }
+
+  .schedule-table .room-header {
+    background: #374151;
+    color: white;
+    font-weight: 600;
+    padding: 1rem;
+    text-align: center;
+    min-width: 140px;
+    position: sticky;
+    left: 0;
+    z-index: 11;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .schedule-table tbody tr:nth-child(even) .room-header {
+    background: #4b5563;
+  }
+
+  .schedule-table td {
+    padding: 0.75rem;
+    border: 1px solid #e2e8f0;
+    vertical-align: top;
+    min-height: 120px;
+    max-width: 180px;
+    position: relative;
+    background: white;
+  }
+
+  .schedule-table tbody tr:hover td:not(.room-header) {
+    background: #f8fafb;
+  }
+
+  /* Event Blocks */
+  .event-block {
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 6px;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    font-size: 0.8rem;
+    line-height: 1.3;
+    transition: var(--transition);
+    cursor: pointer;
+  }
+
+  .event-block:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  .event-block:last-child {
+    margin-bottom: 0;
+  }
+
+  .event-block.confirmed {
+    background: rgba(127, 176, 105, 0.15);
+    border-color: var(--accent-color);
+  }
+
+  .event-block.tentative {
+    background: rgba(244, 162, 97, 0.15);
+    border-color: var(--warning-color);
+  }
+
+  .event-block.cancelled {
+    background: rgba(231, 111, 81, 0.15);
+    border-color: var(--danger-color);
+    opacity: 0.7;
+  }
+
+  .event-client {
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    line-height: 1.2;
+  }
+
+  .event-details {
+    color: #64748b;
+    font-size: 0.7rem;
+    line-height: 1.3;
+  }
+
+  .event-pax {
+    font-weight: 600;
+    color: var(--secondary-color);
+  }
+
+  .event-time {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 3px;
+    padding: 0.125rem 0.25rem;
+    font-size: 0.65rem;
+    display: inline-block;
+    margin: 0.125rem 0;
+    font-family: "JetBrains Mono", monospace;
+  }
+
+  .event-price {
+    color: var(--accent-color);
+    font-weight: 600;
+    font-size: 0.7rem;
+  }
+
+  .empty-cell {
+    color: #94a3b8;
+    text-align: center;
+    font-style: italic;
+    padding: 2rem 0;
+    font-size: 1.2rem;
+  }
+
+  /* Week Navigation */
+  .week-navigation {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 2rem;
+  }
+
+  .nav-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .nav-info h6 {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .nav-info p {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  .nav-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+  }
+
+  /* Weekly Summary Cards */
+  .weekly-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .summary-card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+  }
+
+  .summary-card h6 {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .daily-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+    gap: 1rem;
+  }
+
+  .day-summary {
+    text-align: center;
+    padding: 1rem;
+    background: #f8fafb;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+  }
+
+  .day-name {
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+  }
+
+  .day-events {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--secondary-color);
+  }
+
+  /* Responsive Design */
+  @media (max-width: 1200px) {
+    .schedule-table {
+      font-size: 0.75rem;
+    }
+
+    .schedule-table th,
+    .schedule-table td {
+      padding: 0.5rem;
+    }
+
+    .event-block {
+      padding: 0.375rem;
+      font-size: 0.7rem;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .report-container {
+      padding: 1rem;
+    }
+
+    .report-title {
+      font-size: 1.75rem;
+    }
+
+    .summary-stats {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .toolbar-content {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .toolbar-actions {
+      justify-content: center;
+    }
+
+    .legend {
+      justify-content: center;
+    }
+
+    .table-container {
+      overflow-x: auto;
+      border-radius: var(--border-radius);
+    }
+
+    .schedule-table {
+      min-width: 800px;
+    }
+
+    .nav-content {
+      flex-direction: column;
+      text-align: center;
+    }
+
+    .weekly-summary {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .summary-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .schedule-table th,
+    .schedule-table td {
+      padding: 0.25rem;
+    }
+
+    .event-block {
+      padding: 0.25rem;
+      font-size: 0.65rem;
+      margin-bottom: 0.25rem;
+    }
+  }
+
+  /* Print Styles */
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   @media print {
     .no-print {
       display: none !important;
     }
+<<<<<<< HEAD
     .weekly-table {
       font-size: 0.75rem;
+=======
+    .report-header {
+      background: var(--secondary-color) !important;
+    }
+    .schedule-table {
+      font-size: 0.7rem;
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     }
     .event-block {
       padding: 0.25rem;
       margin-bottom: 0.25rem;
     }
+<<<<<<< HEAD
     .summary-header {
       background: #17a2b8 !important;
     }
@@ -193,10 +725,68 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     .event-block {
       padding: 0.25rem;
       font-size: 0.7rem;
+=======
+    .page-break {
+      page-break-before: always;
+    }
+  }
+
+  /* Loading States */
+  .loading-skeleton {
+    background: linear-gradient(90deg, #f0f4f8 25%, #e2e8f0 50%, #f0f4f8 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+    border-radius: 4px;
+    height: 1rem;
+    margin: 0.25rem 0;
+  }
+
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  /* Scroll Indicators for Mobile */
+  .table-container::before,
+  .table-container::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    width: 20px;
+    z-index: 5;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+  }
+
+  .table-container::before {
+    left: 0;
+    background: linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.8),
+      transparent
+    );
+  }
+
+  .table-container::after {
+    right: 0;
+    background: linear-gradient(to left, rgba(255, 255, 255, 0.8), transparent);
+  }
+
+  @media (min-width: 769px) {
+    .table-container::before,
+    .table-container::after {
+      display: none;
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     }
   }
 </style>
 {% endblock %} {% block content %}
+<<<<<<< HEAD
 <!-- Report Header -->
 <div class="summary-header">
   <div class="row align-items-center">
@@ -499,10 +1089,333 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     <div class="modal-content">
       <div class="modal-header">
         <h5 class="modal-title">Select Week</h5>
+=======
+<div class="report-container">
+  <!-- Report Header -->
+  <div class="report-header">
+    <div class="header-content">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <h1 class="report-title">
+            <i class="fas fa-calendar-week me-2"></i>Weekly Summary Report
+          </h1>
+          <p class="report-subtitle">
+            Week of {{ weekly_data.start_date if weekly_data and
+            weekly_data.start_date else 'Unknown' }} to {{ weekly_data.end_date
+            if weekly_data and weekly_data.end_date else 'Unknown' }}
+          </p>
+          <div class="report-meta">
+            <div class="d-flex align-items-center">
+              <i class="fas fa-clock me-2"></i>
+              <span
+                >Generated: {{ moment().strftime('%A, %B %d, %Y at %I:%M %p') if
+                moment else 'Unknown Time' }}</span
+              >
+            </div>
+            <div class="badge">
+              <i class="fas fa-table me-1"></i>
+              Room Schedule Grid
+            </div>
+            {% if weekly_data and weekly_data.summary %}
+            <div class="d-flex align-items-center">
+              <i class="fas fa-calendar-check me-2"></i>
+              <span>{{ weekly_data.summary.total_events }} Total Events</span>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-md-4 text-md-end">
+          {% if weekly_data and weekly_data.summary %}
+          <div class="stat-card mb-0">
+            <div class="stat-number">
+              ${{ "%.0f"|format(weekly_data.summary.total_revenue) }}
+            </div>
+            <div class="stat-label">Week Revenue</div>
+          </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Summary Statistics -->
+  {% if weekly_data and weekly_data.summary %}
+  <div class="summary-stats">
+    <div class="stat-card">
+      <div class="stat-number">{{ weekly_data.summary.total_events }}</div>
+      <div class="stat-label">Total Events</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ weekly_data.summary.rooms_with_events }}</div>
+      <div class="stat-label">Rooms in Use</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ weekly_data.summary.total_attendees }}</div>
+      <div class="stat-label">Total Attendees</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">
+        {{ "%.1f"|format(weekly_data.summary.average_daily_events) }}
+      </div>
+      <div class="stat-label">Avg Daily Events</div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Export Toolbar -->
+  <div class="export-toolbar no-print">
+    <div class="toolbar-content">
+      <div class="toolbar-info">
+        <h6><i class="fas fa-download me-2"></i>Export & Legend</h6>
+        <div class="legend">
+          <div class="legend-item">
+            <div
+              class="legend-color"
+              style="
+                background-color: rgba(127, 176, 105, 0.15);
+                border-color: #7fb069;
+              "
+            ></div>
+            <span>Confirmed</span>
+          </div>
+          <div class="legend-item">
+            <div
+              class="legend-color"
+              style="
+                background-color: rgba(244, 162, 97, 0.15);
+                border-color: #f4a261;
+              "
+            ></div>
+            <span>Tentative</span>
+          </div>
+          <div class="legend-item">
+            <div
+              class="legend-color"
+              style="
+                background-color: rgba(231, 111, 81, 0.15);
+                border-color: #e76f51;
+              "
+            ></div>
+            <span>Cancelled</span>
+          </div>
+        </div>
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn-export" onclick="downloadExcel()">
+          <i class="fas fa-file-excel"></i>
+          Excel
+        </button>
+        <button class="btn-export" onclick="downloadPDF()">
+          <i class="fas fa-file-pdf"></i>
+          PDF
+        </button>
+        <button class="btn-export" onclick="window.print()">
+          <i class="fas fa-print"></i>
+          Print
+        </button>
+        <button class="btn-export secondary" onclick="showWeekPicker()">
+          <i class="fas fa-calendar"></i>
+          Select Week
+        </button>
+        <a href="{{ url_for('reports.reports') }}" class="btn-export secondary">
+          <i class="fas fa-arrow-left"></i>
+          Back to Reports
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Week Navigation -->
+  <div class="week-navigation no-print">
+    <div class="nav-content">
+      <div class="nav-info">
+        <h6><i class="fas fa-calendar-week me-2"></i>Week Navigation</h6>
+        <p>Navigate between weeks to view different time periods</p>
+      </div>
+      <div class="nav-actions">
+        {% if weekly_data and weekly_data.start_date %} {% set start_date_obj =
+        weekly_data.start_date|as_date %} {% set prev_week = start_date_obj -
+        timedelta(days=7) %} {% set next_week = start_date_obj +
+        timedelta(days=7) %}
+
+        <a
+          href="{{ url_for('reports.weekly_summary_report', start_date=prev_week.strftime('%Y-%m-%d')) }}"
+          class="btn-export secondary"
+        >
+          <i class="fas fa-chevron-left"></i>
+          Previous Week
+        </a>
+
+        <a
+          href="{{ url_for('reports.weekly_summary_report', start_date=next_week.strftime('%Y-%m-%d')) }}"
+          class="btn-export secondary"
+        >
+          Next Week
+          <i class="fas fa-chevron-right"></i>
+        </a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Weekly Schedule Table -->
+  {% if weekly_data and weekly_data.room_schedule %}
+  <div class="table-container">
+    <table class="schedule-table">
+      <thead>
+        <tr>
+          <th class="room-header">ROOM</th>
+          {% for day in weekly_data.week_days %}
+          <th>
+            <div><strong>{{ day.day_name.upper() }}</strong></div>
+            <div>{{ day.date_display }}</div>
+          </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for room_name, room_data in weekly_data.room_schedule.items() %}
+        <tr>
+          <td class="room-header">{{ room_name.upper() }}</td>
+
+          {% for day in weekly_data.week_days %}
+          <td>
+            {% set day_events = room_data.days.get(day.date, []) %} {% if
+            day_events %} {% for event in day_events %}
+            <div
+              class="event-block {{ event.raw_booking.status if event.raw_booking and event.raw_booking.status else 'tentative' }}"
+              onclick="showEventDetails('{{ event.id }}')"
+              data-event-id="{{ event.id }}"
+            >
+              <div class="event-client">
+                {{ event.client_name.upper() if event.client_name else 'UNKNOWN
+                CLIENT' }}
+              </div>
+
+              <div class="event-details">
+                {% if event.attendees %}
+                <div class="event-pax">
+                  <strong>{{ event.attendees }}PAX</strong>
+                </div>
+                {% endif %} {% if event.start_time %}
+                <div class="event-time">{{ event.start_time }}HOURS</div>
+                {% endif %} {% if event.price_per_person %}
+                <div class="event-price">
+                  <strong
+                    >${{ "%.0f"|format(event.price_per_person) }}PP</strong
+                  >
+                </div>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %} {% else %}
+            <div class="empty-cell">—</div>
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <!-- No Data State -->
+  <div class="table-container">
+    <div class="text-center py-5">
+      <div class="text-muted">
+        <i class="fas fa-calendar-times fa-3x mb-3"></i>
+        <h4>No Events Scheduled</h4>
+        <p>There are no events scheduled for this week.</p>
+        <button class="btn-export" onclick="showWeekPicker()">
+          <i class="fas fa-calendar"></i>
+          Select Different Week
+        </button>
+      </div>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Weekly Summary Cards -->
+  {% if weekly_data %}
+  <div class="weekly-summary">
+    <!-- Daily Breakdown -->
+    <div class="summary-card">
+      <h6>
+        <i class="fas fa-chart-bar"></i>
+        Daily Breakdown
+      </h6>
+      <div class="daily-breakdown">
+        {% for day in weekly_data.week_days %} {% set day_events_count = 0 %} {%
+        if weekly_data.room_schedule %} {% for room_name, room_data in
+        weekly_data.room_schedule.items() %} {% set day_events =
+        room_data.days.get(day.date, []) %} {% set day_events_count =
+        day_events_count + (day_events|length) %} {% endfor %} {% endif %}
+
+        <div class="day-summary">
+          <div class="day-name">{{ day.day_name[:3] }}</div>
+          <div class="day-events">{{ day_events_count }}</div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Week Overview -->
+    <div class="summary-card">
+      <h6>
+        <i class="fas fa-calendar-check"></i>
+        Week Overview
+      </h6>
+      <div class="row text-center">
+        {% if weekly_data.summary %}
+        <div class="col-6 mb-3">
+          <div class="h5 mb-1">{{ weekly_data.summary.total_events }}</div>
+          <small class="text-muted">Total Events</small>
+        </div>
+        <div class="col-6 mb-3">
+          <div class="h5 mb-1">{{ weekly_data.summary.rooms_with_events }}</div>
+          <small class="text-muted">Rooms Used</small>
+        </div>
+        <div class="col-6">
+          <div class="h5 mb-1">{{ weekly_data.summary.total_attendees }}</div>
+          <small class="text-muted">Attendees</small>
+        </div>
+        <div class="col-6">
+          <div class="h5 mb-1">
+            ${{ "%.0f"|format(weekly_data.summary.total_revenue) }}
+          </div>
+          <small class="text-muted">Revenue</small>
+        </div>
+        {% else %}
+        <div class="col-12">
+          <div class="text-muted">No summary data available</div>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Week Picker Modal -->
+<div
+  class="modal fade"
+  id="weekPicker"
+  tabindex="-1"
+  aria-labelledby="weekPickerLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="weekPickerLabel">
+          <i class="fas fa-calendar me-2"></i>Select Week
+        </h5>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
         <button
           type="button"
           class="btn-close"
           data-bs-dismiss="modal"
+<<<<<<< HEAD
         ></button>
       </div>
       <div class="modal-body">
@@ -516,19 +1429,49 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         <small class="text-muted"
           >Select any date in the week you want to view</small
         >
+=======
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body">
+        <div class="mb-3">
+          <label for="selectedWeek" class="form-label"
+            >Week Starting Date</label
+          >
+          <input
+            type="date"
+            class="form-control"
+            id="selectedWeek"
+            value="{{ weekly_data.start_date if weekly_data and weekly_data.start_date else '' }}"
+          />
+          <div class="form-text">
+            Select any date within the week you want to view
+          </div>
+        </div>
+        <div class="alert alert-info">
+          <i class="fas fa-lightbulb me-2"></i>
+          <strong>Tip:</strong> The report will show the full week containing
+          your selected date.
+        </div>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
           Cancel
         </button>
         <button type="button" class="btn btn-primary" onclick="goToWeek()">
+<<<<<<< HEAD
           View Week
+=======
+          <i class="fas fa-calendar-check me-1"></i>View Week
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
         </button>
       </div>
     </div>
   </div>
 </div>
 
+<<<<<<< HEAD
 {% endblock %} {% block extra_js %}
 <script>
   function downloadExcel() {
@@ -565,6 +1508,267 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         tableContainer.style.borderRight = "3px solid #17a2b8";
       }
     }
+=======
+<!-- Event Details Modal -->
+<div
+  class="modal fade"
+  id="eventDetailsModal"
+  tabindex="-1"
+  aria-labelledby="eventDetailsLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="eventDetailsLabel">
+          <i class="fas fa-calendar-check me-2"></i>Event Details
+        </h5>
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Close"
+        ></button>
+      </div>
+      <div class="modal-body" id="eventDetailsContent">
+        <!-- Content populated by JavaScript -->
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+          Close
+        </button>
+        <a
+          href="#"
+          id="viewBookingLink"
+          class="btn btn-primary"
+          target="_blank"
+        >
+          <i class="fas fa-eye me-1"></i>View Full Booking
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      console.log('📅 Weekly Summary Report loaded');
+
+      // Initialize data for JavaScript access
+      const weeklyData = {{ weekly_data|tojson if weekly_data else '{}' }};
+      console.log('📊 Weekly data loaded:', weeklyData);
+
+      // Add event block interactions
+      const eventBlocks = document.querySelectorAll('.event-block[data-event-id]');
+      eventBlocks.forEach(block => {
+          block.addEventListener('mouseenter', function() {
+              this.style.transform = 'translateY(-2px)';
+              this.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
+          });
+          block.addEventListener('mouseleave', function() {
+              this.style.transform = 'translateY(-1px)';
+              this.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
+          });
+      });
+
+      // Handle horizontal scroll indicators on mobile
+      handleScrollIndicators();
+
+      console.log('✅ Weekly summary initialization complete');
+  });
+
+  function downloadExcel() {
+      const startDate = '{{ weekly_data.start_date if weekly_data and weekly_data.start_date else "" }}';
+      const endDate = '{{ weekly_data.end_date if weekly_data and weekly_data.end_date else "" }}';
+
+      console.log('📊 Downloading Excel for week:', startDate, 'to', endDate);
+
+      if (!startDate || !endDate) {
+          alert('Unable to download: Week dates not available');
+          return;
+      }
+
+      showLoadingButton(event.target, 'Generating Excel...');
+      window.location.href = `{{ url_for('reports.export_weekly_summary') }}?start_date=${startDate}&end_date=${endDate}&format=excel`;
+
+      setTimeout(() => hideLoadingButton(event.target), 2000);
+  }
+
+  function downloadPDF() {
+      const startDate = '{{ weekly_data.start_date if weekly_data and weekly_data.start_date else "" }}';
+      const endDate = '{{ weekly_data.end_date if weekly_data and weekly_data.end_date else "" }}';
+
+      console.log('📄 Downloading PDF for week:', startDate, 'to', endDate);
+
+      if (!startDate || !endDate) {
+          alert('Unable to download: Week dates not available');
+          return;
+      }
+
+      showLoadingButton(event.target, 'Generating PDF...');
+      window.location.href = `{{ url_for('reports.export_weekly_summary') }}?start_date=${startDate}&end_date=${endDate}&format=pdf`;
+
+      setTimeout(() => hideLoadingButton(event.target), 2000);
+  }
+
+  function showWeekPicker() {
+      const modal = new bootstrap.Modal(document.getElementById('weekPicker'));
+      modal.show();
+
+      // Focus on date input when modal opens
+      setTimeout(() => {
+          document.getElementById('selectedWeek').focus();
+      }, 300);
+  }
+
+  function goToWeek() {
+      const selectedDate = document.getElementById('selectedWeek').value;
+
+      if (!selectedDate) {
+          alert('Please select a date');
+          return;
+      }
+
+      console.log('📅 Navigating to week containing:', selectedDate);
+
+      const modal = bootstrap.Modal.getInstance(document.getElementById('weekPicker'));
+      modal.hide();
+
+      // Show loading state
+      document.body.style.cursor = 'wait';
+
+      window.location.href = `{{ url_for('reports.weekly_summary_report') }}?start_date=${selectedDate}`;
+  }
+
+  function showEventDetails(eventId) {
+      console.log('🔍 Showing details for event:', eventId);
+
+      if (!eventId) {
+          console.error('No event ID provided');
+          return;
+      }
+
+      // Find event in the weekly data
+      const weeklyData = {{ weekly_data|tojson if weekly_data else '{}' }};
+      let eventDetails = null;
+
+      if (weeklyData.room_schedule) {
+          Object.values(weeklyData.room_schedule).forEach(roomData => {
+              Object.values(roomData.days).forEach(dayEvents => {
+                  const event = dayEvents.find(e => e.id == eventId);
+                  if (event) {
+                      eventDetails = event;
+                  }
+              });
+          });
+      }
+
+      if (!eventDetails) {
+          console.error('Event not found:', eventId);
+          alert('Event details not available');
+          return;
+      }
+
+      // Populate modal
+      const modal = new bootstrap.Modal(document.getElementById('eventDetailsModal'));
+      const content = document.getElementById('eventDetailsContent');
+      const viewLink = document.getElementById('viewBookingLink');
+
+      // Build content
+      const booking = eventDetails.raw_booking || {};
+      const client = booking.client || {};
+
+      content.innerHTML = `
+          <div class="row">
+              <div class="col-md-8">
+                  <h6 class="text-primary mb-3">${booking.title || 'Untitled Event'}</h6>
+                  <div class="mb-2"><strong>Time:</strong> ${eventDetails.start_time ? eventDetails.start_time + ' HOURS' : 'Time TBD'}</div>
+                  <div class="mb-2"><strong>Duration:</strong> ${eventDetails.duration_hours || 0} hours</div>
+                  <div class="mb-2"><strong>Client:</strong> ${eventDetails.client_name}</div>
+                  ${client.email ? `<div class="mb-2"><strong>Email:</strong> ${client.email}</div>` : ''}
+                  ${client.phone ? `<div class="mb-2"><strong>Phone:</strong> ${client.phone}</div>` : ''}
+                  <div class="mb-2"><strong>Attendees:</strong> ${eventDetails.attendees || 'Not specified'}</div>
+                  ${eventDetails.total_price ? `<div class="mb-2"><strong>Total Cost:</strong> $${parseFloat(eventDetails.total_price).toFixed(2)}</div>` : ''}
+                  ${booking.notes ? `<div class="mb-2"><strong>Notes:</strong> ${booking.notes}</div>` : ''}
+              </div>
+              <div class="col-md-4 text-center">
+                  <span class="status-badge status-${booking.status || 'tentative'} fs-6">
+                      ${(booking.status || 'tentative').charAt(0).toUpperCase() + (booking.status || 'tentative').slice(1)}
+                  </span>
+              </div>
+          </div>
+      `;
+
+      // Set view booking link
+      viewLink.href = `{{ url_for('bookings.view_booking', id=0) }}`.replace('0', eventId);
+
+      modal.show();
+  }
+
+  function handleScrollIndicators() {
+      const tableContainer = document.querySelector('.table-container');
+      if (!tableContainer) return;
+
+      const table = tableContainer.querySelector('.schedule-table');
+      if (!table) return;
+
+      // Add scroll event listener for mobile
+      if (window.innerWidth <= 768) {
+          tableContainer.addEventListener('scroll', function() {
+              const scrollLeft = this.scrollLeft;
+              const scrollWidth = this.scrollWidth;
+              const clientWidth = this.clientWidth;
+
+              // Show/hide scroll indicators based on scroll position
+              const beforeIndicator = tableContainer.querySelector('::before');
+              const afterIndicator = tableContainer.querySelector('::after');
+
+              if (scrollLeft > 0) {
+                  tableContainer.style.setProperty('--before-opacity', '1');
+              } else {
+                  tableContainer.style.setProperty('--before-opacity', '0');
+              }
+
+              if (scrollLeft < scrollWidth - clientWidth) {
+                  tableContainer.style.setProperty('--after-opacity', '1');
+              } else {
+                  tableContainer.style.setProperty('--after-opacity', '0');
+              }
+          });
+      }
+  }
+
+  function showLoadingButton(button, text) {
+      if (button) {
+          button.dataset.originalText = button.innerHTML;
+          button.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i>${text}`;
+          button.disabled = true;
+      }
+  }
+
+  function hideLoadingButton(button) {
+      if (button && button.dataset.originalText) {
+          button.innerHTML = button.dataset.originalText;
+          button.disabled = false;
+          delete button.dataset.originalText;
+      }
+  }
+
+  // Print optimization
+  window.addEventListener('beforeprint', function() {
+      console.log('🖨️ Preparing weekly summary for printing...');
+      document.body.classList.add('printing');
+  });
+
+  window.addEventListener('afterprint', function() {
+      console.log('🖨️ Print job completed');
+      document.body.classList.remove('printing');
+  });
+
+  // Mobile scroll handling
+  window.addEventListener('resize', function() {
+      handleScrollIndicators();
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   });
 </script>
 {% endblock %}

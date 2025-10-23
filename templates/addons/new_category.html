@@ -18,7 +18,7 @@ Towers Conference Booking{% endblock %} {% block content %}
         </h5>
       </div>
       <div class="card-body">
-        <form method="POST" action="{{ url_for('new_addon_category') }}">
+        <form method="POST" action="{{ url_for('addons.new_addon_category') }}">
           <!-- This form now works without CSRF -->
           <div class="mb-3">
             <label for="name" class="form-label fw-bold">Category Name</label>
@@ -213,7 +213,7 @@ Towers Conference Booking{% endblock %} {% block content %}
     }
   });
 </script>
-{% endblock %}{% extends "layout.html" %} {% block title %}New Add-on Category |
+{% endblock %} {% extends "layout.html" %} {% block title %}New Add-on Category |
 Rainbow Towers Conference Booking{% endblock %} {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <h1>
@@ -233,7 +233,7 @@ Rainbow Towers Conference Booking{% endblock %} {% block content %}
         </h5>
       </div>
       <div class="card-body">
-        <form method="POST" action="{{ url_for('new_addon_category') }}">
+        <form method="POST" action="{{ url_for('addons.new_addon_category') }}">
           {{ form.hidden_tag() }}
           <!-- CSRF token and other hidden fields -->
 

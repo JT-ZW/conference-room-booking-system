@@ -1,6 +1,7 @@
 {% extends "layout.html" %} {% block title %}Daily Summary Report | Rainbow
 Towers Conference Booking{% endblock %} {% block extra_css %}
 <style>
+<<<<<<< HEAD
   /* Professional Report Styling - Matching Excel Format */
   .report-container {
     background: white;
@@ -21,19 +22,82 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     font-weight: 700;
     margin-bottom: 0.5rem;
     letter-spacing: 1px;
+=======
+  :root {
+    --primary-color: #2c5aa0;
+    --secondary-color: #4a90a4;
+    --accent-color: #7fb069;
+    --warning-color: #f4a261;
+    --danger-color: #e76f51;
+    --light-bg: #f8fafb;
+    --card-shadow: 0 2px 10px rgba(44, 90, 160, 0.08);
+    --hover-shadow: 0 4px 20px rgba(44, 90, 160, 0.15);
+    --border-radius: 12px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  body {
+    background-color: var(--light-bg);
+    font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  .report-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+
+  /* Header Section */
+  .report-header {
+    background: linear-gradient(
+      135deg,
+      var(--accent-color) 0%,
+      var(--secondary-color) 100%
+    );
+    color: white;
+    border-radius: var(--border-radius);
+    padding: 2.5rem 2rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .report-header::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>')
+      repeat;
+    opacity: 0.3;
+  }
+
+  .header-content {
+    position: relative;
+    z-index: 1;
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .report-title {
     font-size: 2.5rem;
+<<<<<<< HEAD
     font-weight: 900;
     margin-bottom: 1rem;
     text-transform: uppercase;
     letter-spacing: 2px;
+=======
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.025em;
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .report-subtitle {
     font-size: 1.2rem;
     opacity: 0.9;
+<<<<<<< HEAD
     margin-bottom: 0.5rem;
   }
 
@@ -57,11 +121,56 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     border-radius: 0.5rem;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     margin: 0.5rem;
+=======
+    margin-bottom: 1rem;
+    font-weight: 400;
+  }
+
+  .report-meta {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    font-size: 0.9rem;
+    opacity: 0.8;
+    flex-wrap: wrap;
+  }
+
+  .report-meta .badge {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.375rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+
+  /* Summary Statistics */
+  .summary-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    transition: var(--transition);
+    border-left: 4px solid var(--accent-color);
+    position: relative;
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--hover-shadow);
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .stat-number {
     font-size: 2rem;
     font-weight: 700;
+<<<<<<< HEAD
     color: #1e40af;
     margin-bottom: 0.25rem;
   }
@@ -119,10 +228,22 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     border-radius: 20px;
     font-size: 0.75rem;
     font-weight: 600;
+=======
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+    line-height: 1;
+  }
+
+  .stat-label {
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 500;
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
 
+<<<<<<< HEAD
   .status-confirmed {
     background: #dcfce7;
     color: #166534;
@@ -243,6 +364,18 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
   }
 
   .toolbar-section {
+=======
+  /* Export Toolbar */
+  .export-toolbar {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 2rem;
+  }
+
+  .toolbar-content {
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -250,6 +383,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     gap: 1rem;
   }
 
+<<<<<<< HEAD
   .toolbar-left h6 {
     margin: 0 0 0.25rem 0;
     color: #374151;
@@ -336,16 +470,387 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     .summary-stat {
       margin: 0.25rem;
       padding: 0.75rem;
+=======
+  .toolbar-info h6 {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+  }
+
+  .toolbar-info p {
+    color: #64748b;
+    font-size: 0.9rem;
+    margin: 0;
+  }
+
+  .toolbar-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .btn-export {
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.625rem 1rem;
+    font-weight: 500;
+    font-size: 0.875rem;
+    transition: var(--transition);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-export:hover {
+    background: #1e3a8a;
+    color: white;
+    transform: translateY(-1px);
+  }
+
+  .btn-export.secondary {
+    background: rgba(44, 90, 160, 0.1);
+    color: var(--primary-color);
+    border: 1px solid rgba(44, 90, 160, 0.2);
+  }
+
+  .btn-export.secondary:hover {
+    background: rgba(44, 90, 160, 0.15);
+    color: var(--primary-color);
+  }
+
+  /* Room Sections */
+  .room-section {
+    background: white;
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 2rem;
+    overflow: hidden;
+  }
+
+  .room-header {
+    background: var(--primary-color);
+    color: white;
+    padding: 1.25rem 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: between;
+  }
+
+  .room-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+  }
+
+  .room-count {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    margin-left: auto;
+  }
+
+  /* Events Table */
+  .events-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0;
+    background: white;
+  }
+
+  .events-table thead {
+    background: #f8fafb;
+    border-bottom: 2px solid #e2e8f0;
+  }
+
+  .events-table th {
+    padding: 1rem 1.25rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border: none;
+  }
+
+  .events-table td {
+    padding: 1.25rem 1.25rem;
+    border-bottom: 1px solid #f1f5f9;
+    vertical-align: top;
+  }
+
+  .events-table tbody tr {
+    transition: var(--transition);
+    cursor: pointer;
+  }
+
+  .events-table tbody tr:hover {
+    background-color: #f8fafb;
+  }
+
+  .events-table tbody tr:last-child td {
+    border-bottom: none;
+  }
+
+  /* Event Details */
+  .event-title {
+    font-weight: 600;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+    font-size: 1rem;
+  }
+
+  .event-type {
+    color: #64748b;
+    font-size: 0.8rem;
+    text-transform: capitalize;
+  }
+
+  .client-info {
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 0.25rem;
+  }
+
+  .client-contact {
+    color: #64748b;
+    font-size: 0.85rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.125rem;
+  }
+
+  .time-display {
+    font-family: "JetBrains Mono", "Courier New", monospace;
+    font-weight: 600;
+    color: var(--primary-color);
+    font-size: 0.95rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .duration-info {
+    color: #64748b;
+    font-size: 0.8rem;
+    font-style: italic;
+  }
+
+  .attendees-count {
+    font-weight: 700;
+    color: var(--secondary-color);
+    font-size: 1.1rem;
+  }
+
+  .capacity-note {
+    color: #64748b;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+  }
+
+  .revenue-amount {
+    font-weight: 700;
+    color: var(--accent-color);
+    font-size: 1rem;
+    margin-bottom: 0.25rem;
+  }
+
+  .per-person-rate {
+    color: #64748b;
+    font-size: 0.8rem;
+  }
+
+  /* Status Badges */
+  .status-badge {
+    padding: 0.375rem 0.75rem;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    display: inline-block;
+  }
+
+  .status-confirmed {
+    background: rgba(127, 176, 105, 0.15);
+    color: var(--accent-color);
+    border: 1px solid rgba(127, 176, 105, 0.3);
+  }
+
+  .status-tentative {
+    background: rgba(244, 162, 97, 0.15);
+    color: var(--warning-color);
+    border: 1px solid rgba(244, 162, 97, 0.3);
+  }
+
+  .status-cancelled {
+    background: rgba(231, 111, 81, 0.15);
+    color: var(--danger-color);
+    border: 1px solid rgba(231, 111, 81, 0.3);
+  }
+
+  /* Notes Section */
+  .notes-content {
+    color: #475569;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    max-width: 250px;
+  }
+
+  .notes-content.truncated {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  .notes-expand {
+    color: var(--primary-color);
+    cursor: pointer;
+    font-size: 0.8rem;
+    margin-top: 0.25rem;
+  }
+
+  /* No Events State */
+  .no-events-state {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 4rem 2rem;
+    text-align: center;
+    box-shadow: var(--card-shadow);
+  }
+
+  .no-events-icon {
+    font-size: 4rem;
+    color: #cbd5e1;
+    margin-bottom: 1.5rem;
+  }
+
+  .no-events-title {
+    color: var(--primary-color);
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-bottom: 1rem;
+  }
+
+  .no-events-text {
+    color: #64748b;
+    margin-bottom: 2rem;
+    line-height: 1.5;
+  }
+
+  .no-events-actions {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* Navigation Footer */
+  .navigation-footer {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    margin-top: 2rem;
+  }
+
+  .nav-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+
+  .nav-info {
+    color: #64748b;
+    font-size: 0.9rem;
+  }
+
+  .nav-actions {
+    display: flex;
+    gap: 0.75rem;
+  }
+
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .report-container {
+      padding: 1rem;
+    }
+
+    .report-title {
+      font-size: 1.75rem;
+    }
+
+    .summary-stats {
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .stat-card {
+      padding: 1rem;
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     }
 
     .stat-number {
       font-size: 1.5rem;
     }
+<<<<<<< HEAD
   }
 
   /* Loading States */
   .loading-shimmer {
     background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+=======
+
+    .toolbar-content {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .toolbar-actions {
+      justify-content: center;
+    }
+
+    .events-table {
+      font-size: 0.85rem;
+    }
+
+    .events-table th,
+    .events-table td {
+      padding: 0.75rem 0.5rem;
+    }
+
+    .nav-content {
+      flex-direction: column;
+      text-align: center;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .summary-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .report-meta {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+  }
+
+  /* Loading States */
+  .loading-skeleton {
+    background: linear-gradient(90deg, #f0f4f8 25%, #e2e8f0 50%, #f0f4f8 75%);
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     background-size: 200% 100%;
     animation: loading 1.5s infinite;
     border-radius: 4px;
@@ -362,6 +867,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     }
   }
 
+<<<<<<< HEAD
   /* Data Validation Indicators */
   .data-warning {
     background: #fef3c7;
@@ -381,12 +887,29 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     border-radius: 0.25rem;
     font-size: 0.875rem;
     margin: 1rem 2rem;
+=======
+  /* Print Styles */
+  @media print {
+    .no-print {
+      display: none !important;
+    }
+    .report-header {
+      background: var(--accent-color) !important;
+    }
+    .events-table {
+      font-size: 0.8rem;
+    }
+    .page-break {
+      page-break-before: always;
+    }
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 </style>
 {% endblock %} {% block content %}
 <div class="report-container">
   <!-- Report Header -->
   <div class="report-header">
+<<<<<<< HEAD
     <div class="container-fluid">
       <div class="row align-items-center">
         <div class="col-md-8">
@@ -447,11 +970,55 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             </div>
             <div class="stat-label">Total Revenue</div>
           </div>
+=======
+    <div class="header-content">
+      <div class="row align-items-center">
+        <div class="col-md-8">
+          <h1 class="report-title">
+            <i class="fas fa-calendar-day me-2"></i>Daily Summary Report
+          </h1>
+          <p class="report-subtitle">
+            Events scheduled for {{ daily_data.date.strftime('%A, %d %B %Y') if
+            daily_data and daily_data.date else 'Selected Date' }}
+          </p>
+          <div class="report-meta">
+            <div class="d-flex align-items-center">
+              <i class="fas fa-clock me-2"></i>
+              <span
+                >Generated: {{ moment().strftime('%A, %B %d, %Y at %I:%M %p') if
+                moment else 'Unknown Time' }}</span
+              >
+            </div>
+            <div class="badge">
+              <i class="fas fa-map-marker-alt me-1"></i>
+              Central Africa Time (CAT)
+            </div>
+            {% if daily_data and daily_data.summary %}
+            <div class="d-flex align-items-center">
+              <i class="fas fa-calendar-check me-2"></i>
+              <span
+                >{{ daily_data.summary.total_events }} Events Scheduled</span
+              >
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-md-4 text-md-end">
+          {% if daily_data and daily_data.summary %}
+          <div class="stat-card mb-0">
+            <div class="stat-number">
+              ${{ "%.0f"|format(daily_data.summary.total_revenue) }}
+            </div>
+            <div class="stat-label">Total Day Revenue</div>
+          </div>
+          {% endif %}
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
         </div>
       </div>
     </div>
   </div>
 
+<<<<<<< HEAD
   <!-- Export Toolbar -->
   <div class="report-toolbar no-print">
     <div class="container-fluid">
@@ -559,12 +1126,114 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
       </thead>
       <tbody>
         {% for event in room_events %}
+=======
+  <!-- Summary Statistics -->
+  {% if daily_data and daily_data.summary %}
+  <div class="summary-stats">
+    <div class="stat-card">
+      <div class="stat-number">{{ daily_data.summary.total_events }}</div>
+      <div class="stat-label">Total Events</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ daily_data.summary.confirmed_events }}</div>
+      <div class="stat-label">Confirmed Events</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ daily_data.summary.rooms_in_use }}</div>
+      <div class="stat-label">Rooms in Use</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-number">{{ daily_data.summary.total_attendees }}</div>
+      <div class="stat-label">Expected Attendees</div>
+    </div>
+    {% if daily_data.summary.tentative_events > 0 %}
+    <div class="stat-card">
+      <div class="stat-number">{{ daily_data.summary.tentative_events }}</div>
+      <div class="stat-label">Tentative Events</div>
+    </div>
+    {% endif %} {% if daily_data.summary.average_event_value > 0 %}
+    <div class="stat-card">
+      <div class="stat-number">
+        ${{ "%.0f"|format(daily_data.summary.average_event_value) }}
+      </div>
+      <div class="stat-label">Avg Event Value</div>
+    </div>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Export Toolbar -->
+  <div class="export-toolbar no-print">
+    <div class="toolbar-content">
+      <div class="toolbar-info">
+        <h6><i class="fas fa-download me-2"></i>Export & Navigation</h6>
+        <p>
+          Download this report or navigate to different dates for operational
+          planning
+        </p>
+      </div>
+      <div class="toolbar-actions">
+        <button class="btn-export" onclick="downloadExcel()">
+          <i class="fas fa-file-excel"></i>
+          Excel
+        </button>
+        <button class="btn-export" onclick="downloadPDF()">
+          <i class="fas fa-file-pdf"></i>
+          PDF
+        </button>
+        <button class="btn-export" onclick="window.print()">
+          <i class="fas fa-print"></i>
+          Print
+        </button>
+        <button class="btn-export secondary" onclick="showDatePicker()">
+          <i class="fas fa-calendar"></i>
+          Select Date
+        </button>
+        <a href="{{ url_for('reports.reports') }}" class="btn-export secondary">
+          <i class="fas fa-arrow-left"></i>
+          Back to Reports
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  {% if daily_data and daily_data.events_by_room %}
+  <!-- Events by Room -->
+  {% for room_name, events in daily_data.events_by_room.items() %}
+  <div class="room-section">
+    <div class="room-header">
+      <h2 class="room-title">
+        <i class="fas fa-door-open"></i>
+        {{ room_name }}
+      </h2>
+      <div class="room-count">
+        {{ events|length }} Event{{ 's' if events|length != 1 else '' }}
+      </div>
+    </div>
+
+    <table class="events-table">
+      <thead>
+        <tr>
+          <th style="width: 15%">Time</th>
+          <th style="width: 20%">Event</th>
+          <th style="width: 18%">Client</th>
+          <th style="width: 10%">Attendees</th>
+          <th style="width: 12%">Revenue</th>
+          <th style="width: 10%">Status</th>
+          <th style="width: 15%">Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for event in events %}
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
         <tr
           onclick="showEventDetails({{ event.id }})"
           data-event-id="{{ event.id }}"
         >
           <!-- Time Column -->
           <td>
+<<<<<<< HEAD
             <div class="event-time">
               {% if event.start_time and event.end_time %} {{
               event.start_time.strftime('%H:%M') }} - {{
@@ -587,11 +1256,31 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             </div>
             {% if event.event_type %}
             <div class="text-muted small">{{ event.event_type|title }}</div>
+=======
+            {% if event.start_time and event.end_time %}
+            <div class="time-display">{{ event.time_display }}</div>
+            <div class="duration-info">
+              {{ event.duration_hours }}h duration
+            </div>
+            {% else %}
+            <div class="time-display text-muted">Time TBD</div>
+            {% endif %}
+          </td>
+
+          <!-- Event Column -->
+          <td>
+            <div class="event-title">{{ event.title or 'Untitled Event' }}</div>
+            {% if event.raw_booking and event.raw_booking.event_type %}
+            <div class="event-type">
+              {{ event.raw_booking.event_type|replace('_', ' ')|title }}
+            </div>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
             {% endif %}
           </td>
 
           <!-- Client Column -->
           <td>
+<<<<<<< HEAD
             <div class="client-info">
               {% if event.client %} {{ event.client.company_name or
               event.client.contact_person|default('Unknown Client') }} {% else
@@ -606,6 +1295,22 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
               {% endif %} {% if event.client.phone %}
               <i class="fas fa-phone me-1"></i>{{ event.client.phone }} {% endif
               %}
+=======
+            <div class="client-info">{{ event.client_name }}</div>
+            {% if event.raw_booking and event.raw_booking.client %}
+            <div class="client-contact">
+              {% if event.raw_booking.client.email %}
+              <span
+                ><i class="fas fa-envelope me-1"></i>{{
+                event.raw_booking.client.email }}</span
+              >
+              {% endif %} {% if event.raw_booking.client.phone %}
+              <span
+                ><i class="fas fa-phone me-1"></i>{{
+                event.raw_booking.client.phone }}</span
+              >
+              {% endif %}
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
             </div>
             {% endif %}
           </td>
@@ -614,13 +1319,22 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
           <td>
             {% if event.attendees and event.attendees > 0 %}
             <div class="attendees-count">{{ event.attendees }}</div>
+<<<<<<< HEAD
             {% if event.room and event.room.capacity %}
             <div class="capacity-info">of {{ event.room.capacity }}</div>
+=======
+            {% if event.raw_booking and event.raw_booking.room and
+            event.raw_booking.room.capacity %}
+            <div class="capacity-note">
+              of {{ event.raw_booking.room.capacity }} capacity
+            </div>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
             {% endif %} {% else %}
             <span class="text-muted">Not specified</span>
             {% endif %}
           </td>
 
+<<<<<<< HEAD
           <!-- Total Cost Column -->
           <td>
             {% if event.total_price and event.total_price > 0 %}
@@ -630,6 +1344,17 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             {% if event.attendees and event.attendees > 0 %}
             <div class="pricing-breakdown">
               ${{ "%.0f"|format(event.total_price / event.attendees) }}/person
+=======
+          <!-- Revenue Column -->
+          <td>
+            {% if event.total_price and event.total_price > 0 %}
+            <div class="revenue-amount">
+              ${{ "%.2f"|format(event.total_price) }}
+            </div>
+            {% if event.price_per_person and event.price_per_person > 0 %}
+            <div class="per-person-rate">
+              ${{ "%.0f"|format(event.price_per_person) }}/person
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
             </div>
             {% endif %} {% else %}
             <span class="text-muted">TBD</span>
@@ -638,6 +1363,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
 
           <!-- Status Column -->
           <td>
+<<<<<<< HEAD
             <span
               class="status-badge status-{{ event.status|default('tentative') }}"
             >
@@ -666,11 +1392,35 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
               <span class="text-muted small">No additional notes</span>
               {% endif %}
             </div>
+=======
+            <span class="status-badge status-{{ event.status }}">
+              {{ event.status_display }}
+            </span>
+          </td>
+
+          <!-- Notes Column -->
+          <td>
+            {% if event.notes %}
+            <div class="notes-content truncated" id="notes-{{ event.id }}">
+              {{ event.notes }}
+            </div>
+            {% if event.notes|length > 100 %}
+            <div
+              class="notes-expand"
+              onclick="toggleNotes({{ event.id }}, event)"
+            >
+              <i class="fas fa-chevron-down me-1"></i>Show more
+            </div>
+            {% endif %} {% else %}
+            <span class="text-muted">No additional notes</span>
+            {% endif %}
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
           </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
+<<<<<<< HEAD
     {% endfor %} {% else %}
     <!-- No Events State -->
     <div class="no-events-state">
@@ -708,6 +1458,65 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             %H:%M CAT') if now else 'Unknown Time' }}
           </small>
         </div>
+=======
+  </div>
+  {% endfor %} {% else %}
+  <!-- No Events State -->
+  <div class="no-events-state">
+    <div class="no-events-icon">
+      <i class="fas fa-calendar-times"></i>
+    </div>
+    <h3 class="no-events-title">No Events Scheduled</h3>
+    <p class="no-events-text">
+      There are no events scheduled for {{ daily_data.date.strftime('%A, %d %B
+      %Y') if daily_data and daily_data.date else 'the selected date' }}.
+      <br />This appears to be a quiet day for the conference centre.
+    </p>
+    <div class="no-events-actions">
+      <a href="{{ url_for('bookings.new_booking') }}" class="btn-export">
+        <i class="fas fa-plus"></i>
+        Schedule New Event
+      </a>
+      <button class="btn-export secondary" onclick="showDatePicker()">
+        <i class="fas fa-calendar"></i>
+        Select Different Date
+      </button>
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- Navigation Footer -->
+  <div class="navigation-footer no-print">
+    <div class="nav-content">
+      <div class="nav-info">
+        <small>
+          <i class="fas fa-info-circle me-1"></i>
+          This report shows events scheduled to <strong>start</strong> on the
+          selected date
+        </small>
+      </div>
+      <div class="nav-actions">
+        {% set yesterday = daily_data.date - timedelta(days=1) if daily_data and
+        daily_data.date else None %} {% set tomorrow = daily_data.date +
+        timedelta(days=1) if daily_data and daily_data.date else None %} {% if
+        yesterday %}
+        <a
+          href="{{ url_for('reports.daily_summary_report', date=yesterday.strftime('%Y-%m-%d')) }}"
+          class="btn-export secondary"
+        >
+          <i class="fas fa-chevron-left"></i>
+          Previous Day
+        </a>
+        {% endif %} {% if tomorrow %}
+        <a
+          href="{{ url_for('reports.daily_summary_report', date=tomorrow.strftime('%Y-%m-%d')) }}"
+          class="btn-export secondary"
+        >
+          Next Day
+          <i class="fas fa-chevron-right"></i>
+        </a>
+        {% endif %}
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
       </div>
     </div>
   </div>
@@ -743,6 +1552,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
             type="date"
             class="form-control"
             id="selectedDate"
+<<<<<<< HEAD
             value="{{ report_date.strftime('%Y-%m-%d') if report_date else '' }}"
           />
         </div>
@@ -750,6 +1560,15 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
           <i class="fas fa-info-circle me-2"></i>
           <strong>Tip:</strong> For operational planning, select tomorrow's date
           to prepare for the next day's events.
+=======
+            value="{{ daily_data.date.strftime('%Y-%m-%d') if daily_data and daily_data.date else '' }}"
+          />
+        </div>
+        <div class="alert alert-info">
+          <i class="fas fa-lightbulb me-2"></i>
+          <strong>Tip:</strong> Select tomorrow's date for operational planning
+          and day-ahead preparation.
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
         </div>
       </div>
       <div class="modal-footer">
@@ -786,7 +1605,11 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         ></button>
       </div>
       <div class="modal-body" id="eventDetailsContent">
+<<<<<<< HEAD
         <!-- Content will be populated by JavaScript -->
+=======
+        <!-- Content populated by JavaScript -->
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -804,6 +1627,7 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     </div>
   </div>
 </div>
+<<<<<<< HEAD
 
 {% endblock %} {% block extra_js %}
 <script>
@@ -1009,10 +1833,202 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
         }
       });
     }
+=======
+{% endblock %} {% block extra_js %}
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+      console.log('📅 Daily Summary Report loaded');
+
+      // Initialize data for JavaScript access
+      const dailyData = {{ daily_data|tojson if daily_data else '{}' }};
+      console.log('📊 Daily data loaded:', dailyData);
+
+      // Add event row interactions
+      const eventRows = document.querySelectorAll('tr[data-event-id]');
+      eventRows.forEach(row => {
+          row.addEventListener('mouseenter', function() {
+              this.style.backgroundColor = '#f8fafb';
+          });
+          row.addEventListener('mouseleave', function() {
+              this.style.backgroundColor = '';
+          });
+      });
+
+      // Show loading completion
+      console.log('✅ Daily summary initialization complete');
+  });
+
+  function downloadExcel() {
+      const date = '{{ daily_data.date.strftime("%Y-%m-%d") if daily_data and daily_data.date else "" }}';
+      console.log('📊 Downloading Excel for date:', date);
+
+      if (!date) {
+          alert('Unable to download: Report date not available');
+          return;
+      }
+
+      showLoadingButton(event.target, 'Generating Excel...');
+      window.location.href = `{{ url_for('reports.export_daily_summary') }}?date=${date}&format=excel`;
+
+      setTimeout(() => hideLoadingButton(event.target), 2000);
+  }
+
+  function downloadPDF() {
+      const date = '{{ daily_data.date.strftime("%Y-%m-%d") if daily_data and daily_data.date else "" }}';
+      console.log('📄 Downloading PDF for date:', date);
+
+      if (!date) {
+          alert('Unable to download: Report date not available');
+          return;
+      }
+
+      showLoadingButton(event.target, 'Generating PDF...');
+      window.location.href = `{{ url_for('reports.export_daily_summary') }}?date=${date}&format=pdf`;
+
+      setTimeout(() => hideLoadingButton(event.target), 2000);
+  }
+
+  function showDatePicker() {
+      const modal = new bootstrap.Modal(document.getElementById('datePicker'));
+      modal.show();
+
+      // Focus on date input when modal opens
+      setTimeout(() => {
+          document.getElementById('selectedDate').focus();
+      }, 300);
+  }
+
+  function goToDate() {
+      const selectedDate = document.getElementById('selectedDate').value;
+
+      if (!selectedDate) {
+          alert('Please select a date');
+          return;
+      }
+
+      console.log('📅 Navigating to date:', selectedDate);
+
+      const modal = bootstrap.Modal.getInstance(document.getElementById('datePicker'));
+      modal.hide();
+
+      // Show loading state
+      document.body.style.cursor = 'wait';
+
+      window.location.href = `{{ url_for('reports.daily_summary_report') }}?date=${selectedDate}`;
+  }
+
+  function showEventDetails(eventId) {
+      console.log('🔍 Showing details for event:', eventId);
+
+      if (!eventId) {
+          console.error('No event ID provided');
+          return;
+      }
+
+      // Find event in the data
+      const dailyData = {{ daily_data|tojson if daily_data else '{}' }};
+      let eventDetails = null;
+
+      if (dailyData.events_by_room) {
+          Object.values(dailyData.events_by_room).forEach(roomEvents => {
+              const event = roomEvents.find(e => e.id === eventId);
+              if (event) {
+                  eventDetails = event;
+              }
+          });
+      }
+
+      if (!eventDetails) {
+          console.error('Event not found:', eventId);
+          alert('Event details not available');
+          return;
+      }
+
+      // Populate modal
+      const modal = new bootstrap.Modal(document.getElementById('eventDetailsModal'));
+      const content = document.getElementById('eventDetailsContent');
+      const viewLink = document.getElementById('viewBookingLink');
+
+      // Build content
+      const timeStr = eventDetails.time_display || 'Time TBD';
+      const client = eventDetails.raw_booking?.client || {};
+
+      content.innerHTML = `
+          <div class="row">
+              <div class="col-md-8">
+                  <h6 class="text-primary mb-3">${eventDetails.title || 'Untitled Event'}</h6>
+                  <div class="mb-2"><strong>Time:</strong> ${timeStr}</div>
+                  <div class="mb-2"><strong>Duration:</strong> ${eventDetails.duration_hours || 0} hours</div>
+                  <div class="mb-2"><strong>Client:</strong> ${eventDetails.client_name}</div>
+                  ${client.email ? `<div class="mb-2"><strong>Email:</strong> ${client.email}</div>` : ''}
+                  ${client.phone ? `<div class="mb-2"><strong>Phone:</strong> ${client.phone}</div>` : ''}
+                  <div class="mb-2"><strong>Attendees:</strong> ${eventDetails.attendees || 'Not specified'}</div>
+                  ${eventDetails.total_price ? `<div class="mb-2"><strong>Total Cost:</strong> $${parseFloat(eventDetails.total_price).toFixed(2)}</div>` : ''}
+                  ${eventDetails.notes ? `<div class="mb-2"><strong>Notes:</strong> ${eventDetails.notes}</div>` : ''}
+              </div>
+              <div class="col-md-4 text-center">
+                  <span class="status-badge status-${eventDetails.status || 'tentative'} fs-6">
+                      ${(eventDetails.status_display || 'Tentative')}
+                  </span>
+              </div>
+          </div>
+      `;
+
+      // Set view booking link
+      viewLink.href = `{{ url_for('bookings.view_booking', id=0) }}`.replace('0', eventId);
+
+      modal.show();
+  }
+
+  function toggleNotes(eventId, event) {
+      event.stopPropagation(); // Prevent row click
+
+      const notesElement = document.getElementById(`notes-${eventId}`);
+      const expandButton = event.target.closest('.notes-expand');
+
+      if (notesElement.classList.contains('truncated')) {
+          notesElement.classList.remove('truncated');
+          expandButton.innerHTML = '<i class="fas fa-chevron-up me-1"></i>Show less';
+      } else {
+          notesElement.classList.add('truncated');
+          expandButton.innerHTML = '<i class="fas fa-chevron-down me-1"></i>Show more';
+      }
+  }
+
+  function showLoadingButton(button, text) {
+      if (button) {
+          button.dataset.originalText = button.innerHTML;
+          button.innerHTML = `<i class="fas fa-spinner fa-spin me-1"></i>${text}`;
+          button.disabled = true;
+      }
+  }
+
+  function hideLoadingButton(button) {
+      if (button && button.dataset.originalText) {
+          button.innerHTML = button.dataset.originalText;
+          button.disabled = false;
+          delete button.dataset.originalText;
+      }
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') {
+          // Close any open modals
+          const modals = document.querySelectorAll('.modal.show');
+          modals.forEach(modal => {
+              const modalInstance = bootstrap.Modal.getInstance(modal);
+              if (modalInstance) {
+                  modalInstance.hide();
+              }
+          });
+      }
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   });
 
   // Print optimization
   window.addEventListener('beforeprint', function() {
+<<<<<<< HEAD
     console.log('🖨️ Preparing report for printing...');
     document.body.classList.add('printing');
   });
@@ -1045,6 +2061,15 @@ Towers Conference Booking{% endblock %} {% block extra_css %}
     // If download buttons are in loading state, restore them
     const downloadButtons = document.querySelectorAll('.btn-export[disabled]');
     downloadButtons.forEach(hideLoadingState);
+=======
+      console.log('🖨️ Preparing daily summary for printing...');
+      document.body.classList.add('printing');
+  });
+
+  window.addEventListener('afterprint', function() {
+      console.log('🖨️ Print job completed');
+      document.body.classList.remove('printing');
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   });
 </script>
 {% endblock %}

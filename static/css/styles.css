@@ -23,8 +23,8 @@
 }
 
 body {
-  font-family: 'Nunito', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  background-color: var(--light);
+  font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+  background-color: #f8f9fc;
   color: var(--secondary);
   line-height: 1.6;
   padding-bottom: 4rem;
@@ -123,15 +123,13 @@ a:hover {
 
 /* ===== CARDS ===== */
 .card {
+  box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
   border: none;
-  box-shadow: var(--shadow);
-  border-radius: var(--border-radius);
-  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .card-header {
   background-color: white;
-  border-bottom: 1px solid var(--gray-light);
+  border-bottom: 1px solid rgba(0,0,0,.125);
   padding: 1rem 1.25rem;
 }
 
@@ -162,13 +160,13 @@ a:hover {
 }
 
 .btn-primary {
-  background-color: var(--primary);
-  border-color: var(--primary);
+  background-color: #4e73df;
+  border-color: #4e73df;
 }
 
 .btn-primary:hover {
-  background-color: var(--primary-dark);
-  border-color: var(--primary-dark);
+  background-color: #2e59d9;
+  border-color: #2653d4;
 }
 
 .btn-outline-primary {
@@ -235,8 +233,8 @@ a:hover {
 
 .form-control:focus,
 .form-select:focus {
-  border-color: var(--primary-light);
-  box-shadow: 0 0 0 0.25rem rgba(78, 115, 223, 0.25);
+  border-color: #4e73df;
+  box-shadow: 0 0 0 0.2rem rgba(78, 115, 223, 0.25);
 }
 
 .form-label {
@@ -679,7 +677,7 @@ footer {
 
 /* ===== ANIMATIONS ===== */
 .fade-in {
-  animation: fadeIn 0.5s;
+  animation: fadeIn 0.5s ease-in;
 }
 
 @keyframes fadeIn {

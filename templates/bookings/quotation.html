@@ -1,5 +1,10 @@
+<<<<<<< HEAD
 {% extends "layout.html" %} {% block title %}Quotation #{{ quotation_number }} |
 Rainbow Towers{% endblock %} {% block extra_css %}
+=======
+{% extends "layout.html" %} {% block title %}Proforma Invoice - {{ booking.title
+or 'Booking' }} | Rainbow Towers{% endblock %} {% block extra_css %}
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
 <style>
   /* Print-specific styles */
   @media print {
@@ -7,6 +12,7 @@ Rainbow Towers{% endblock %} {% block extra_css %}
       display: none !important;
     }
     body {
+<<<<<<< HEAD
       background-color: white !important;
       margin: 0;
       padding: 0;
@@ -245,10 +251,168 @@ Rainbow Towers{% endblock %} {% block extra_css %}
   /* Signature Section */
   .signature-section {
     margin-top: 30px;
+=======
+      margin: 0;
+      padding: 0;
+      background: white !important;
+    }
+    .container {
+      max-width: 100% !important;
+      margin: 0 !important;
+      padding: 0 !important;
+    }
+    .quotation-container {
+      box-shadow: none !important;
+    }
+    .action-buttons {
+      display: none !important;
+    }
+  }
+
+  body {
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    line-height: 1.4;
+    background-color: #f5f5f5;
+  }
+
+  .quotation-container {
+    background: white;
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 0;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+
+  .header {
+    text-align: center;
+    padding: 20px;
+    border-bottom: 3px solid #d4a843;
+  }
+
+  .logo {
+    max-height: 100px;
+    margin-bottom: 10px;
+  }
+
+  .hotel-info {
+    font-size: 11px;
+    color: #666;
+    margin-top: 10px;
+  }
+
+  .invoice-title {
+    background: linear-gradient(135deg, #d4a843 0%, #b8922a 100%);
+    color: white;
+    text-align: center;
+    padding: 15px;
+    font-size: 18px;
+    font-weight: bold;
+    margin: 0;
+  }
+
+  .date-section {
+    text-align: right;
+    padding: 15px 20px;
+    font-weight: bold;
+  }
+
+  .client-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 40px;
+    padding: 20px;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .client-column h4 {
+    color: #d4a843;
+    margin: 0 0 10px 0;
+    font-size: 12px;
+    font-weight: bold;
+  }
+
+  .client-details {
+    font-size: 11px;
+    line-height: 1.6;
+  }
+
+  .event-section {
+    padding: 20px;
+    border-bottom: 1px solid #ddd;
+  }
+
+  .event-title {
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 15px;
+    color: #333;
+  }
+
+  .services-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 20px 0;
+  }
+
+  .services-table th {
+    background: linear-gradient(135deg, #d4a843 0%, #b8922a 100%);
+    color: white;
+    padding: 12px 8px;
+    text-align: center;
+    font-weight: bold;
+    border: 1px solid #b8922a;
+    font-size: 11px;
+  }
+
+  .services-table td {
+    padding: 10px 8px;
+    border: 1px solid #ddd;
+    text-align: center;
+    font-size: 11px;
+  }
+
+  .services-table tr:nth-child(even) {
+    background-color: #f9f9f9;
+  }
+
+  .total-row {
+    background: linear-gradient(135deg, #d4a843 0%, #b8922a 100%);
+    color: white;
+    font-weight: bold;
+  }
+
+  .terms-section {
+    padding: 20px;
+    font-size: 10px;
+    line-height: 1.5;
+  }
+
+  .terms-section h4 {
+    color: #d4a843;
+    margin: 15px 0 8px 0;
+    font-size: 12px;
+  }
+
+  .terms-section ol {
+    margin: 0;
+    padding-left: 18px;
+  }
+
+  .terms-section li {
+    margin-bottom: 5px;
+  }
+
+  .signature-section {
+    margin-top: 30px;
+    padding: 20px;
+    border-top: 1px solid #ddd;
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .signature-line {
     display: inline-block;
+<<<<<<< HEAD
     margin-top: 40px;
     font-size: 10px;
   }
@@ -270,11 +434,68 @@ Rainbow Towers{% endblock %} {% block extra_css %}
     margin-bottom: 20px;
     border: 1px solid #ddd;
     border-radius: 5px;
+=======
+    border-bottom: 1px solid #333;
+    width: 250px;
+    margin: 0 10px;
+  }
+
+  .action-buttons {
+    background: #f8f9fa;
+    padding: 20px;
+    text-align: center;
+    border-bottom: 3px solid #d4a843;
+  }
+
+  .btn {
+    background: #d4a843;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    margin: 0 5px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.3s;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .btn:hover {
+    background: #b8922a;
+    color: white;
+    text-decoration: none;
+  }
+
+  .btn-secondary {
+    background: #6c757d;
+  }
+
+  .btn-secondary:hover {
+    background: #545b62;
+  }
+
+  @media print {
+    body {
+      background: white;
+    }
+    .container {
+      width: 100%;
+      max-width: none;
+    }
+    .card {
+      border: 1px solid #ddd;
+    }
+    .card-header {
+      background-color: #f8f9fa !important;
+    }
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 </style>
 {% endblock %} {% block content %}
 <!-- Action Buttons (Not Printed) -->
 <div class="action-buttons no-print">
+<<<<<<< HEAD
   <div class="d-flex justify-content-between align-items-center">
     <div>
       <h5 class="mb-0">
@@ -298,10 +519,269 @@ Rainbow Towers{% endblock %} {% block extra_css %}
       <button type="button" class="btn btn-success btn-sm" id="downloadPdf">
         <i class="fas fa-download me-1"></i>Download PDF
       </button>
+=======
+  <a
+    href="{{ url_for('bookings.view_booking', id=booking.id) }}"
+    class="btn btn-secondary"
+  >
+    ← Back to Booking
+  </a>
+  <button class="btn" onclick="window.print()">🖨️ Print Invoice</button>
+  <button class="btn" onclick="downloadPDF()">📄 Download PDF</button>
+  <button class="btn" onclick="sendEmail()">📧 Send to Client</button>
+</div>
+
+<div class="quotation-container" id="quotation-content">
+  <!-- Header with Logo -->
+  <div class="header">
+    <img
+      src="{{ url_for('static', filename='img/rainbow-towers-logo.png') }}"
+      alt="Rainbow Towers Logo"
+      class="logo"
+    />
+    <div class="hotel-info">
+      HARARE'S LEISURE HOTEL & CONFERENCE CENTRE<br />
+      1 Pennefather Avenue, P.O. Box 3033, Causeway, Harare, Zimbabwe<br />
+      Tel: +263 242 772633 - 9<br />
+      Email: reservations@rtg.co.zw<br />
+      Website: www.rtgafrica.com
+    </div>
+  </div>
+
+  <!-- Invoice Title -->
+  <div class="invoice-title">PROFORMA INVOICE</div>
+
+  <!-- Date -->
+  <div class="date-section">DATE: {{ current_date.strftime('%d %B %Y') }}</div>
+
+  <!-- Client Information -->
+  <div class="client-info">
+    <div class="client-column">
+      <h4>CONTACT PERSON</h4>
+      <div class="client-details">
+        {% if booking.client %}
+        <strong>Contact Person:</strong> {{ booking.client.contact_person or
+        booking.client_name or 'Not specified' }}<br />
+        <strong>Company:</strong> {{ booking.client.company_name or
+        booking.company_name or 'Individual Client' }}<br />
+        <strong>Phone:</strong> {{ booking.client.phone or 'Not provided' }}<br />
+        <strong>Address:</strong> {{ booking.client.address or 'Not provided'
+        }}<br />
+        <strong>Email:</strong> {{ booking.client.email or booking.client_email
+        or 'Not provided' }}<br />
+        <strong>Mobile:</strong> {{ booking.client.phone or 'Not provided' }} {%
+        else %} <strong>Contact Person:</strong> {{ booking.client_name or 'Not
+        specified' }}<br />
+        <strong>Company:</strong> {{ booking.company_name or 'Individual Client'
+        }}<br />
+        <strong>Phone:</strong> Not provided<br />
+        <strong>Address:</strong> Not provided<br />
+        <strong>Email:</strong> {{ booking.client_email or 'Not provided' }}<br />
+        <strong>Mobile:</strong> Not provided {% endif %}
+      </div>
+    </div>
+    <div class="client-column">
+      <h4>VAT REG NUMBER</h4>
+      <div class="client-details">10001189</div>
+      <h4 style="margin-top: 20px">BANK DETAILS</h4>
+      <div class="client-details">
+        <strong>Account Name:</strong> The Rainbow Towers<br />
+        <strong>Bank Name:</strong> Stanbic<br />
+        <strong>Branch:</strong> Nelson Mandela<br />
+        <strong>Acc Number:</strong> 9140000892512<br />
+        <strong>Nostro FCA</strong>
+      </div>
+    </div>
+  </div>
+
+  <!-- Hotel Contact -->
+  <div class="client-info" style="border-bottom: 2px solid #d4a843">
+    <div class="client-column">
+      <h4>CONTACT PERSON</h4>
+      <div class="client-details">
+        <strong>Contact Person:</strong> Tandiwe<br />
+        <strong>Address:</strong> 1 Pennefather Ave, Harare<br />
+        <strong>Phone:</strong> 0242 772633<br />
+        <strong>Mobile:</strong> 782705301<br />
+        <strong>Website:</strong> www.rtgafrica.com<br />
+        <strong>Facebook:</strong> rtgreservations<br />
+        <strong>Skype:</strong> reservations
+      </div>
+    </div>
+    <div class="client-column">
+      <!-- Empty column for spacing -->
+    </div>
+  </div>
+
+  <!-- Event Details -->
+  <div class="event-section">
+    <div class="event-title">{{ booking.title or 'Event Booking' }}</div>
+    <div style="margin-top: 10px; font-weight: bold">
+      THE RAINBOW TOWERS HOTEL
+    </div>
+  </div>
+
+  <!-- Services Table -->
+  <table class="services-table">
+    <thead>
+      <tr>
+        <th style="width: 40%">REQUESTED SERVICE</th>
+        <th style="width: 12%">NO. OF PAX</th>
+        <th style="width: 12%">NO. OF ROOMS</th>
+        <th style="width: 16%">UNIT PRICE/PER PERSON</th>
+        <th style="width: 12%">NO. OF DAYS</th>
+        <th style="width: 18%">TOTAL AMOUNT US$</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% set total_amount = 0 %}
+
+      <!-- Use custom addons if available -->
+      {% if booking.custom_addons %} {% for addon in booking.custom_addons %}
+      <tr>
+        <td style="text-align: left">
+          {{ addon.description or 'Service Item' }}
+        </td>
+        <td>{{ booking.attendees or '-' }}</td>
+        <td>{{ addon.quantity or 1 }}</td>
+        <td>{{ "%.2f"|format(addon.unit_price or 0) }}</td>
+        <td>1</td>
+        <td>{{ "%.2f"|format(addon.total_price or 0) }}</td>
+      </tr>
+      {% set total_amount = total_amount + (addon.total_price or 0) %} {% endfor
+      %} {% else %}
+      <!-- Fallback: Use room rental as main service -->
+      {% set room_name = booking.room.name if booking.room else 'Conference
+      Room' %} {% set room_rate = booking.total_price or totals.total or 0 %}
+      <tr>
+        <td style="text-align: left">
+          {{ room_name }} - Conference Room Rental
+        </td>
+        <td>{{ booking.attendees or '-' }}</td>
+        <td>1</td>
+        <td>{{ "%.2f"|format(room_rate) }}</td>
+        <td>1</td>
+        <td>{{ "%.2f"|format(room_rate) }}</td>
+      </tr>
+      {% set total_amount = room_rate %} {% endif %}
+    </tbody>
+    <tfoot>
+      <tr class="total-row">
+        <td colspan="5" style="text-align: right; font-weight: bold">
+          TOTAL US$
+        </td>
+        <td style="font-weight: bold">{{ "%.2f"|format(total_amount) }}</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <!-- Terms and Conditions -->
+  <div class="terms-section">
+    <h4>TERMS AND CONDITIONS</h4>
+    <ol>
+      <li>
+        The hotel will provide all required equipment for the conference at a
+        cost.
+      </li>
+      <li>
+        The hotel shall not allow clients to bring own equipment as this is a
+        service provided by the hotel. Equipment shall include but not limited
+        to PA systems, screens, translation equipment.
+      </li>
+      <li>
+        All Equipment needs to be communicated at the point of making a
+        reservation.
+      </li>
+      <li>
+        100% of the total amount quoted is required within 48 hours of making an
+        enquiry to guarantee your booking.
+      </li>
+      <li>Full payment is required for confirmation of the booking.</li>
+      <li>Rates are subject to change without notice.</li>
+    </ol>
+
+    <h4>AIRPORT TRANSFERS AND ACTIVITIES</h4>
+    <p>
+      The hotel through its subsidiary Heritage Expeditions Africa (HExA)
+      provides the following ground handling services:
+    </p>
+    <ul style="margin: 5px 0; padding-left: 18px">
+      <li>Shuttle Services</li>
+      <li>City Tours</li>
+      <li>Day Trips</li>
+      <li>Various Activities</li>
+    </ul>
+
+    <h4>CANCELLATION POLICY</h4>
+    <p>
+      Accommodation and conference rooms booked are subject to the following
+      policy:
+    </p>
+    <ul style="margin: 5px 0; padding-left: 18px">
+      <li>15 - 29 Days: 50% refund is made</li>
+      <li>8 - 14 Days: 25% refund is made</li>
+      <li>0 - 7 Days: No refund</li>
+    </ul>
+
+    <h4>PAYMENT</h4>
+    <p>
+      We require confirmation of payment 2 weeks before arrival to secure your
+      booking. Payment can be a purchase order, cash or bank transfer.
+    </p>
+    <p>
+      Please note that we hold the right to cancel your reservation if we have
+      not received your full payment, an order or letter of commitment to pay.
+    </p>
+    <p>
+      This quotation does not constitute an undertaking by RTG to provide the
+      requested services. It will only remain a quotation and may only
+      constitute an undertaking to provide services after both payment has been
+      made and the booking confirmed.
+    </p>
+
+    <h4>INCREASE IN NUMBERS OR ADDITIONAL SERVICES</h4>
+    <ul style="margin: 5px 0; padding-left: 18px">
+      <li>Day conferences – numbers to be communicated by 0900hrs</li>
+      <li>Lunch Bookings – numbers to be communicated by 0900hrs</li>
+      <li>Dinner/Cocktail bookings – numbers to be communicated by 1200hrs</li>
+    </ul>
+    <p>
+      Please note that if there is no communication regarding the reduction of
+      numbers, the hotel will charge as per original booking numbers.
+    </p>
+    <p>
+      In the event of an increase in numbers for either conferencing or
+      accommodation bookings, the hotel will charge accordingly and your
+      organisation will be required to provide order, commitment letter or
+      payment within 24 hours.
+    </p>
+
+    <h4>NO SHOWS</h4>
+    <p>
+      Guests with a valid room reservation who do not arrive on the day of the
+      reservation will be considered no-shows and the applicable room rate equal
+      to one night stay will be charged.
+    </p>
+  </div>
+
+  <!-- Signature Section -->
+  <div class="signature-section">
+    <p>
+      <strong
+        >If in agreement, please sign and return copy to certify
+        confirmation</strong
+      >
+    </p>
+    <div style="margin-top: 30px">
+      <span>Name </span><span class="signature-line"></span>
+      <span> Signature </span><span class="signature-line"></span>
+      <span> Date </span><span class="signature-line"></span>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     </div>
   </div>
 </div>
 
+<<<<<<< HEAD
 <!-- Quotation Document -->
 <div class="card shadow-sm border-0">
   <div class="card-body p-0">
@@ -731,5 +1211,27 @@ Rainbow Towers{% endblock %} {% block extra_css %}
           });
       });
   });
+=======
+<script>
+  function downloadPDF() {
+      // Navigate to the PDF download route
+      window.location.href = "{{ url_for('bookings.download_quotation', id=booking.id) }}";
+  }
+
+  function sendEmail() {
+      // Integrate with your email sending functionality
+      {% if booking.client and booking.client.email %}
+          if (confirm('Send quotation to {{ booking.client.email }}?')) {
+              // Add your email sending logic here
+              alert('Email functionality to be implemented');
+          }
+      {% else %}
+          alert('No client email available. Please update client contact information.');
+      {% endif %}
+  }
+
+  // Log activity when quotation is viewed
+  console.log('Quotation viewed for booking ID: {{ booking.id }}');
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
 </script>
 {% endblock %}

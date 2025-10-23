@@ -1,22 +1,221 @@
-{% extends "layout.html" %} {% block title %}Reports | Rainbow Towers Conference
-Booking{% endblock %} {% block extra_css %}
+{% extends "layout.html" %} {% block title %}Reports Dashboard | Rainbow Towers
+Conference Booking{% endblock %} {% block extra_css %}
 <style>
+  :root {
+    --primary-color: #2c5aa0;
+    --secondary-color: #4a90a4;
+    --accent-color: #7fb069;
+    --warning-color: #f4a261;
+    --light-bg: #f8fafb;
+    --card-shadow: 0 2px 10px rgba(44, 90, 160, 0.08);
+    --hover-shadow: 0 4px 20px rgba(44, 90, 160, 0.15);
+    --border-radius: 12px;
+    --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  body {
+    background-color: var(--light-bg);
+    font-family: "Inter", "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+  }
+
+  .dashboard-container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem;
+  }
+
+  /* Header Section */
+  .dashboard-header {
+    background: linear-gradient(
+      135deg,
+      var(--primary-color) 0%,
+      var(--secondary-color) 100%
+    );
+    color: white;
+    border-radius: var(--border-radius);
+    padding: 2.5rem 2rem;
+    margin-bottom: 2rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .dashboard-header::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 100%;
+    height: 100%;
+    background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grid" width="10" height="10" patternUnits="userSpaceOnUse"><path d="M 10 0 L 0 0 0 10" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="0.5"/></pattern></defs><rect width="100" height="100" fill="url(%23grid)"/></svg>')
+      repeat;
+    opacity: 0.3;
+  }
+
+  .dashboard-header .content {
+    position: relative;
+    z-index: 1;
+  }
+
+  .header-title {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.025em;
+  }
+
+  .header-subtitle {
+    font-size: 1.1rem;
+    opacity: 0.9;
+    margin-bottom: 1rem;
+    font-weight: 400;
+  }
+
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    font-size: 0.9rem;
+    opacity: 0.8;
+  }
+
+  .header-meta .badge {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.375rem 0.75rem;
+    border-radius: 20px;
+    font-weight: 500;
+  }
+
+  /* Quick Stats Section */
+  .quick-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+  }
+
+  .stat-card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    transition: var(--transition);
+    border: 1px solid rgba(44, 90, 160, 0.05);
+    position: relative;
+    overflow: hidden;
+  }
+
+  .stat-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 4px;
+    height: 100%;
+    background: var(--accent-color);
+    transition: var(--transition);
+  }
+
+  .stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--hover-shadow);
+  }
+
+  .stat-card:hover::before {
+    width: 6px;
+  }
+
+  .stat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+  }
+
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    color: white;
+  }
+
+  .stat-icon.primary {
+    background: var(--primary-color);
+  }
+  .stat-icon.secondary {
+    background: var(--secondary-color);
+  }
+  .stat-icon.accent {
+    background: var(--accent-color);
+  }
+  .stat-icon.warning {
+    background: var(--warning-color);
+  }
+
+  .stat-value {
+    font-size: 2rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.25rem;
+    line-height: 1;
+  }
+
+  .stat-label {
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 500;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-trend {
+    font-size: 0.8rem;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+
+  .trend-positive {
+    color: var(--accent-color);
+  }
+  .trend-neutral {
+    color: #64748b;
+  }
+
+  /* Main Reports Grid */
+  .reports-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+    gap: 2rem;
+    margin-bottom: 2.5rem;
+  }
+
   .report-card {
-    transition: all 0.3s ease-in-out;
-    border-left: 4px solid;
-    box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15);
-    min-height: 320px;
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 0;
+    box-shadow: var(--card-shadow);
+    transition: var(--transition);
+    border: 1px solid rgba(44, 90, 160, 0.05);
+    overflow: hidden;
+    position: relative;
   }
 
   .report-card:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 0.5rem 2rem 0 rgba(58, 59, 69, 0.25);
+    transform: translateY(-4px);
+    box-shadow: var(--hover-shadow);
   }
 
-  .report-utilization {
-    border-color: #4e73df;
+  .report-header {
+    padding: 1.5rem 1.5rem 1rem;
+    position: relative;
   }
 
+<<<<<<< HEAD
   .report-daily {
     border-color: #1cc88a;
   }
@@ -27,124 +226,236 @@ Booking{% endblock %} {% block extra_css %}
 
   .report-monthly {
     border-color: #f6c23e;
+=======
+  .report-type-badge {
+    position: absolute;
+    top: 1rem;
+    right: 1rem;
+    background: rgba(44, 90, 160, 0.1);
+    color: var(--primary-color);
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .report-icon-wrapper {
-    width: 70px;
-    height: 70px;
-    border-radius: 50%;
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 1rem;
+    font-size: 1.5rem;
+    color: white;
   }
 
-  .bg-primary-soft {
-    background-color: rgba(78, 115, 223, 0.1);
+  .daily-report .report-icon-wrapper {
+    background: var(--accent-color);
+  }
+  .weekly-report .report-icon-wrapper {
+    background: var(--secondary-color);
+  }
+  .monthly-report .report-icon-wrapper {
+    background: var(--warning-color);
   }
 
-  .bg-success-soft {
-    background-color: rgba(28, 200, 138, 0.1);
+  .report-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--primary-color);
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
   }
 
-  .bg-info-soft {
-    background-color: rgba(54, 185, 204, 0.1);
+  .report-description {
+    color: #64748b;
+    font-size: 0.95rem;
+    line-height: 1.5;
+    margin-bottom: 1.5rem;
   }
 
-  .bg-warning-soft {
-    background-color: rgba(246, 194, 62, 0.1);
-  }
-
-  .feature-list {
+  .report-features {
     list-style: none;
-    padding-left: 0;
+    padding: 0;
+    margin: 0 0 1.5rem 0;
   }
 
-  .feature-list li {
-    padding: 0.25rem 0;
-    position: relative;
-    padding-left: 1.5rem;
+  .report-features li {
+    color: #64748b;
+    font-size: 0.9rem;
+    padding: 0.375rem 0;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
   }
 
-  .feature-list li:before {
+  .report-features li::before {
     content: "✓";
-    position: absolute;
-    left: 0;
-    color: #1cc88a;
-    font-weight: bold;
+    color: var(--accent-color);
+    font-weight: 600;
+    font-size: 0.875rem;
   }
 
-  .stats-overview {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    color: white;
+  .report-footer {
+    padding: 0 1.5rem 1.5rem;
+    margin-top: auto;
   }
 
-  .stats-card {
-    background: rgba(255, 255, 255, 0.1);
-    border: none;
-    backdrop-filter: blur(10px);
-    transition: transform 0.2s ease-in-out;
-    cursor: pointer;
-  }
-
-  .stats-card:hover {
-    transform: translateY(-2px);
-    background: rgba(255, 255, 255, 0.15);
-  }
-
-  .page-header {
-    background: linear-gradient(135deg, #f093fb 0%, #f5576c 50%, #4facfe 100%);
-    padding: 2rem 0;
-    margin-bottom: 2rem;
-    border-radius: 0.75rem;
-    color: white;
-  }
-
-  .quick-actions {
-    background-color: #f8f9fc;
-    border-radius: 0.75rem;
-    padding: 1.5rem;
-    margin-bottom: 2rem;
+  .report-actions {
+    display: flex;
+    gap: 0.75rem;
+    align-items: center;
   }
 
   .btn-report {
-    transition: all 0.2s ease-in-out;
-    border-radius: 0.5rem;
+    flex: 1;
+    background: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    padding: 0.75rem 1rem;
     font-weight: 600;
-    padding: 0.75rem 1.5rem;
+    font-size: 0.9rem;
+    transition: var(--transition);
+    text-decoration: none;
+    text-align: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
   }
 
   .btn-report:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.15);
+    background: #1e3a8a;
+    color: white;
+    transform: translateY(-1px);
   }
 
-  /* Enhanced styles for better data display */
-  .stat-value {
-    font-size: 1.75rem;
-    font-weight: 700;
+  .btn-download {
+    background: rgba(44, 90, 160, 0.1);
+    color: var(--primary-color);
+    border: 1px solid rgba(44, 90, 160, 0.2);
+    border-radius: 8px;
+    padding: 0.75rem;
+    font-size: 0.9rem;
+    transition: var(--transition);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .btn-download:hover {
+    background: rgba(44, 90, 160, 0.15);
+    color: var(--primary-color);
+  }
+
+  /* Quick Actions */
+  .quick-actions {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    margin-bottom: 2rem;
+  }
+
+  .actions-header {
+    display: flex;
+    align-items: center;
+    justify-content: between;
+    margin-bottom: 1rem;
+  }
+
+  .actions-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary-color);
     margin-bottom: 0.25rem;
   }
 
-  .stat-label {
-    font-size: 0.875rem;
-    opacity: 0.9;
-    margin-bottom: 0;
+  .actions-subtitle {
+    color: #64748b;
+    font-size: 0.9rem;
   }
 
-  .stat-trend {
-    font-size: 0.75rem;
-    margin-top: 0.25rem;
-    opacity: 0.8;
+  .action-buttons {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
   }
 
-  .loading-placeholder {
-    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+  .btn-action {
+    background: rgba(44, 90, 160, 0.06);
+    color: var(--primary-color);
+    border: 1px solid rgba(44, 90, 160, 0.1);
+    border-radius: 8px;
+    padding: 0.625rem 1.25rem;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: var(--transition);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .btn-action:hover {
+    background: rgba(44, 90, 160, 0.1);
+    color: var(--primary-color);
+    transform: translateY(-1px);
+  }
+
+  /* System Status */
+  .system-status {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 1.5rem;
+    box-shadow: var(--card-shadow);
+    border-left: 4px solid var(--accent-color);
+  }
+
+  .status-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #f1f5f9;
+  }
+
+  .status-item:last-child {
+    border-bottom: none;
+  }
+
+  .status-label {
+    color: #64748b;
+    font-size: 0.9rem;
+  }
+
+  .status-value {
+    font-weight: 600;
+    color: var(--primary-color);
+  }
+
+  .status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    margin-left: 0.5rem;
+  }
+
+  /* Loading States */
+  .loading-skeleton {
+    background: linear-gradient(90deg, #f0f4f8 25%, #e2e8f0 50%, #f0f4f8 75%);
     background-size: 200% 100%;
     animation: loading 1.5s infinite;
     border-radius: 4px;
     height: 1.5rem;
-    margin-bottom: 0.5rem;
   }
 
   @keyframes loading {
@@ -156,40 +467,96 @@ Booking{% endblock %} {% block extra_css %}
     }
   }
 
-  .error-state {
-    color: #dc3545;
-    font-size: 0.875rem;
-    font-style: italic;
+  /* Error States */
+  .error-message {
+    background: #fef2f2;
+    border: 1px solid #fecaca;
+    border-radius: 8px;
+    padding: 1rem;
+    color: #dc2626;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
   }
 
-  .no-data-state {
-    color: #6c757d;
-    font-size: 0.875rem;
-    font-style: italic;
+  .warning-message {
+    background: #fffbeb;
+    border: 1px solid #fed7aa;
+    border-radius: 8px;
+    padding: 1rem;
+    color: #d97706;
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
   }
 
-  .debug-info {
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 0.375rem;
-    padding: 0.75rem;
-    margin-top: 1rem;
-    font-size: 0.875rem;
-    color: #6c757d;
-  }
-
-  .refresh-indicator {
-    display: inline-block;
-    animation: spin 1s linear infinite;
-  }
-
-  @keyframes spin {
-    0% {
-      transform: rotate(0deg);
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .dashboard-container {
+      padding: 1rem;
     }
-    100% {
-      transform: rotate(360deg);
+
+    .header-title {
+      font-size: 2rem;
     }
+
+    .quick-stats {
+      grid-template-columns: 1fr;
+      gap: 1rem;
+    }
+
+    .reports-grid {
+      grid-template-columns: 1fr;
+      gap: 1.5rem;
+    }
+
+    .report-actions {
+      flex-direction: column;
+    }
+
+    .action-buttons {
+      flex-direction: column;
+    }
+
+    .header-meta {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .stat-card {
+      padding: 1rem;
+    }
+
+    .stat-value {
+      font-size: 1.5rem;
+    }
+
+    .report-card {
+      margin-bottom: 1rem;
+    }
+  }
+
+  /* Animation for cards appearing */
+  .animate-in {
+    opacity: 0;
+    transform: translateY(20px);
+    animation: slideIn 0.6s ease-out forwards;
+  }
+
+  @keyframes slideIn {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  /* Focus states for accessibility */
+  .btn-report:focus,
+  .btn-download:focus,
+  .btn-action:focus {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
   }
 
   .download-options {
@@ -206,6 +573,7 @@ Booking{% endblock %} {% block extra_css %}
   }
 </style>
 {% endblock %} {% block content %}
+<<<<<<< HEAD
 <!-- Page Header -->
 <div class="page-header text-center">
   <div class="container">
@@ -220,9 +588,46 @@ Booking{% endblock %} {% block extra_css %}
       <i class="fas fa-clock me-1"></i>Last updated: {{ now.strftime('%d %B %Y
   at %H:%M CAT') if now else 'Unknown' }}
     </small>
+=======
+<div class="dashboard-container">
+  <!-- Dashboard Header -->
+  <div class="dashboard-header">
+    <div class="content">
+      <h1 class="header-title">
+        <i class="fas fa-chart-line me-2"></i>Reports Dashboard
+      </h1>
+      <p class="header-subtitle">
+        Comprehensive conference room booking analytics and operational reports
+      </p>
+      <div class="header-meta">
+        <div class="d-flex align-items-center">
+          <i class="fas fa-clock me-2"></i>
+          <span
+            >Last updated:
+            <strong
+              >{{ moment().strftime('%B %d, %Y at %I:%M %p') if moment else
+              'Unknown Time' }}</strong
+            ></span
+          >
+        </div>
+        <div class="badge">
+          <i class="fas fa-database me-1"></i>
+          Live Data
+        </div>
+        {% if current_user.is_authenticated %}
+        <div class="d-flex align-items-center">
+          <i class="fas fa-user me-2"></i>
+          <span
+            >{{ current_user.first_name }} {{ current_user.last_name }}</span
+          >
+        </div>
+        {% endif %}
+      </div>
+    </div>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   </div>
-</div>
 
+<<<<<<< HEAD
 <!-- Overview Statistics -->
 <div class="stats-overview rounded-3 mb-4" id="statsOverview">
   <div class="container py-4">
@@ -248,9 +653,42 @@ Booking{% endblock %} {% block extra_css %}
           {% else %}
           <div class="stat-trend no-data-state">No events today</div>
           {% endif %}
+=======
+  <!-- Quick Stats Section -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h5 class="text-muted mb-0">Quick Stats</h5>
+    <div
+      id="refresh-indicator"
+      class="text-muted"
+      style="font-size: 12px; display: none"
+    >
+      <i class="fas fa-sync-alt fa-spin me-1"></i>Refreshing...
+    </div>
+  </div>
+  <div class="quick-stats">
+    <div class="stat-card animate-in" style="animation-delay: 0.1s">
+      <div class="stat-header">
+        <div>
+          <div class="stat-value" id="todayEvents">
+            <span
+              class="loading-skeleton"
+              style="width: 60px; display: inline-block"
+            ></span>
+          </div>
+          <div class="stat-label">Today's Events</div>
+          <div class="stat-trend">
+            <i class="fas fa-calendar-day me-1"></i>
+            <span id="todayTrend">Loading...</span>
+          </div>
+        </div>
+        <div class="stat-icon primary">
+          <i class="fas fa-calendar-day"></i>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
         </div>
       </div>
+    </div>
 
+<<<<<<< HEAD
       <!-- This Week's Revenue -->
       <div class="col-md-3 mb-3">
         <div
@@ -267,38 +705,45 @@ Booking{% endblock %} {% block extra_css %}
           </div>
           <div class="stat-label">This Week's Revenue</div>
           {% if stats.avg_booking_value and stats.avg_booking_value > 0 %}
-          <div class="stat-trend">
-            Avg: ${{ "%.0f"|format(stats.avg_booking_value) }} per booking
+=======
+    <div class="stat-card animate-in" style="animation-delay: 0.2s">
+      <div class="stat-header">
+        <div>
+          <div class="stat-value" id="weeklyRevenue">
+            <span
+              class="loading-skeleton"
+              style="width: 80px; display: inline-block"
+            ></span>
           </div>
-          {% else %}
-          <div class="stat-trend no-data-state">No revenue data</div>
-          {% endif %}
+          <div class="stat-label">This Week's Revenue</div>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
+          <div class="stat-trend">
+            <i class="fas fa-dollar-sign me-1"></i>
+            <span id="weeklyTrend">Loading...</span>
+          </div>
+        </div>
+        <div class="stat-icon accent">
+          <i class="fas fa-dollar-sign"></i>
         </div>
       </div>
+    </div>
 
-      <!-- Active Rooms -->
-      <div class="col-md-3 mb-3">
-        <div
-          class="stats-card rounded p-3 h-100"
-          onclick="showStatsDetails('rooms')"
-        >
-          <i class="fas fa-door-open fa-2x mb-2"></i>
-          <div class="stat-value" id="roomsValue">
-            {{ stats.active_rooms|default(0) }}
+    <div class="stat-card animate-in" style="animation-delay: 0.3s">
+      <div class="stat-header">
+        <div>
+          <div class="stat-value" id="activeRooms">
+            <span
+              class="loading-skeleton"
+              style="width: 40px; display: inline-block"
+            ></span>
           </div>
           <div class="stat-label">Active Rooms</div>
-          {% if stats.active_rooms and stats.active_rooms > 0 %}
           <div class="stat-trend">
-            <i class="fas fa-check-circle text-success me-1"></i>
-            Available for booking
+            <i class="fas fa-door-open me-1"></i>
+            <span id="roomsTrend">Loading...</span>
           </div>
-          {% else %}
-          <div class="stat-trend error-state">
-            <i class="fas fa-exclamation-triangle me-1"></i>
-            No active rooms
-          </div>
-          {% endif %}
         </div>
+<<<<<<< HEAD
       </div>
 
       <!-- Utilization Rate -->
@@ -343,43 +788,69 @@ Booking{% endblock %} {% block extra_css %}
           <small class="text-light opacity-75"
             >Please wait while we fetch your data</small
           >
+=======
+        <div class="stat-icon secondary">
+          <i class="fas fa-door-open"></i>
         </div>
       </div>
     </div>
-    {% endif %}
-  </div>
-</div>
 
-<!-- Error State for Statistics -->
-{% if not stats or (stats.current_month_bookings == 0 and
-stats.current_month_revenue == 0 and stats.active_rooms == 0) %}
-<div class="alert alert-warning rounded-3 mb-4" id="statsWarning">
-  <div class="row align-items-center">
-    <div class="col-md-8">
-      <h6 class="alert-heading mb-2">
-        <i class="fas fa-exclamation-triangle me-2"></i>
-        Statistics Unavailable
-      </h6>
-      <p class="mb-md-0">
-        We're having trouble loading your statistics. This could be due to:
-        <br />• No data in the database yet <br />• Database connectivity issues
-        <br />• Permissions configuration
-      </p>
+    <div class="stat-card animate-in" style="animation-delay: 0.4s">
+      <div class="stat-header">
+        <div>
+          <div class="stat-value" id="utilization">
+            <span
+              class="loading-skeleton"
+              style="width: 50px; display: inline-block"
+            ></span>
+          </div>
+          <div class="stat-label">Room Utilization</div>
+          <div class="stat-trend">
+            <i class="fas fa-chart-line me-1"></i>
+            <span id="utilizationTrend">Loading...</span>
+          </div>
+        </div>
+        <div class="stat-icon warning">
+          <i class="fas fa-chart-line"></i>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
+        </div>
+      </div>
     </div>
-    <div class="col-md-4 text-md-end">
-      <button class="btn btn-warning" onclick="refreshStats()">
-        <i class="fas fa-sync-alt me-1" id="refreshIcon"></i>
-        Refresh Statistics
-      </button>
-      {% if current_user.role in ['admin', 'manager'] %}
-      <a
-        href="/debug/production-stats"
-        class="btn btn-outline-warning ms-2"
-        target="_blank"
-      >
-        <i class="fas fa-bug me-1"></i>
-        Debug
+  </div>
+
+  <!-- Error/Warning Messages -->
+  <div id="errorContainer" style="display: none"></div>
+
+  <!-- Quick Actions -->
+  <div class="quick-actions animate-in" style="animation-delay: 0.5s">
+    <div class="actions-header">
+      <div>
+        <div class="actions-title">
+          <i class="fas fa-bolt me-2"></i>Quick Actions
+        </div>
+        <div class="actions-subtitle">
+          Generate reports instantly or navigate to specific dates
+        </div>
+      </div>
+    </div>
+    <div class="action-buttons">
+      <a href="#" class="btn-action" onclick="generateTomorrowReport()">
+        <i class="fas fa-calendar-plus"></i>
+        Tomorrow's Report
       </a>
+      <a href="#" class="btn-action" onclick="generateThisWeekReport()">
+        <i class="fas fa-calendar-week"></i>
+        This Week's Summary
+      </a>
+      <a href="#" class="btn-action" onclick="generateThisMonthReport()">
+        <i class="fas fa-calendar-alt"></i>
+        This Month's Report
+      </a>
+      <a href="#" class="btn-action" onclick="showCustomDateModal()">
+        <i class="fas fa-calendar"></i>
+        Custom Date Range
+      </a>
+<<<<<<< HEAD
       {% endif %}
     </div>
   </div>
@@ -728,33 +1199,193 @@ stats.current_month_bookings == 0) %}
       href="/debug/production-stats"
       target="_blank"
       class="btn btn-sm btn-outline-secondary"
+=======
+    </div>
+  </div>
+
+  <!-- Main Reports Grid -->
+  <div class="reports-grid">
+    <!-- Daily Summary Report -->
+    <div
+      class="report-card daily-report animate-in"
+      style="animation-delay: 0.6s"
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     >
-      <i class="fas fa-bug me-1"></i>View Debug Stats
-    </a>
-    <a
-      href="/debug/supabase-config"
-      target="_blank"
-      class="btn btn-sm btn-outline-secondary ms-2"
+      <div class="report-type-badge">Essential</div>
+      <div class="report-header">
+        <div class="report-icon-wrapper">
+          <i class="fas fa-calendar-day"></i>
+        </div>
+        <h3 class="report-title">Daily Summary Report</h3>
+        <p class="report-description">
+          Comprehensive breakdown of tomorrow's events with detailed scheduling,
+          client information, and operational requirements for daily planning.
+        </p>
+        <ul class="report-features">
+          <li>Tomorrow's complete event schedule</li>
+          <li>Room assignments and client details</li>
+          <li>Attendee counts and special requirements</li>
+          <li>Revenue projections and pricing breakdown</li>
+          <li>Event timing and duration analysis</li>
+        </ul>
+      </div>
+      <div class="report-footer">
+        <div class="report-actions">
+          <a
+            href="{{ url_for('reports.daily_summary_report') }}"
+            class="btn-report"
+          >
+            <i class="fas fa-eye me-1"></i>
+            View Report
+          </a>
+          <a
+            href="#"
+            class="btn-download"
+            onclick="downloadDailyReport()"
+            title="Download Excel"
+          >
+            <i class="fas fa-download"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Weekly Summary Report -->
+    <div
+      class="report-card weekly-report animate-in"
+      style="animation-delay: 0.7s"
     >
-      <i class="fas fa-database me-1"></i>Check Database Config
-    </a>
+      <div class="report-type-badge">Planning</div>
+      <div class="report-header">
+        <div class="report-icon-wrapper">
+          <i class="fas fa-calendar-week"></i>
+        </div>
+        <h3 class="report-title">Weekly Summary Report</h3>
+        <p class="report-description">
+          Week-at-a-glance table view showing all rooms and their scheduled
+          events. Perfect for strategic planning and resource allocation across
+          the week.
+        </p>
+        <ul class="report-features">
+          <li>7-day room schedule grid view</li>
+          <li>All rooms and events in table format</li>
+          <li>Client and pricing information display</li>
+          <li>Weekly utilization patterns</li>
+          <li>Export-ready professional format</li>
+        </ul>
+      </div>
+      <div class="report-footer">
+        <div class="report-actions">
+          <a
+            href="{{ url_for('reports.weekly_summary_report') }}"
+            class="btn-report"
+          >
+            <i class="fas fa-eye me-1"></i>
+            View Report
+          </a>
+          <a
+            href="#"
+            class="btn-download"
+            onclick="downloadWeeklyReport()"
+            title="Download Excel"
+          >
+            <i class="fas fa-download"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <!-- Monthly Performance Report -->
+    <div
+      class="report-card monthly-report animate-in"
+      style="animation-delay: 0.8s"
+    >
+      <div class="report-type-badge">Executive</div>
+      <div class="report-header">
+        <div class="report-icon-wrapper">
+          <i class="fas fa-calendar-alt"></i>
+        </div>
+        <h3 class="report-title">Monthly Performance Report</h3>
+        <p class="report-description">
+          Comprehensive monthly analytics combining utilization metrics, revenue
+          analysis, and strategic insights for executive decision-making.
+        </p>
+        <ul class="report-features">
+          <li>Monthly revenue and booking analytics</li>
+          <li>Room performance comparisons</li>
+          <li>Client activity trends and insights</li>
+          <li>Utilization vs capacity analysis</li>
+          <li>Executive summary with recommendations</li>
+        </ul>
+      </div>
+      <div class="report-footer">
+        <div class="report-actions">
+          <a
+            href="{{ url_for('reports.monthly_summary_report') }}"
+            class="btn-report"
+          >
+            <i class="fas fa-eye me-1"></i>
+            View Report
+          </a>
+          <a
+            href="#"
+            class="btn-download"
+            onclick="downloadMonthlyReport()"
+            title="Download Excel"
+          >
+            <i class="fas fa-download"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- System Status -->
+  <div class="system-status animate-in" style="animation-delay: 0.9s">
+    <h4 class="actions-title mb-3">
+      <i class="fas fa-server me-2"></i>System Status
+    </h4>
+    <div class="status-item">
+      <span class="status-label">Database Connection</span>
+      <div class="d-flex align-items-center">
+        <span class="status-value" id="dbStatus">Checking...</span>
+        <div class="status-indicator" id="dbIndicator"></div>
+      </div>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Last Data Sync</span>
+      <span class="status-value" id="lastSync">Checking...</span>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Export Services</span>
+      <div class="d-flex align-items-center">
+        <span class="status-value">Available</span>
+        <div class="status-indicator"></div>
+      </div>
+    </div>
+    <div class="status-item">
+      <span class="status-label">Current Time (CAT)</span>
+      <span class="status-value" id="currentTime"
+        >{{ moment().strftime('%I:%M %p, %B %d') if moment else 'Unknown Time'
+        }}</span
+      >
+    </div>
   </div>
 </div>
-{% endif %}
 
-<!-- Custom Date Range Modal -->
+<!-- Custom Date Modal -->
 <div
   class="modal fade"
-  id="dateRangeModal"
+  id="customDateModal"
   tabindex="-1"
-  aria-labelledby="dateRangeModalLabel"
+  aria-labelledby="customDateModalLabel"
   aria-hidden="true"
 >
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
-        <h5 class="modal-title" id="dateRangeModalLabel">
-          <i class="fas fa-calendar-alt me-2"></i>Custom Date Range
+        <h5 class="modal-title" id="customDateModalLabel">
+          <i class="fas fa-calendar me-2"></i>Custom Date Range
         </h5>
         <button
           type="button"
@@ -764,29 +1395,21 @@ stats.current_month_bookings == 0) %}
         ></button>
       </div>
       <div class="modal-body">
-        <form id="dateRangeForm">
-          <div class="row">
-            <div class="col-md-6 mb-3">
-              <label class="form-label">Start Date</label>
-              <input
-                type="date"
-                class="form-control"
-                id="startDate"
-                name="start_date"
-                required
-              />
-            </div>
-            <div class="col-md-6 mb-3">
-              <label class="form-label">End Date</label>
-              <input
-                type="date"
-                class="form-control"
-                id="endDate"
-                name="end_date"
-                required
-              />
-            </div>
+        <div class="mb-3">
+          <label for="reportType" class="form-label">Report Type</label>
+          <select class="form-select" id="reportType">
+            <option value="daily">Daily Summary</option>
+            <option value="weekly">Weekly Summary</option>
+            <option value="monthly">Monthly Report</option>
+          </select>
+        </div>
+        <div class="mb-3">
+          <label for="selectedDate" class="form-label">Select Date</label>
+          <input type="date" class="form-control" id="selectedDate" />
+          <div class="form-text">
+            Choose any date within your desired reporting period
           </div>
+<<<<<<< HEAD
           <div class="mb-3">
             <label class="form-label">Report Type</label>
             <select
@@ -803,6 +1426,9 @@ stats.current_month_bookings == 0) %}
             </select>
           </div>
         </form>
+=======
+        </div>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
@@ -819,54 +1445,22 @@ stats.current_month_bookings == 0) %}
     </div>
   </div>
 </div>
-
-<!-- Stats Details Modal -->
-<div
-  class="modal fade"
-  id="statsDetailsModal"
-  tabindex="-1"
-  aria-labelledby="statsDetailsModalLabel"
-  aria-hidden="true"
->
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h5 class="modal-title" id="statsDetailsModalLabel">
-          <i class="fas fa-chart-line me-2"></i>Statistics Details
-        </h5>
-        <button
-          type="button"
-          class="btn-close"
-          data-bs-dismiss="modal"
-          aria-label="Close"
-        ></button>
-      </div>
-      <div class="modal-body" id="statsDetailsContent">
-        <!-- Content will be populated by JavaScript -->
-      </div>
-    </div>
-  </div>
-</div>
-
 {% endblock %} {% block extra_js %}
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    console.log("📊 Reports page loading...");
+  document.addEventListener("DOMContentLoaded", function () {
+    console.log("📊 Reports Dashboard initializing...");
 
-    // Initialize tooltips
-    const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-      return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
+    // Load dashboard stats initially
+    loadDashboardStats();
 
-    // Add animation to report cards
-    const reportCards = document.querySelectorAll('.report-card');
+    // Set up auto-refresh for dashboard stats every 30 seconds
+    setInterval(loadDashboardStats, 30000);
 
-    const observerOptions = {
-      threshold: 0.1,
-      rootMargin: '0px 0px -50px 0px'
-    };
+    // Update time every minute
+    updateCurrentTime();
+    setInterval(updateCurrentTime, 60000);
 
+<<<<<<< HEAD
     const observer = new IntersectionObserver(function(entries) {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -899,41 +1493,105 @@ stats.current_month_bookings == 0) %}
       console.log("✅ Statistics validation passed");
       hideLoadingStates();
     }
+=======
+    // Check system status
+    checkSystemStatus();
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   });
 
-  function showStatsLoadingError() {
-    const statsOverview = document.getElementById('statsOverview');
-    if (statsOverview) {
-      statsOverview.innerHTML = `
-        <div class="container py-4">
-          <div class="text-center">
-            <i class="fas fa-exclamation-triangle fa-3x text-warning mb-3"></i>
-            <h4>Unable to Load Statistics</h4>
-            <p class="text-light opacity-75">There was an issue loading your dashboard statistics.</p>
-            <button class="btn btn-light" onclick="refreshStats()">
-              <i class="fas fa-sync-alt me-1"></i>Try Again
-            </button>
-          </div>
-        </div>
-      `;
+  async function loadDashboardStats() {
+    try {
+      console.log("📈 Loading dashboard statistics...");
+
+      // Call the fetch function to get real data
+      await fetchDashboardStats();
+
+      console.log("✅ Dashboard statistics loaded successfully");
+    } catch (error) {
+      console.error("❌ Failed to load dashboard statistics:", error);
+      showError(
+        "Unable to load dashboard statistics. Please refresh the page."
+      );
     }
   }
 
-  function showStatsValidationWarning() {
-    console.log("⚠️ Showing validation warning for zero statistics");
-    const statsWarning = document.getElementById('statsWarning');
-    if (statsWarning) {
-      statsWarning.style.display = 'block';
+  // Fetch real dashboard stats from API
+  async function fetchDashboardStats() {
+    // Show refresh indicator
+    const refreshIndicator = document.getElementById("refresh-indicator");
+    if (refreshIndicator) {
+      refreshIndicator.style.display = "block";
+    }
+
+    try {
+      const response = await fetch("/api/dashboard/stats");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const stats = await response.json();
+
+      // Update the display with real data
+      updateStatDisplay("todayEvents", stats.todayEvents, "events scheduled");
+      updateStatDisplay(
+        "weeklyRevenue",
+        `$${stats.weeklyRevenue.toLocaleString()}`,
+        "from confirmed bookings"
+      );
+      updateStatDisplay(
+        "activeRooms",
+        stats.activeRooms,
+        "available for booking"
+      );
+      updateStatDisplay(
+        "utilization",
+        `${stats.utilization}%`,
+        getUtilizationText(stats.utilization)
+      );
+
+      console.log("✅ Dashboard stats updated:", stats);
+    } catch (error) {
+      console.error("❌ Error fetching dashboard stats:", error);
+      // Fallback to show error state
+      updateStatDisplay("todayEvents", "Error", "loading failed");
+      updateStatDisplay("weeklyRevenue", "Error", "loading failed");
+      updateStatDisplay("activeRooms", "Error", "loading failed");
+      updateStatDisplay("utilization", "Error", "loading failed");
+    } finally {
+      // Hide refresh indicator
+      if (refreshIndicator) {
+        setTimeout(() => {
+          refreshIndicator.style.display = "none";
+        }, 500);
+      }
     }
   }
 
-  function hideLoadingStates() {
-    const loadingState = document.getElementById('loadingState');
-    if (loadingState) {
-      loadingState.style.display = 'none';
+  function updateStatDisplay(elementId, value, trendText) {
+    const valueElement = document.getElementById(elementId);
+    const trendElement = document.getElementById(
+      elementId
+        .replace("Events", "Trend")
+        .replace("Revenue", "Trend")
+        .replace("Rooms", "Trend")
+        .replace("utilization", "utilizationTrend")
+    );
+
+    if (valueElement) {
+      // Remove loading skeleton
+      const skeleton = valueElement.querySelector(".loading-skeleton");
+      if (skeleton) {
+        skeleton.remove();
+      }
+      valueElement.textContent = value;
+    }
+
+    if (trendElement) {
+      trendElement.textContent = trendText;
+      trendElement.classList.add("trend-positive");
     }
   }
 
+<<<<<<< HEAD
   function refreshStats() {
     console.log("🔄 Refreshing statistics...");
     const refreshIcon = document.getElementById('refreshIcon');
@@ -953,36 +1611,125 @@ stats.current_month_bookings == 0) %}
 
     // Navigate to daily summary with tomorrow's date
     window.location.href = `{{ url_for('daily_summary_report') }}?date=${dateStr}`;
+=======
+  function getUtilizationText(rate) {
+    if (rate >= 80) return "excellent performance";
+    if (rate >= 60) return "good utilization";
+    if (rate >= 40) return "moderate activity";
+    return "room for improvement";
   }
 
-  function showDateRangeModal() {
-    const modal = new bootstrap.Modal(document.getElementById('dateRangeModal'));
+  function updateCurrentTime() {
+    const timeElement = document.getElementById("currentTime");
+    if (timeElement) {
+      const now = new Date();
+      const options = {
+        timeZone: "Africa/Harare",
+        hour: "numeric",
+        minute: "2-digit",
+        hour12: true,
+        month: "long",
+        day: "numeric",
+      };
+      timeElement.textContent = now.toLocaleString("en-US", options);
+    }
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
+  }
+
+  async function checkSystemStatus() {
+    try {
+      const dbStatusElement = document.getElementById("dbStatus");
+      const dbIndicatorElement = document.getElementById("dbIndicator");
+      const lastSyncElement = document.getElementById("lastSync");
+
+      // Simulate system check
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
+      if (dbStatusElement) {
+        dbStatusElement.textContent = "Connected";
+        dbStatusElement.style.color = "var(--accent-color)";
+      }
+
+      if (dbIndicatorElement) {
+        dbIndicatorElement.style.background = "var(--accent-color)";
+      }
+
+      if (lastSyncElement) {
+        lastSyncElement.textContent = "Just now";
+      }
+    } catch (error) {
+      console.error("System status check failed:", error);
+    }
+  }
+
+  function showError(message) {
+    const errorContainer = document.getElementById("errorContainer");
+    if (errorContainer) {
+      errorContainer.innerHTML = `
+            <div class="error-message">
+                <i class="fas fa-exclamation-triangle me-2"></i>
+                <strong>Error:</strong> ${message}
+            </div>
+        `;
+      errorContainer.style.display = "block";
+    }
+  }
+
+  // Navigation functions
+  function generateTomorrowReport() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateString = tomorrow.toISOString().split("T")[0];
+    window.location.href = `{{ url_for('reports.daily_summary_report') }}?date=${dateString}`;
+  }
+
+  function generateThisWeekReport() {
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay() + 1); // Monday
+    const dateString = startOfWeek.toISOString().split("T")[0];
+    window.location.href = `{{ url_for('reports.weekly_summary_report') }}?start_date=${dateString}`;
+  }
+
+  function generateThisMonthReport() {
+    const today = new Date();
+    const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+    const year = startOfMonth.getFullYear();
+    const month = startOfMonth.getMonth() + 1;
+    window.location.href = `{{ url_for('reports.monthly_summary_report') }}?year=${year}&month=${month}`;
+  }
+
+  function showCustomDateModal() {
+    const modal = new bootstrap.Modal(
+      document.getElementById("customDateModal")
+    );
     modal.show();
   }
 
   function generateCustomReport() {
-    const form = document.getElementById('dateRangeForm');
-    const formData = new FormData(form);
+    const reportType = document.getElementById("reportType").value;
+    const selectedDate = document.getElementById("selectedDate").value;
 
-    const startDate = formData.get('start_date');
-    const endDate = formData.get('end_date');
-    const reportType = formData.get('report_type');
-
-    if (!startDate || !endDate || !reportType) {
-      alert('Please fill in all fields');
+    if (!selectedDate) {
+      alert("Please select a date");
       return;
     }
 
+<<<<<<< HEAD
     if (new Date(startDate) > new Date(endDate)) {
       alert('Start date must be before end date');
       return;
     }
+=======
+    let url = "";
+    const date = new Date(selectedDate);
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
 
-    let reportUrl = '';
-    switch(reportType) {
-      case 'room_utilization':
-        reportUrl = `{{ url_for('room_utilization_report') }}?start_date=${startDate}&end_date=${endDate}`;
+    switch (reportType) {
+      case "daily":
+        url = `{{ url_for('reports.daily_summary_report') }}?date=${selectedDate}`;
         break;
+<<<<<<< HEAD
       case 'daily_summary':
         reportUrl = `{{ url_for('daily_summary_report') }}?date=${startDate}`;
         break;
@@ -998,10 +1745,28 @@ stats.current_month_bookings == 0) %}
       const modal = bootstrap.Modal.getInstance(document.getElementById('dateRangeModal'));
       modal.hide();
       window.location.href = reportUrl;
+=======
+      case "weekly":
+        url = `{{ url_for('reports.weekly_summary_report') }}?start_date=${selectedDate}`;
+        break;
+      case "monthly":
+        const year = date.getFullYear();
+        const month = date.getMonth() + 1;
+        url = `{{ url_for('reports.monthly_summary_report') }}?year=${year}&month=${month}`;
+        break;
+    }
+
+    if (url) {
+      bootstrap.Modal.getInstance(
+        document.getElementById("customDateModal")
+      ).hide();
+      window.location.href = url;
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     }
   }
 
   // Download functions
+<<<<<<< HEAD
   function downloadDailyExcel() {
     const today = new Date().toISOString().split('T')[0];
     window.location.href = `/reports/daily-summary/download?format=excel&date=${today}`;
@@ -1101,5 +1866,47 @@ stats.current_month_bookings == 0) %}
   console.log("Stats object exists:", {{ 'true' if stats else 'false' }});
   console.log("Current user role:", "{{ current_user.role if current_user.is_authenticated else 'Not authenticated' }}");
   {% endif %}
+=======
+  function downloadDailyReport() {
+    const tomorrow = new Date();
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const dateString = tomorrow.toISOString().split("T")[0];
+    window.location.href = `{{ url_for('reports.export_daily_summary') }}?date=${dateString}&format=excel`;
+  }
+
+  function downloadWeeklyReport() {
+    const today = new Date();
+    const startOfWeek = new Date(today);
+    startOfWeek.setDate(today.getDate() - today.getDay() + 1);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 6);
+
+    const startDate = startOfWeek.toISOString().split("T")[0];
+    const endDate = endOfWeek.toISOString().split("T")[0];
+
+    window.location.href = `{{ url_for('reports.export_weekly_summary') }}?start_date=${startDate}&end_date=${endDate}&format=excel`;
+  }
+
+  function downloadMonthlyReport() {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth() + 1;
+    window.location.href = `{{ url_for('reports.export_monthly_summary') }}?year=${year}&month=${month}&format=excel`;
+  }
+
+  // Add smooth scroll behavior for better UX
+  document.querySelectorAll('a[href^="#"]').forEach((anchor) => {
+    anchor.addEventListener("click", function (e) {
+      e.preventDefault();
+      const target = document.querySelector(this.getAttribute("href"));
+      if (target) {
+        target.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    });
+  });
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
 </script>
 {% endblock %}

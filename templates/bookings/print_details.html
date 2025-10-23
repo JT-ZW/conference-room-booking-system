@@ -297,7 +297,7 @@ Conference Booking{% endblock %} {% block extra_css %}
     </div>
     <div class="btn-group">
       <a
-        href="{{ url_for('view_booking', id=booking.id) }}"
+        href="{{ url_for('bookings.view_booking', id=booking.id) }}"
         class="btn btn-light btn-enhanced"
       >
         <i class="fas fa-arrow-left me-2"></i>Back to Booking
@@ -470,7 +470,7 @@ Conference Booking{% endblock %} {% block extra_css %}
             <div class="col-sm-4 detail-label">Status:</div>
             <div class="col-sm-8">
               <span
-                class="badge bg-{{ booking.status|booking_status_color }} px-3 py-2"
+                class="badge bg-{{ booking_status_color(booking.status) }} px-3 py-2"
               >
                 {% if booking.status == 'confirmed' %}
                 <i class="fas fa-check me-1"></i>Confirmed {% elif

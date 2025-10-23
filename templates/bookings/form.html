@@ -1,6 +1,11 @@
-{% extends "layout.html" %} {% block title %} {% if booking %}Edit Booking{%
-else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
+{% extends "layout.html" %} 
+
+{% block title %} 
+{% if booking %}Edit Booking{% else %}New Booking{% endif %} | Rainbow Towers Conference Booking 
+{% endblock %}
+
 {% block extra_css %}
+<<<<<<< HEAD
 <!-- Select2 CSS for autofill functionality -->
 <link
   rel="stylesheet"
@@ -20,15 +25,32 @@ else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
   .form-container {
     max-width: 1000px;
     margin: 0 auto;
+=======
+<!-- Flatpickr CSS for date/time picker -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" />
+
+<style>
+  .form-container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .form-section {
     background: white;
+<<<<<<< HEAD
     border-radius: 12px;
     box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
     padding: 2rem;
     margin-bottom: 1.5rem;
     border: 1px solid #e9ecef;
+=======
+    border-radius: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .section-title {
@@ -37,9 +59,12 @@ else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
     margin-bottom: 1.5rem;
     padding-bottom: 0.5rem;
     border-bottom: 2px solid #3498db;
+<<<<<<< HEAD
     display: flex;
     align-items: center;
     gap: 0.5rem;
+=======
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .form-label {
@@ -48,6 +73,7 @@ else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
     margin-bottom: 0.5rem;
   }
 
+<<<<<<< HEAD
   .form-control,
   .form-select {
     border: 2px solid #e9ecef;
@@ -56,6 +82,21 @@ else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
     transition: all 0.3s ease;
   }
 
+=======
+  .required-field::after {
+    content: " *";
+    color: #dc3545;
+  }
+
+  .form-control,
+  .form-select {
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    padding: 0.75rem;
+    transition: all 0.3s ease;
+  }
+
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   .form-control:focus,
   .form-select:focus {
     border-color: #3498db;
@@ -67,14 +108,23 @@ else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
     border-radius: 8px;
     padding: 1rem;
     margin-top: 1rem;
+<<<<<<< HEAD
+=======
+    display: none;
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .capacity-progress {
     height: 25px;
+<<<<<<< HEAD
+=======
+    background-color: #e9ecef;
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     border-radius: 12px;
     overflow: hidden;
   }
 
+<<<<<<< HEAD
   .capacity-text {
     font-weight: 500;
     margin-bottom: 0.5rem;
@@ -194,11 +244,30 @@ else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
 
   /* Client Autofill Dropdown Styles */
   .client-suggestions {
+=======
+  .capacity-bar {
+    height: 100%;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+  }
+
+  .capacity-good { background-color: #28a745; }
+  .capacity-warning { background-color: #ffc107; }
+  .capacity-danger { background-color: #dc3545; }
+
+  /* Client Suggestions Dropdown */
+  .suggestions-dropdown {
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     position: absolute;
     top: 100%;
     left: 0;
     right: 0;
     background: white;
+<<<<<<< HEAD
     border: 2px solid #3498db;
     border-top: none;
     border-radius: 0 0 8px 8px;
@@ -225,17 +294,47 @@ else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
   }
 
   .client-suggestion:last-child {
+=======
+    border: 1px solid #dee2e6;
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: none;
+  }
+
+  .suggestion-item {
+    padding: 12px 15px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    transition: background-color 0.2s ease;
+  }
+
+  .suggestion-item:hover,
+  .suggestion-item.active {
+    background-color: #e3f2fd;
+  }
+
+  .suggestion-item:last-child {
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
     border-bottom: none;
   }
 
   .suggestion-name {
     font-weight: 600;
     display: block;
+<<<<<<< HEAD
+=======
+    color: #2c3e50;
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 
   .suggestion-company {
     font-size: 0.875rem;
     color: #6c757d;
+<<<<<<< HEAD
     display: block;
   }
 
@@ -284,6 +383,104 @@ else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
     content: " *";
     color: #dc3545;
     font-weight: bold;
+=======
+    margin-top: 2px;
+    display: block;
+  }
+
+  .suggestion-email {
+    font-size: 0.75rem;
+    color: #868e96;
+    margin-top: 2px;
+    display: block;
+  }
+
+  /* Pricing Items */
+  .pricing-item {
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+
+  .pricing-summary {
+    background: #2c3e50;
+    color: white;
+    border-radius: 10px;
+    padding: 1.5rem;
+    position: sticky;
+    top: 20px;
+  }
+
+  .total-amount {
+    font-size: 2rem;
+    font-weight: bold;
+    text-align: center;
+    margin-top: 1rem;
+  }
+
+  .btn-primary-custom {
+    background: #3498db;
+    border: none;
+    padding: 0.75rem 2rem;
+    font-weight: 600;
+  }
+
+  .btn-primary-custom:hover {
+    background: #2980b9;
+  }
+
+  .loading-spinner {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 9999;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .spinner-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 10px;
+    text-align: center;
+  }
+
+  /* Status indicator styling */
+  .status-indicator .badge {
+    border-radius: 8px;
+    font-weight: 500;
+  }
+
+  .status-indicator .badge.tentative {
+    background-color: #ffc107;
+    color: #212529;
+  }
+
+  .status-indicator .badge.confirmed {
+    background-color: #28a745;
+    color: white;
+  }
+
+  .status-indicator .badge.cancelled {
+    background-color: #dc3545;
+    color: white;
+  }
+
+  .status-indicator .badge.completed {
+    background-color: #17a2b8;
+    color: white;
+  }
+
+  /* Status select styling */
+  #status option {
+    padding: 8px;
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
   }
 </style>
 {% endblock %} 
@@ -296,6 +493,7 @@ else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
       <i class="fas fa-calendar-plus text-primary me-2"></i>
       {% if booking %}Edit Booking{% else %}Create New Booking{% endif %}
     </h2>
+<<<<<<< HEAD
     <div>
       <a
         href="{{ url_for('bookings') }}"
@@ -459,9 +657,82 @@ else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
             <i class="fas fa-calendar-alt"></i>
             Event Information
           </h4>
+=======
+    <a href="{{ url_for('bookings.bookings') }}" class="btn btn-outline-secondary">
+      <i class="fas fa-arrow-left me-1"></i>Back to Bookings
+    </a>
+  </div>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ 'danger' if category == 'error' else category }} alert-dismissible fade show">
+          {{ message|safe }}
+          <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <form method="POST" id="bookingForm" novalidate>
+    {{ form.hidden_tag() }}
+
+    <div class="row">
+      <!-- Main Form Column -->
+      <div class="col-lg-8">
+        <!-- Venue & Client Information -->
+        <div class="form-section">
+          <h4 class="section-title">
+            <i class="fas fa-building me-2"></i>
+            Venue & Client Details
+          </h4>
 
           <div class="row mb-3">
             <div class="col-md-6">
+              <label class="form-label required-field">Select Venue</label>
+              <select class="form-select" id="room_id" name="room_id" required>
+                <option value="">Choose a venue...</option>
+                {% for room in rooms %}
+                <option value="{{ room.id }}" 
+                        data-capacity="{{ room.capacity }}"
+                        data-hourly="{{ room.hourly_rate }}"
+                        data-halfday="{{ room.half_day_rate }}"
+                        data-fullday="{{ room.full_day_rate }}"
+                        {% if booking and booking.room_id == room.id %}selected{% endif %}>
+                  {{ room.name }} (Capacity: {{ room.capacity }})
+                </option>
+                {% endfor %}
+              </select>
+              <div class="invalid-feedback">Please select a venue.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label required-field">Number of Attendees</label>
+              <input type="number" class="form-control" id="attendees" name="attendees" 
+                     min="1" max="1000" required
+                     value="{{ booking.attendees if booking else '' }}"
+                     placeholder="Enter number of attendees">
+              <div class="invalid-feedback">Please enter the number of attendees.</div>
+            </div>
+          </div>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
+
+          <!-- Capacity Indicator -->
+          <div class="capacity-indicator" id="capacityIndicator">
+            <div class="d-flex justify-content-between mb-2">
+              <span id="capacityText">Room capacity</span>
+              <span id="capacityPercentage">0%</span>
+            </div>
+            <div class="capacity-progress">
+              <div class="capacity-bar" id="capacityBar">0%</div>
+            </div>
+            <div id="capacityAlert" class="mt-2"></div>
+          </div>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+<<<<<<< HEAD
               <label class="form-label required-field">
                 <i class="fas fa-tag text-primary me-1"></i>
                 Event Type
@@ -500,11 +771,36 @@ else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
                 value="{{ booking.custom_event_type if booking else '' }}"
                 style="{% if not booking or booking.event_type != 'other' %}display: none{% endif %}"
               />
+=======
+              <label class="form-label required-field">Client Name</label>
+              <div class="position-relative">
+                <input type="text" class="form-control" id="client_name" name="client_name" 
+                       required autocomplete="off"
+                       value="{{ booking.client.contact_person if booking and booking.client else '' }}"
+                       placeholder="Start typing to search clients...">
+                <input type="hidden" id="client_id" name="client_id" 
+                       value="{{ booking.client.id if booking and booking.client else '' }}">
+                <div id="clientSuggestions" class="suggestions-dropdown"></div>
+                <div class="invalid-feedback">Please enter the client name.</div>
+              </div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label">Company Name</label>
+              <div class="position-relative">
+                <input type="text" class="form-control" id="company_name" name="company_name"
+                       autocomplete="off"
+                       value="{{ booking.client.company_name if booking and booking.client else '' }}"
+                       placeholder="Enter company name (optional)">
+                <div id="companySuggestions" class="suggestions-dropdown"></div>
+              </div>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
             </div>
           </div>
 
           <div class="row mb-3">
             <div class="col-md-6">
+<<<<<<< HEAD
               <label class="form-label required-field">
                 <i class="fas fa-calendar text-primary me-1"></i>
                 Start Date & Time
@@ -518,9 +814,17 @@ else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
                 value="{{ booking.start_time.strftime('%Y-%m-%d %H:%M') if booking and booking.start_time else '' }}"
                 required
               />
+=======
+              <label class="form-label">Client Email</label>
+              <input type="email" class="form-control" id="client_email" name="client_email"
+                     value="{{ booking.client.email if booking and booking.client else '' }}"
+                     placeholder="Enter client email address">
+              <div class="invalid-feedback">Please enter a valid email address.</div>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
             </div>
 
             <div class="col-md-6">
+<<<<<<< HEAD
               <label class="form-label required-field">
                 <i class="fas fa-calendar-check text-primary me-1"></i>
                 End Date & Time
@@ -534,10 +838,73 @@ else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
                 value="{{ booking.end_time.strftime('%Y-%m-%d %H:%M') if booking and booking.end_time else '' }}"
                 required
               />
+=======
+              <label class="form-label">Client Phone</label>
+              <input type="tel" class="form-control" id="client_phone" name="client_phone"
+                     value="{{ booking.client.phone if booking and booking.client else '' }}"
+                     placeholder="Enter client phone number">
+              <div class="invalid-feedback">Please enter a valid phone number.</div>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
+            </div>
+          </div>
+        </div>
+
+        <!-- Event Details -->
+        <div class="form-section">
+          <h4 class="section-title">
+            <i class="fas fa-calendar-alt me-2"></i>
+            Event Information
+          </h4>
+
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label required-field">Event Type</label>
+              <select class="form-select" id="event_type" name="event_type" required>
+                <option value="">Select event type...</option>
+                <option value="conference">Conference</option>
+                <option value="meeting">Business Meeting</option>
+                <option value="workshop">Workshop</option>
+                <option value="seminar">Seminar</option>
+                <option value="training">Training Session</option>
+                <option value="presentation">Presentation</option>
+                <option value="board_meeting">Board Meeting</option>
+                <option value="team_building">Team Building</option>
+                <option value="product_launch">Product Launch</option>
+                <option value="other">Other</option>
+              </select>
+              <div class="invalid-feedback">Please select an event type.</div>
+            </div>
+
+            <div class="col-md-6" id="customEventTypeDiv" style="display: none;">
+              <label class="form-label">Custom Event Type</label>
+              <input type="text" class="form-control" id="custom_event_type" name="custom_event_type"
+                     placeholder="Specify event type...">
             </div>
           </div>
 
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label required-field">Start Date & Time</label>
+              <input type="text" class="form-control" id="start_time" name="start_time" required
+                     placeholder="Select start date and time"
+                     value="{{ booking.start_time.strftime('%Y-%m-%d %H:%M') if booking and booking.start_time else '' }}">
+              <div class="invalid-feedback">Please select start date and time.</div>
+            </div>
+
+            <div class="col-md-6">
+              <label class="form-label required-field">End Date & Time</label>
+              <input type="text" class="form-control" id="end_time" name="end_time" required
+                     placeholder="Select end date and time"
+                     value="{{ booking.end_time.strftime('%Y-%m-%d %H:%M') if booking and booking.end_time else '' }}">
+              <div class="invalid-feedback">Please select end date and time.</div>
+            </div>
+          </div>
+
+          <!-- Room Availability Alert -->
+          <div id="availabilityAlert" class="mt-3"></div>
+
           <div class="mb-3">
+<<<<<<< HEAD
             <label class="form-label">
               <i class="fas fa-clipboard-list text-primary me-1"></i>
               Event Requirements / Special Notes
@@ -549,17 +916,85 @@ else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
               rows="4"
               placeholder="Enter any special requirements, setup instructions, catering needs, technical requirements, etc."
             >{{ booking.notes if booking else '' }}</textarea>
+=======
+            <label class="form-label">Special Notes / Requirements</label>
+            <textarea class="form-control" id="notes" name="notes" rows="3"
+                      placeholder="Enter any special requirements or notes...">{{ booking.notes if booking else '' }}</textarea>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
           </div>
+
+          <!-- Booking Status (Only show for existing bookings) -->
+          {% if booking %}
+          <div class="row mb-3">
+            <div class="col-md-6">
+              <label class="form-label">Booking Status</label>
+              <select class="form-select" id="status" name="status">
+                <option value="tentative" {% if (booking.status == 'tentative') or (form.status.data == 'tentative') %}selected{% endif %}>
+                  Tentative
+                </option>
+                <option value="confirmed" {% if (booking.status == 'confirmed') or (form.status.data == 'confirmed') %}selected{% endif %}>
+                  Confirmed
+                </option>
+                <option value="cancelled" {% if (booking.status == 'cancelled') or (form.status.data == 'cancelled') %}selected{% endif %}>
+                  Cancelled
+                </option>
+                <option value="completed" {% if (booking.status == 'completed') or (form.status.data == 'completed') %}selected{% endif %}>
+                  Completed
+                </option>
+              </select>
+              <small class="form-text text-muted">
+                Change from Tentative to Confirmed once details are finalized
+              </small>
+            </div>
+            <div class="col-md-6">
+              <div class="status-indicator mt-2">
+                <span class="badge fs-6 p-2" id="statusBadge" 
+                      {% set current_status = booking.status or form.status.data or 'tentative' %}
+                      {% if current_status == 'tentative' %}
+                        style="background-color: #ffc107; color: #212529;"
+                      {% elif current_status == 'confirmed' %}
+                        style="background-color: #28a745; color: white;"
+                      {% elif current_status == 'cancelled' %}
+                        style="background-color: #dc3545; color: white;"
+                      {% elif current_status == 'completed' %}
+                        style="background-color: #17a2b8; color: white;"
+                      {% else %}
+                        style="background-color: #6c757d; color: white;"
+                      {% endif %}>
+                  {% if current_status == 'tentative' %}
+                    <i class="fas fa-clock me-1"></i>Tentative
+                  {% elif current_status == 'confirmed' %}
+                    <i class="fas fa-check-circle me-1"></i>Confirmed
+                  {% elif current_status == 'cancelled' %}
+                    <i class="fas fa-times-circle me-1"></i>Cancelled
+                  {% elif current_status == 'completed' %}
+                    <i class="fas fa-flag-checkered me-1"></i>Completed
+                  {% else %}
+                    <i class="fas fa-question-circle me-1"></i>Unknown
+                  {% endif %}
+                </span>
+              </div>
+            </div>
+          </div>
+          {% endif %}
         </div>
 
+<<<<<<< HEAD
         <!-- Simplified Pricing -->
         <div class="form-section">
           <h4 class="section-title">
             <i class="fas fa-dollar-sign"></i>
+=======
+        <!-- Pricing -->
+        <div class="form-section">
+          <h4 class="section-title">
+            <i class="fas fa-dollar-sign me-2"></i>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
             Pricing Details
           </h4>
 
           <div id="pricingItems">
+<<<<<<< HEAD
             <!-- Default pricing item -->
             <div class="pricing-item" data-item="0">
               <div class="row align-items-end">
@@ -626,10 +1061,68 @@ else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
             >
               <i class="fas fa-plus me-1"></i>Add Another Item
             </button>
+=======
+            <!-- Pricing items will be added here dynamically -->
+            {% if booking and booking.custom_addons %}
+              {% for addon in booking.custom_addons %}
+              <div class="pricing-item" data-index="{{ loop.index0 }}">
+                <div class="row">
+                  <div class="col-md-5">
+                    <input type="text" class="form-control item-description" 
+                           name="pricing_items[{{ loop.index0 }}][description]"
+                           value="{{ addon.description }}" placeholder="Item description">
+                  </div>
+                  <div class="col-md-2">
+                    <input type="number" class="form-control item-quantity" 
+                           name="pricing_items[{{ loop.index0 }}][quantity]"
+                           value="{{ addon.quantity }}" min="1" placeholder="Qty">
+                  </div>
+                  <div class="col-md-3">
+                    <input type="number" class="form-control item-price" 
+                           name="pricing_items[{{ loop.index0 }}][price]"
+                           value="{{ addon.unit_price }}" min="0" step="0.01" placeholder="Unit price">
+                  </div>
+                  <div class="col-md-2">
+                    <button type="button" class="btn btn-sm btn-danger remove-item">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+              {% endfor %}
+            {% else %}
+              <div class="pricing-item" data-index="0">
+                <div class="row">
+                  <div class="col-md-5">
+                    <input type="text" class="form-control item-description" 
+                           name="pricing_items[0][description]" placeholder="Item description">
+                  </div>
+                  <div class="col-md-2">
+                    <input type="number" class="form-control item-quantity" 
+                           name="pricing_items[0][quantity]" value="1" min="1" placeholder="Qty">
+                  </div>
+                  <div class="col-md-3">
+                    <input type="number" class="form-control item-price" 
+                           name="pricing_items[0][price]" min="0" step="0.01" placeholder="Unit price">
+                  </div>
+                  <div class="col-md-2">
+                    <button type="button" class="btn btn-sm btn-danger remove-item" style="display: none;">
+                      <i class="fas fa-trash"></i>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            {% endif %}
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
           </div>
+
+          <button type="button" class="btn btn-sm btn-success mt-2" id="addPricingItem">
+            <i class="fas fa-plus me-1"></i>Add Item
+          </button>
         </div>
       </div>
 
+<<<<<<< HEAD
       <!-- Simplified Pricing Summary Column -->
       <div class="col-lg-4">
         <div class="pricing-summary">
@@ -646,9 +1139,36 @@ else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
 
           <div class="total-amount">
             Total: <span id="summaryTotal">$0.00</span>
+=======
+      <!-- Summary Column -->
+      <div class="col-lg-4">
+        <div class="pricing-summary">
+          <h5 class="mb-3">Booking Summary</h5>
+          
+          <div class="mb-3">
+            <small class="text-light">Venue:</small>
+            <div id="summaryVenue">Not selected</div>
           </div>
-
+          
+          <div class="mb-3">
+            <small class="text-light">Date & Time:</small>
+            <div id="summaryDateTime">Not selected</div>
+          </div>
+          
+          <div class="mb-3">
+            <small class="text-light">Attendees:</small>
+            <div id="summaryAttendees">0</div>
+          </div>
+          
+          <hr class="bg-light">
+          
+          <div class="total-amount">
+            Total: $<span id="totalAmount">0.00</span>
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
+          </div>
+          
           <div class="d-grid gap-2 mt-4">
+<<<<<<< HEAD
             <button type="submit" class="btn btn-primary-custom">
               <i class="fas fa-save me-2"></i>
               {% if booking %}Update Booking{% else %}Create Booking{% endif %}
@@ -661,6 +1181,14 @@ else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
             {% endif %}
 
             <a href="{{ url_for('bookings') }}" class="btn btn-outline-light">
+=======
+            <button type="submit" class="btn btn-primary btn-primary-custom">
+              <i class="fas fa-save me-2"></i>
+              {% if booking %}Update Booking{% else %}Create Booking{% endif %}
+            </button>
+            
+            <a href="{{ url_for('bookings.bookings') }}" class="btn btn-outline-light">
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
               <i class="fas fa-times me-2"></i>Cancel
             </a>
           </div>
@@ -669,15 +1197,32 @@ else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
     </div>
   </form>
 </div>
+<<<<<<< HEAD
 {% endblock %} 
 
 {% block extra_js %}
 <!-- Select2 JS -->
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+=======
+
+<!-- Loading Spinner -->
+<div class="loading-spinner" id="loadingSpinner">
+  <div class="spinner-content">
+    <div class="spinner-border text-primary mb-3" role="status">
+      <span class="visually-hidden">Loading...</span>
+    </div>
+    <h5>Processing...</h5>
+  </div>
+</div>
+{% endblock %} 
+
+{% block extra_js %}
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
 <!-- Flatpickr JS -->
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 
 <script>
+<<<<<<< HEAD
   document.addEventListener("DOMContentLoaded", function () {
     console.log("🎯 Enhanced booking form loaded with simplified pricing");
     
@@ -1151,5 +1696,681 @@ else %}New Booking{% endif %} | Rainbow Towers Conference Booking {% endblock %}
 
     console.log("🚀 Booking form initialization complete");
   });
+=======
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize date pickers
+    flatpickr('#start_time', {
+        enableTime: true,
+        dateFormat: 'Y-m-d H:i',
+        time_24hr: true,
+        minuteIncrement: 15,
+        {% if not booking %}minDate: 'today',{% endif %}
+        {% if booking and booking.start_time %}defaultDate: '{{ booking.start_time.strftime('%Y-%m-%d %H:%M') }}',{% endif %}
+        onChange: updateSummary
+    });
+    
+    flatpickr('#end_time', {
+        enableTime: true,
+        dateFormat: 'Y-m-d H:i',
+        time_24hr: true,
+        minuteIncrement: 15,
+        {% if not booking %}minDate: 'today',{% endif %}
+        {% if booking and booking.end_time %}defaultDate: '{{ booking.end_time.strftime('%Y-%m-%d %H:%M') }}',{% endif %}
+        onChange: updateSummary
+    });
+    
+    // Venue selection handler
+    document.getElementById('room_id').addEventListener('change', function() {
+        updateCapacityIndicator();
+        updateSummary();
+    });
+    
+    // Attendees input handler
+    document.getElementById('attendees').addEventListener('input', function() {
+        updateCapacityIndicator();
+        updateSummary();
+    });
+    
+    // Event type handler
+    document.getElementById('event_type').addEventListener('change', function() {
+        const customDiv = document.getElementById('customEventTypeDiv');
+        const customInput = document.getElementById('custom_event_type');
+        
+        if (this.value === 'other') {
+            customDiv.style.display = 'block';
+            customInput.required = true;
+        } else {
+            customDiv.style.display = 'none';
+            customInput.required = false;
+            customInput.value = '';
+        }
+    });
+
+    // Status change handler (only for edit mode)
+    const statusSelect = document.getElementById('status');
+    if (statusSelect) {
+        statusSelect.addEventListener('change', function() {
+            updateStatusBadge(this.value);
+        });
+    }
+
+    function updateStatusBadge(status) {
+        const statusBadge = document.getElementById('statusBadge');
+        if (!statusBadge) return;
+        
+        // Clear existing classes
+        statusBadge.className = 'badge fs-6 p-2';
+        
+        let iconClass, text, badgeClass;
+        
+        switch(status) {
+            case 'tentative':
+                iconClass = 'fas fa-clock';
+                text = 'Tentative';
+                badgeClass = 'tentative';
+                statusBadge.style.backgroundColor = '#ffc107';
+                statusBadge.style.color = '#212529';
+                break;
+            case 'confirmed':
+                iconClass = 'fas fa-check-circle';
+                text = 'Confirmed';
+                badgeClass = 'confirmed';
+                statusBadge.style.backgroundColor = '#28a745';
+                statusBadge.style.color = 'white';
+                break;
+            case 'cancelled':
+                iconClass = 'fas fa-times-circle';
+                text = 'Cancelled';
+                badgeClass = 'cancelled';
+                statusBadge.style.backgroundColor = '#dc3545';
+                statusBadge.style.color = 'white';
+                break;
+            case 'completed':
+                iconClass = 'fas fa-flag-checkered';
+                text = 'Completed';
+                badgeClass = 'completed';
+                statusBadge.style.backgroundColor = '#17a2b8';
+                statusBadge.style.color = 'white';
+                break;
+            default:
+                iconClass = 'fas fa-question-circle';
+                text = 'Unknown';
+                statusBadge.style.backgroundColor = '#6c757d';
+                statusBadge.style.color = 'white';
+        }
+        
+        statusBadge.className += ` ${badgeClass}`;
+        statusBadge.innerHTML = `<i class="${iconClass} me-1"></i>${text}`;
+    }
+    
+    // Client name autocomplete
+    let clientSearchTimeout;
+    const clientInput = document.getElementById('client_name');
+    const clientSuggestions = document.getElementById('clientSuggestions');
+    const clientIdInput = document.getElementById('client_id');
+    
+    clientInput.addEventListener('input', function() {
+        clearTimeout(clientSearchTimeout);
+        const query = this.value.trim();
+        
+        if (query.length < 2) {
+            clientSuggestions.style.display = 'none';
+            clientIdInput.value = '';
+            return;
+        }
+        
+        clientSearchTimeout = setTimeout(() => {
+            console.log('🔍 Searching for clients with query:', query);
+            fetch(`/api/clients/search?q=${encodeURIComponent(query)}`)
+                .then(response => {
+                    console.log('📡 Response status:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('📋 Client search results:', data);
+                    displayClientSuggestions(data);
+                })
+                .catch(error => {
+                    console.error('❌ Client search error:', error);
+                    clientSuggestions.style.display = 'none';
+                });
+        }, 300);
+    });
+    
+    function displayClientSuggestions(suggestions) {
+        if (!suggestions || suggestions.length === 0) {
+            clientSuggestions.style.display = 'none';
+            return;
+        }
+        
+        let html = '';
+        suggestions.forEach(client => {
+            const clientName = escapeHtml(client.name || client.contact_person || '');
+            const clientCompany = escapeHtml(client.company || client.company_name || '');
+            const clientEmail = escapeHtml(client.email || '');
+            
+            html += `
+                <div class="suggestion-item" onclick="selectClient(${client.id}, '${clientName}', '${clientCompany}', '${clientEmail}')">
+                    <span class="suggestion-name">${clientName}</span>
+                    ${clientCompany ? `<span class="suggestion-company">${clientCompany}</span>` : ''}
+                    ${clientEmail ? `<span class="suggestion-email">${clientEmail}</span>` : ''}
+                </div>
+            `;
+        });
+        
+        clientSuggestions.innerHTML = html;
+        clientSuggestions.style.display = 'block';
+        console.log('✅ Displayed', suggestions.length, 'client suggestions');
+    }
+    
+    window.selectClient = function(id, name, company, email) {
+        console.log('👤 Selected client:', { id, name, company, email });
+        document.getElementById('client_name').value = name || '';
+        document.getElementById('client_id').value = id || '';
+        if (company) {
+            document.getElementById('company_name').value = company;
+        }
+        if (email) {
+            document.getElementById('client_email').value = email;
+        }
+        clientSuggestions.style.display = 'none';
+    };
+    
+    // Company name autocomplete
+    let companySearchTimeout;
+    const companyInput = document.getElementById('company_name');
+    const companySuggestions = document.getElementById('companySuggestions');
+    
+    companyInput.addEventListener('input', function() {
+        clearTimeout(companySearchTimeout);
+        const query = this.value.trim();
+        
+        if (query.length < 2) {
+            companySuggestions.style.display = 'none';
+            return;
+        }
+        
+        companySearchTimeout = setTimeout(() => {
+            console.log('🏢 Searching for companies with query:', query);
+            fetch(`/api/companies/search?q=${encodeURIComponent(query)}`)
+                .then(response => {
+                    console.log('📡 Company response status:', response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('🏢 Company search results:', data);
+                    displayCompanySuggestions(data);
+                })
+                .catch(error => {
+                    console.error('❌ Company search error:', error);
+                    companySuggestions.style.display = 'none';
+                });
+        }, 300);
+    });
+    
+    function displayCompanySuggestions(suggestions) {
+        if (!suggestions || suggestions.length === 0) {
+            companySuggestions.style.display = 'none';
+            return;
+        }
+        
+        let html = '';
+        suggestions.forEach(company => {
+            const companyName = escapeHtml(company.company_name || company.name || '');
+            html += `
+                <div class="suggestion-item" onclick="selectCompany('${companyName}')">
+                    <span class="suggestion-name">${companyName}</span>
+                </div>
+            `;
+        });
+        
+        companySuggestions.innerHTML = html;
+        companySuggestions.style.display = 'block';
+        console.log('✅ Displayed', suggestions.length, 'company suggestions');
+    }
+    
+    window.selectCompany = function(name) {
+        console.log('🏢 Selected company:', name);
+        document.getElementById('company_name').value = name;
+        companySuggestions.style.display = 'none';
+    };
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('#client_name') && !e.target.closest('#clientSuggestions')) {
+            clientSuggestions.style.display = 'none';
+        }
+        if (!e.target.closest('#company_name') && !e.target.closest('#companySuggestions')) {
+            companySuggestions.style.display = 'none';
+        }
+    });
+    
+    // Real-time availability checking
+    let availabilityCheckTimeout;
+    
+    function checkRoomAvailability() {
+        const roomSelect = document.getElementById('room_id');
+        const startTimeInput = document.getElementById('start_time');
+        const endTimeInput = document.getElementById('end_time');
+        const availabilityAlert = document.getElementById('availabilityAlert');
+        
+        if (!roomSelect.value || !startTimeInput.value || !endTimeInput.value) {
+            if (availabilityAlert) {
+                availabilityAlert.innerHTML = '';
+            }
+            return;
+        }
+        
+        // Get datetime values directly from the datetime inputs
+        const startDateTime = startTimeInput.value + ':00'; // Add seconds if not present
+        const endDateTime = endTimeInput.value + ':00'; // Add seconds if not present
+        
+        // Show checking status
+        if (availabilityAlert) {
+            availabilityAlert.innerHTML = '<div class="alert alert-info">🔍 Checking availability...</div>';
+        }
+        
+        // Make API call
+        const params = new URLSearchParams({
+            room_id: roomSelect.value,
+            start_time: startDateTime,
+            end_time: endDateTime
+        });
+        
+        fetch(`/api/rooms/availability?${params}`)
+            .then(response => response.json())
+            .then(data => {
+                if (availabilityAlert) {
+                    if (data.available) {
+                        let message = `✅ ${data.room_name} is available for the selected time`;
+                        let alertClass = 'alert-success';
+                        
+                        // Show tentative conflicts as warnings
+                        if (data.tentative_conflicts > 0) {
+                            message = `⚠️ ${data.room_name} is available but has tentative conflicts`;
+                            alertClass = 'alert-warning';
+                            
+                            // Add details about tentative conflicts
+                            if (data.conflicting_bookings && data.conflicting_bookings.length > 0) {
+                                message += '<br><small><strong>Tentative bookings that may conflict:</strong>';
+                                data.conflicting_bookings.forEach(booking => {
+                                    if (booking.status === 'tentative') {
+                                        const startTime = booking.start_time ? new Date(booking.start_time).toLocaleString() : 'Unknown time';
+                                        message += `<br>• ${booking.title || 'Untitled Event'} at ${startTime}`;
+                                    }
+                                });
+                                message += '<br><em>You can still proceed with your booking, but be aware of potential conflicts.</em></small>';
+                            }
+                        }
+                        
+                        availabilityAlert.innerHTML = `<div class="alert ${alertClass}">${message}</div>`;
+                    } else {
+                        // Room not available due to confirmed conflicts
+                        let conflictDetails = '';
+                        if (data.conflicting_bookings && data.conflicting_bookings.length > 0) {
+                            conflictDetails = '<br><small><strong>Confirmed conflicts:</strong>';
+                            data.conflicting_bookings.forEach(booking => {
+                                if (booking.status === 'confirmed') {
+                                    const startTime = booking.start_time ? new Date(booking.start_time).toLocaleString() : 'Unknown time';
+                                    conflictDetails += `<br>• ${booking.title || 'Untitled Event'} at ${startTime}`;
+                                }
+                            });
+                            conflictDetails += '</small>';
+                        }
+                        availabilityAlert.innerHTML = `<div class="alert alert-danger">❌ ${data.message}${conflictDetails}</div>`;
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Availability check failed:', error);
+                if (availabilityAlert) {
+                    availabilityAlert.innerHTML = '<div class="alert alert-warning">⚠️ Could not check availability</div>';
+                }
+            });
+    }
+    
+    // Add availability checking to relevant fields
+    ['room_id', 'start_time', 'end_time'].forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+            field.addEventListener('change', () => {
+                clearTimeout(availabilityCheckTimeout);
+                availabilityCheckTimeout = setTimeout(checkRoomAvailability, 500);
+            });
+        }
+    });
+    
+    // Form data preservation - populate fields if preserved data exists
+    {% if preserved_data %}
+    const preservedData = {{ preserved_data|tojson }};
+    
+    // Populate form fields with preserved data
+    Object.keys(preservedData).forEach(key => {
+        const field = document.getElementById(key);
+        if (field && preservedData[key]) {
+            if (field.type === 'select-one') {
+                field.value = preservedData[key];
+            } else if (field.type === 'checkbox') {
+                field.checked = preservedData[key];
+            } else if (field.type === 'radio') {
+                if (field.value === preservedData[key]) {
+                    field.checked = true;
+                }
+            } else {
+                field.value = preservedData[key];
+            }
+            
+            // Trigger change events to update dependent fields
+            field.dispatchEvent(new Event('change'));
+        }
+    });
+    
+    // Restore pricing items if they exist
+    if (preservedData.pricing_items && preservedData.pricing_items.length > 0) {
+        const container = document.getElementById('pricingItems');
+        if (container) {
+            // Clear existing items first
+            container.innerHTML = '';
+            
+            preservedData.pricing_items.forEach((item, index) => {
+                if (item.description) {
+                    const newItem = document.createElement('div');
+                    newItem.className = 'pricing-item';
+                    newItem.dataset.index = index;
+                    
+                    newItem.innerHTML = `
+                        <div class="row">
+                            <div class="col-md-5">
+                                <input type="text" class="form-control item-description" 
+                                       name="pricing_items[${index}][description]" 
+                                       value="${escapeHtml(item.description)}" placeholder="Item description">
+                            </div>
+                            <div class="col-md-2">
+                                <input type="number" class="form-control item-quantity" 
+                                       name="pricing_items[${index}][quantity]" 
+                                       value="${item.quantity || 1}" min="1" placeholder="Qty">
+                            </div>
+                            <div class="col-md-3">
+                                <input type="number" class="form-control item-price" 
+                                       name="pricing_items[${index}][price]" 
+                                       value="${item.price || 0}" min="0" step="0.01" placeholder="Price">
+                            </div>
+                            <div class="col-md-2">
+                                <button type="button" class="btn btn-danger btn-sm remove-pricing-item">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    container.appendChild(newItem);
+                }
+            });
+            
+            // Update pricing index and totals
+            pricingItemIndex = preservedData.pricing_items.length;
+            updateRemoveButtons();
+            calculateTotal();
+        }
+    }
+    
+    // Show preservation message
+    const preservationMessage = document.createElement('div');
+    preservationMessage.className = 'alert alert-info alert-dismissible fade show';
+    preservationMessage.innerHTML = `
+        <i class="fas fa-info-circle"></i> Your previous form data has been restored.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    const form = document.querySelector('.card-body');
+    if (form) {
+        form.insertBefore(preservationMessage, form.firstChild);
+    }
+    {% endif %}
+    
+    // Enhanced capacity checking with better messaging
+    function updateCapacityIndicator() {
+        const venueSelect = document.getElementById('room_id');
+        const attendeesInput = document.getElementById('attendees');
+        const indicator = document.getElementById('capacityIndicator');
+        
+        if (!venueSelect.value || !attendeesInput.value) {
+            indicator.style.display = 'none';
+            return;
+        }
+        
+        const selectedOption = venueSelect.options[venueSelect.selectedIndex];
+        const capacity = parseInt(selectedOption.dataset.capacity) || 0;
+        const attendees = parseInt(attendeesInput.value) || 0;
+        
+        if (capacity === 0) {
+            indicator.style.display = 'none';
+            return;
+        }
+        
+        const percentage = Math.round((attendees / capacity) * 100);
+        const bar = document.getElementById('capacityBar');
+        const text = document.getElementById('capacityText');
+        const percentageText = document.getElementById('capacityPercentage');
+        const alert = document.getElementById('capacityAlert');
+        
+        text.textContent = `${selectedOption.text}`;
+        percentageText.textContent = `${percentage}%`;
+        bar.style.width = `${Math.min(percentage, 100)}%`;
+        bar.textContent = `${percentage}%`;
+        
+        // Remove all classes
+        bar.classList.remove('capacity-good', 'capacity-warning', 'capacity-danger');
+        
+        if (percentage > 100) {
+            bar.classList.add('capacity-danger');
+            alert.innerHTML = `<div class="alert alert-warning">⚠️ Over capacity! ${attendees} attendees exceeds room limit of ${capacity}. The system will allow this booking but please ensure you have adequate space and facilities.</div>`;
+        } else if (percentage > 80) {
+            bar.classList.add('capacity-warning');
+            alert.innerHTML = `<div class="alert alert-warning">Near capacity. Consider a larger venue for comfort.</div>`;
+        } else {
+            bar.classList.add('capacity-good');
+            alert.innerHTML = '';
+        }
+        
+        indicator.style.display = 'block';
+    }
+    
+    // Pricing items
+    let pricingItemIndex = {% if booking and booking.custom_addons %}{{ booking.custom_addons|length }}{% else %}1{% endif %};
+    
+    document.getElementById('addPricingItem').addEventListener('click', function() {
+        const container = document.getElementById('pricingItems');
+        const newItem = document.createElement('div');
+        newItem.className = 'pricing-item';
+        newItem.dataset.index = pricingItemIndex;
+        
+        newItem.innerHTML = `
+            <div class="row">
+                <div class="col-md-5">
+                    <input type="text" class="form-control item-description" 
+                           name="pricing_items[${pricingItemIndex}][description]" placeholder="Item description">
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control item-quantity" 
+                           name="pricing_items[${pricingItemIndex}][quantity]" value="1" min="1" placeholder="Qty">
+                </div>
+                <div class="col-md-3">
+                    <input type="number" class="form-control item-price" 
+                           name="pricing_items[${pricingItemIndex}][price]" min="0" step="0.01" placeholder="Unit price">
+                </div>
+                <div class="col-md-2">
+                    <button type="button" class="btn btn-sm btn-danger remove-item">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        container.appendChild(newItem);
+        pricingItemIndex++;
+        
+        // Show all remove buttons if more than one item
+        updateRemoveButtons();
+        attachPricingListeners(newItem);
+    });
+    
+    // Remove pricing item
+    document.addEventListener('click', function(e) {
+        if (e.target.closest('.remove-item')) {
+            e.target.closest('.pricing-item').remove();
+            updateRemoveButtons();
+            calculateTotal();
+        }
+    });
+    
+    function updateRemoveButtons() {
+        const items = document.querySelectorAll('.pricing-item');
+        const removeButtons = document.querySelectorAll('.remove-item');
+        
+        removeButtons.forEach(btn => {
+            btn.style.display = items.length > 1 ? 'block' : 'none';
+        });
+    }
+    
+    // Calculate total
+    function attachPricingListeners(item) {
+        const inputs = item.querySelectorAll('.item-quantity, .item-price');
+        inputs.forEach(input => {
+            input.addEventListener('input', calculateTotal);
+        });
+    }
+    
+    function calculateTotal() {
+        let total = 0;
+        
+        document.querySelectorAll('.pricing-item').forEach(item => {
+            const quantity = parseFloat(item.querySelector('.item-quantity').value) || 0;
+            const price = parseFloat(item.querySelector('.item-price').value) || 0;
+            total += quantity * price;
+        });
+        
+        document.getElementById('totalAmount').textContent = total.toFixed(2);
+    }
+    
+    // Attach listeners to existing items
+    document.querySelectorAll('.pricing-item').forEach(item => {
+        attachPricingListeners(item);
+    });
+    
+    // Update summary
+    function updateSummary() {
+        // Update venue
+        const venueSelect = document.getElementById('room_id');
+        const venueText = venueSelect.value ? 
+            venueSelect.options[venueSelect.selectedIndex].text : 'Not selected';
+        document.getElementById('summaryVenue').textContent = venueText;
+        
+        // Update date/time
+        const startTime = document.getElementById('start_time').value;
+        const endTime = document.getElementById('end_time').value;
+        let dateTimeText = 'Not selected';
+        
+        if (startTime && endTime) {
+            dateTimeText = `${startTime} to ${endTime}`;
+        }
+        document.getElementById('summaryDateTime').textContent = dateTimeText;
+        
+        // Update attendees
+        const attendees = document.getElementById('attendees').value || '0';
+        document.getElementById('summaryAttendees').textContent = attendees;
+    }
+    
+    // Form submission
+    document.getElementById('bookingForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        console.log('Form submission started...');
+        
+        // Basic validation
+        const requiredFields = ['room_id', 'attendees', 'client_name', 'event_type', 'start_time', 'end_time'];
+        let isValid = true;
+        
+        requiredFields.forEach(fieldId => {
+            const field = document.getElementById(fieldId);
+            if (!field || !field.value.trim()) {
+                if (field) {
+                    field.classList.add('is-invalid');
+                }
+                console.log(`Validation failed for field: ${fieldId}`);
+                isValid = false;
+            } else {
+                field.classList.remove('is-invalid');
+            }
+        });
+        
+        // Check custom event type if needed
+        const eventTypeField = document.getElementById('event_type');
+        if (eventTypeField && eventTypeField.value === 'other') {
+            const customField = document.getElementById('custom_event_type');
+            if (!customField || !customField.value.trim()) {
+                if (customField) {
+                    customField.classList.add('is-invalid');
+                }
+                console.log('Validation failed: custom event type required');
+                isValid = false;
+            }
+        }
+        
+        // Validate dates
+        const startTimeField = document.getElementById('start_time');
+        const endTimeField = document.getElementById('end_time');
+        
+        if (startTimeField && endTimeField && startTimeField.value && endTimeField.value) {
+            const startTime = new Date(startTimeField.value);
+            const endTime = new Date(endTimeField.value);
+            
+            if (endTime <= startTime) {
+                endTimeField.classList.add('is-invalid');
+                console.log('Validation failed: end time must be after start time');
+                isValid = false;
+            }
+        }
+        
+        if (!isValid) {
+            console.log('Form validation failed, not submitting');
+            return false;
+        }
+        
+        console.log('Form validation passed, submitting...');
+        
+        // Show loading spinner
+        const spinner = document.getElementById('loadingSpinner');
+        if (spinner) {
+            spinner.style.display = 'flex';
+        }
+        
+        // Submit form
+        this.submit();
+    });
+    
+    // Utility function to escape HTML
+    function escapeHtml(text) {
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, m => map[m]);
+    }
+    
+    // Initialize on load
+    updateCapacityIndicator();
+    updateSummary();
+    calculateTotal();
+    updateRemoveButtons();
+    
+    // Check availability on page load if form is pre-filled
+    setTimeout(() => {
+        checkRoomAvailability();
+    }, 1000);
+});
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
 </script>
 {% endblock %}

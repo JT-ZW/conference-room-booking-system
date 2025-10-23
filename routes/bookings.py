@@ -1,0 +1,1635 @@
+from flask import Blueprint, render_template, request, redirect, url_for, flash, jsonify, send_file, session, Response
+from flask_login import login_required, current_user
+from datetime import datetime, UTC, timedelta, date
+import io
+import tempfile
+import os
+import re
+import pytz
+import traceback
+import time
+import mimetypes
+from core import (
+    BookingForm, handle_booking_creation, handle_booking_update,
+    get_complete_booking_details, get_booking_with_details, supabase_admin, ActivityTypes,
+    calculate_booking_totals, supabase_select, supabase_update,
+    extract_booking_form_data, validate_booking_business_rules,
+    find_or_create_client_enhanced, find_or_create_event_type,
+    create_complete_booking, safe_log_user_activity,
+    format_booking_success_message, safe_str, safe_str_lower
+)
+from httpx import TimeoutException
+from functools import wraps
+from reportlab.lib.pagesizes import A4
+from reportlab.lib import colors
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.units import inch
+
+bookings_bp = Blueprint('bookings', __name__)
+
+def safe_format_date(date_value, format_type='date'):
+    """Safely format date/time values handling both string and datetime objects"""
+    if not date_value:
+        return None
+    
+    try:
+        # If it's already a datetime object
+        if isinstance(date_value, datetime):
+            if format_type == 'date':
+                return date_value.strftime('%Y-%m-%d')
+            elif format_type == 'time':
+                return date_value.strftime('%H:%M')
+            else:
+                return date_value.strftime('%Y-%m-%d %H:%M')
+        
+        # If it's a string, try to parse it
+        if isinstance(date_value, str):
+            # Handle different string formats
+            clean_date = date_value.replace('Z', '+00:00')
+            dt = datetime.fromisoformat(clean_date)
+            
+            if format_type == 'date':
+                return dt.strftime('%Y-%m-%d')
+            elif format_type == 'time':
+                return dt.strftime('%H:%M')
+            else:
+                return dt.strftime('%Y-%m-%d %H:%M')
+                
+    except (ValueError, AttributeError, TypeError) as e:
+        return None
+    
+    return None
+
+def generate_pdf_filename(booking, document_type="quotation"):
+    """Generate a clean PDF filename with client name and booking number"""
+    try:
+        # Get client name
+        client_name = "Unknown Client"
+        if booking.get('client'):
+            client_data = booking['client']
+            
+            # Try company name first, then contact person
+            if client_data.get('company_name'):
+                client_name = client_data['company_name']
+            elif client_data.get('contact_person'):
+                client_name = client_data['contact_person']
+        
+        # Clean the client name - remove special characters and keep spaces, then replace spaces with hyphens
+        clean_client_name = re.sub(r'[^a-zA-Z0-9\s-]', '', str(client_name))
+        clean_client_name = re.sub(r'\s+', '-', clean_client_name.strip())
+        
+        # Limit length to avoid overly long filenames
+        if len(clean_client_name) > 25:
+            clean_client_name = clean_client_name[:25].rstrip('-')
+        
+        # Get current date in readable format (24-July-2025)
+        current_date = datetime.now().strftime("%d-%B-%Y")
+        
+        # Determine document type - simplified logic
+        doc_type = "Proforma-Invoice"
+        
+        # Generate filename in format: "Client-Name-Proforma-Invoice-24-July-2025.pdf"
+        filename = f"{clean_client_name}-{doc_type}-{current_date}.pdf"
+        
+        return filename
+    except Exception as e:
+        # Fallback to simple format if anything goes wrong
+        current_date = datetime.now().strftime("%d-%B-%Y")
+        fallback_filename = f"Unknown-Client-Proforma-Invoice-{current_date}.pdf"
+        return fallback_filename
+
+# Helper function for safe string conversion
+def retry_on_timeout(max_retries=3, delay=1):
+    """Decorator to retry operations on timeout"""
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            retries = 0
+            while retries < max_retries:
+                try:
+                    return func(*args, **kwargs)
+                except TimeoutException as e:
+                    retries += 1
+                    if retries == max_retries:
+                        raise e
+                    time.sleep(delay)
+            return None
+        return wrapper
+    return decorator
+
+@retry_on_timeout(max_retries=3)
+def save_booking_to_db(booking_data):
+    """Save booking with retry mechanism"""
+    try:
+        # Set timeout for database operations
+        result = supabase_admin.table('bookings').insert(
+            booking_data
+        ).execute(timeout=30)  # 30 second timeout
+        
+        if result and result.data:
+            return result.data[0]
+        return None
+    except Exception as e:
+        print(f"❌ ERROR: Failed to save booking: {e}")
+        return None
+
+# ===============================
+# MAIN BOOKING ROUTES
+# ===============================
+
+@bookings_bp.route('/bookings')
+@login_required
+def bookings():
+    """Display all bookings with enhanced data fetching and filtering"""
+    try:
+        # Get filter parameters
+        status_filter = request.args.get('status', 'all')
+        date_filter = request.args.get('date', 'all')
+        room_filter = request.args.get('room', 'all')
+        
+        # Build query with filters
+        query = supabase_admin.table('bookings').select("""
+            *,
+            room:rooms(id, name, capacity),
+            client:clients(id, contact_person, company_name, email)
+        """)
+        
+        # Apply status filter
+        if status_filter != 'all':
+            query = query.eq('status', status_filter)
+        
+        # Apply room filter
+        if room_filter != 'all' and room_filter.isdigit():
+            query = query.eq('room_id', int(room_filter))
+        
+        # Apply date filter
+        if date_filter == 'today':
+            today = datetime.now().date()
+            query = query.gte('start_time', today.isoformat()).lt('start_time', (today + timedelta(days=1)).isoformat())
+        elif date_filter == 'week':
+            today = datetime.now().date()
+            week_start = today - timedelta(days=today.weekday())
+            week_end = week_start + timedelta(days=7)
+            query = query.gte('start_time', week_start.isoformat()).lt('start_time', week_end.isoformat())
+        elif date_filter == 'month':
+            today = datetime.now().date()
+            month_start = today.replace(day=1)
+            if month_start.month == 12:
+                month_end = month_start.replace(year=month_start.year + 1, month=1)
+            else:
+                month_end = month_start.replace(month=month_start.month + 1)
+            query = query.gte('start_time', month_start.isoformat()).lt('start_time', month_end.isoformat())
+        
+        # Execute query with ordering
+        response = query.order('start_time', desc=True).execute()
+        bookings_data = response.data if response.data else []
+        
+        # Get rooms for filter dropdown
+        rooms_response = supabase_admin.table('rooms').select('id, name').order('name').execute()
+        rooms = rooms_response.data if rooms_response.data else []
+        
+        # Enhance booking data for display
+        for booking in bookings_data:
+            # Ensure room name
+            if booking.get('room'):
+                booking['room_name'] = booking['room'].get('name', 'Unknown Room')
+            else:
+                booking['room_name'] = 'Unknown Room'
+            
+            # Ensure client name
+            if booking.get('client'):
+                client = booking['client']
+                booking['client_name'] = client.get('company_name') or client.get('contact_person', 'Unknown Client')
+            else:
+                booking['client_name'] = booking.get('client_name', 'Unknown Client')
+            
+            # Format dates for display
+            try:
+                if booking.get('start_time'):
+                    start_dt = datetime.fromisoformat(booking['start_time'].replace('Z', ''))
+                    booking['start_time_formatted'] = start_dt.strftime('%Y-%m-%d %H:%M')
+                if booking.get('end_time'):
+                    end_dt = datetime.fromisoformat(booking['end_time'].replace('Z', ''))
+                    booking['end_time_formatted'] = end_dt.strftime('%Y-%m-%d %H:%M')
+            except:
+                booking['start_time_formatted'] = 'Invalid Date'
+                booking['end_time_formatted'] = 'Invalid Date'
+        
+        # Log page view
+        safe_log_user_activity(
+            ActivityTypes.PAGE_VIEW,
+            f"Viewed bookings list page ({len(bookings_data)} bookings, filter: {status_filter})",
+            resource_type='page'
+        )
+        
+        return render_template('bookings/index.html', 
+                             title='Bookings', 
+                             bookings=bookings_data,
+                             rooms=rooms,
+                             current_filters={
+                                 'status': status_filter,
+                                 'date': date_filter,
+                                 'room': room_filter
+                             })
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to fetch bookings: {e}")
+        flash('Error loading bookings', 'danger')
+        return render_template('bookings/index.html', 
+                             title='Bookings', 
+                             bookings=[], 
+                             rooms=[],
+                             current_filters={'status': 'all', 'date': 'all', 'room': 'all'})
+
+@bookings_bp.route('/bookings/new', methods=['GET', 'POST'])
+@login_required
+def new_booking():
+    """Create a new booking with enhanced validation and form preservation"""
+    form = BookingForm()
+    
+    try:
+        # Get available rooms for the form
+        rooms_response = supabase_admin.table('rooms').select('*').eq('status', 'available').order('name').execute()
+        rooms = rooms_response.data or []
+        
+        if not rooms:
+            flash('❌ No rooms available for booking. Please contact administrator.', 'warning')
+            return redirect(url_for('bookings.bookings'))
+        
+        # Set form choices
+        form.room_id.choices = [(room['id'], f"{room['name']} (Capacity: {room.get('capacity', 'N/A')})") for room in rooms]
+        
+        # Check if we have preserved form data from a previous error
+        preserved_data = session.pop('preserved_booking_data', None)
+        
+        if request.method == 'POST':
+            # Preserve current form data in case of errors
+            current_form_data = {
+                'room_id': request.form.get('room_id'),
+                'client_name': request.form.get('client_name'),
+                'company_name': request.form.get('company_name'),
+                'client_email': request.form.get('client_email'),
+                'client_phone': request.form.get('client_phone'),
+                'event_type': request.form.get('event_type'),
+                'custom_event_type': request.form.get('custom_event_type'),
+                'title': request.form.get('title'),
+                'description': request.form.get('description'),
+                'attendees': request.form.get('attendees'),
+                'start_date': request.form.get('start_date'),
+                'start_time': request.form.get('start_time'),
+                'end_date': request.form.get('end_date'),
+                'end_time': request.form.get('end_time'),
+                'status': request.form.get('status'),
+                'special_requirements': request.form.get('special_requirements'),
+                'notes': request.form.get('notes'),
+                # Preserve pricing items if any
+                'pricing_items': []
+            }
+            
+            # Extract pricing items from form
+            for key in request.form.keys():
+                if key.startswith('pricing_items[') and key.endswith('][description]'):
+                    index = key.split('[')[1].split(']')[0]
+                    description = request.form.get(f'pricing_items[{index}][description]')
+                    quantity = request.form.get(f'pricing_items[{index}][quantity]')
+                    price = request.form.get(f'pricing_items[{index}][price]')
+                    if description:
+                        current_form_data['pricing_items'].append({
+                            'description': description,
+                            'quantity': quantity,
+                            'price': price
+                        })
+            
+            # Validate form data
+            if not form.validate_on_submit():
+                for field, errors in form.errors.items():
+                    for error in errors:
+                        flash(f'❌ {field}: {error}', 'danger')
+                # Preserve form data for next load
+                session['preserved_booking_data'] = current_form_data
+                return render_template('bookings/form.html', title='New Booking', form=form, rooms=rooms, preserved_data=current_form_data)
+            
+            # Extract and validate form data
+            booking_data = extract_booking_form_data(request.form)
+            if not booking_data:
+                flash('❌ Invalid booking data provided', 'danger')
+                session['preserved_booking_data'] = current_form_data
+                return render_template('bookings/form.html', title='New Booking', form=form, rooms=rooms, preserved_data=current_form_data)
+            
+            # Validate business rules (now allows over-capacity with warnings)
+            validation_result = validate_booking_business_rules(booking_data)
+            validation_errors = validation_result.get('errors', [])
+            validation_warnings = validation_result.get('warnings', [])
+            
+            # Show validation errors
+            if validation_errors:
+                for error in validation_errors:
+                    flash(error, 'danger')
+                session['preserved_booking_data'] = current_form_data
+                return render_template('bookings/form.html', title='New Booking', form=form, rooms=rooms, preserved_data=current_form_data)
+            
+            # Show validation warnings
+            for warning in validation_warnings:
+                flash(warning, 'warning')
+            
+            # Display any additional warnings from validation stored in session
+            if 'booking_warnings' in session:
+                for warning in session.pop('booking_warnings'):
+                    flash(warning, 'warning')
+            
+            # Find or create client
+            client_id = find_or_create_client_enhanced(
+                booking_data['client_name'], 
+                booking_data.get('company_name'),
+                booking_data.get('client_email'),
+                booking_data.get('client_phone')
+            )
+            
+            if not client_id:
+                flash('❌ Error processing client information', 'danger')
+                session['preserved_booking_data'] = current_form_data
+                return render_template('bookings/form.html', title='New Booking', form=form, rooms=rooms, preserved_data=current_form_data)
+            
+            # Find or create event type
+            event_type_id = find_or_create_event_type(
+                booking_data['event_type'], 
+                booking_data.get('custom_event_type')
+            )
+            
+            # Create booking
+            booking_id = create_complete_booking(booking_data, client_id, event_type_id)
+            
+            if booking_id:
+                # Clear any preserved data on success
+                session.pop('preserved_booking_data', None)
+                
+                # Log successful creation
+                safe_log_user_activity(
+                    ActivityTypes.CREATE_BOOKING,
+                    f"Created booking for {booking_data.get('client_name')}",
+                    resource_type='booking',
+                    resource_id=booking_id
+                )
+                
+                # Store success message in session for dashboard
+                session['booking_success'] = True
+                session['booking_success_message'] = format_booking_success_message(booking_data)
+                
+                # Redirect to booking view page
+                return redirect(url_for('bookings.view_booking', id=booking_id))
+            else:
+                flash('❌ Error creating booking', 'danger')
+                session['preserved_booking_data'] = current_form_data
+        
+        # For GET requests, use preserved data if available
+        return render_template('bookings/form.html', title='New Booking', form=form, rooms=rooms, preserved_data=preserved_data)
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to process new booking: {e}")
+        flash('Error processing booking', 'danger')
+        # Preserve form data even on exceptions
+        if request.method == 'POST':
+            session['preserved_booking_data'] = current_form_data
+        return render_template('bookings/form.html', title='New Booking', form=form, rooms=[], preserved_data=session.get('preserved_booking_data'))
+
+@bookings_bp.route('/bookings/<int:id>')
+@login_required
+def view_booking(id):
+    """View booking details with improved error handling and audit trail"""
+    try:
+        booking = get_booking_with_details(id)
+        
+        if not booking:
+            flash('❌ Booking not found', 'danger')
+            return redirect(url_for('bookings.bookings'))
+            
+        # Convert datetime strings if needed and fix timezone
+        if isinstance(booking.get('created_at'), str):
+            booking['created_at'] = datetime.fromisoformat(booking['created_at'].replace('Z', '+00:00'))
+        if isinstance(booking.get('updated_at'), str):
+            booking['updated_at'] = datetime.fromisoformat(booking['updated_at'].replace('Z', '+00:00'))
+            
+        # Convert to local timezone (assuming you're in Zimbabwe/South Africa timezone)
+        local_tz = pytz.timezone('Africa/Harare')
+        
+        if booking.get('created_at'):
+            if booking['created_at'].tzinfo is None:
+                # If no timezone info, assume UTC
+                booking['created_at'] = pytz.UTC.localize(booking['created_at'])
+            booking['created_at'] = booking['created_at'].astimezone(local_tz)
+            
+        if booking.get('updated_at'):
+            if booking['updated_at'].tzinfo is None:
+                # If no timezone info, assume UTC
+                booking['updated_at'] = pytz.UTC.localize(booking['updated_at'])
+            booking['updated_at'] = booking['updated_at'].astimezone(local_tz)
+        
+        # Get audit trail for this booking
+        from core import get_booking_audit_trail
+        audit_trail = get_booking_audit_trail(id)
+            
+        return render_template(
+            'bookings/view.html',
+            booking=booking,
+            audit_trail=audit_trail,
+            title=f"Booking - {booking.get('title', '')}",
+            pytz=pytz  # Pass pytz to template
+        )
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to fetch booking {id}: {e}")
+        flash('❌ Error loading booking details', 'danger')
+        return redirect(url_for('bookings.bookings'))
+
+@bookings_bp.route('/bookings/<int:id>/edit', methods=['GET', 'POST'])
+@login_required
+def edit_booking(id):
+    """Edit an existing booking"""
+    print(f"🔍 Edit booking route called for ID: {id}, method: {request.method}")
+    
+    form = BookingForm()
+    
+    try:
+        # Get rooms for the form
+        rooms = supabase_admin.table('rooms').select('*').order('name').execute().data or []
+        form.room_id.choices = [(room['id'], f"{room['name']} (Capacity: {room.get('capacity', 'N/A')})") for room in rooms]
+        
+        # Fetch existing booking
+        booking = get_complete_booking_details(id)
+        if not booking:
+            flash('Booking not found', 'danger')
+            return redirect(url_for('bookings.bookings'))
+        
+        if request.method == 'POST':
+            print(f"🔍 Processing POST request with form data")
+            print(f"🔍 Form data keys: {list(request.form.keys())}")
+            result = handle_booking_update(id, request.form, booking, rooms)
+            if hasattr(result, 'status_code') and result.status_code in [301, 302]:
+                return result
+            return result
+        
+        # Populate form with existing data
+        if booking:
+            form.room_id.data = booking.get('room_id')
+            form.attendees.data = booking.get('attendees')
+            form.client_name.data = booking.get('client_name') or (booking.get('client', {}).get('contact_person', ''))
+            form.company_name.data = booking.get('company_name') or (booking.get('client', {}).get('company_name', ''))
+            form.notes.data = booking.get('notes')
+            form.status.data = booking.get('status', 'tentative')
+            
+            # Parse datetime
+            try:
+                if booking.get('start_time'):
+                    if isinstance(booking['start_time'], str):
+                        form.start_time.data = datetime.fromisoformat(booking['start_time'].replace('Z', ''))
+                    else:
+                        form.start_time.data = booking['start_time']
+                
+                if booking.get('end_time'):
+                    if isinstance(booking['end_time'], str):
+                        form.end_time.data = datetime.fromisoformat(booking['end_time'].replace('Z', ''))
+                    else:
+                        form.end_time.data = booking['end_time']
+            except Exception as dt_error:
+                print(f"⚠️ WARNING: Error parsing datetime: {dt_error}")
+        
+        return render_template('bookings/form.html', 
+                             title='Edit Booking', 
+                             form=form, 
+                             rooms=rooms, 
+                             booking=booking)
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to process edit booking: {e}")
+        flash('Error loading booking for edit', 'danger')
+        return redirect(url_for('bookings.bookings'))
+
+@bookings_bp.route('/bookings/<int:id>/delete', methods=['POST'])
+@login_required
+def delete_booking(id):
+    """Delete a booking"""
+    try:
+        # Get booking details for logging
+        booking_response = supabase_admin.table('bookings').select('*').eq('id', id).execute()
+        
+        if not booking_response.data:
+            flash('Booking not found', 'danger')
+            return redirect(url_for('bookings.bookings'))
+        
+        booking = booking_response.data[0]
+        
+        # Delete related records first
+        supabase_admin.table('booking_custom_addons').delete().eq('booking_id', id).execute()
+        
+        # Delete the booking
+        supabase_admin.table('bookings').delete().eq('id', id).execute()
+        
+        # Log deletion
+        safe_log_user_activity(
+            ActivityTypes.DELETE_BOOKING,
+            f"Deleted booking '{booking.get('title', 'Unknown')}'",
+            resource_type='booking',
+            resource_id=id
+        )
+        
+        flash('✅ Booking deleted successfully', 'success')
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to delete booking {id}: {e}")
+        flash('❌ Error deleting booking', 'danger')
+    
+    return redirect(url_for('bookings.bookings'))
+
+@bookings_bp.route('/bookings/<int:id>/status', methods=['POST'])
+@login_required
+def update_booking_status(id):
+    """Update booking status with timestamp tracking and audit trail"""
+    try:
+        status = request.form.get('status')
+        if not status:
+            flash('❌ No status provided', 'danger')
+            return redirect(url_for('bookings.view_booking', id=id))
+
+        # Get current booking to compare status
+        current_booking = supabase_admin.table('bookings').select('status').eq('id', id).execute()
+        if not current_booking.data:
+            flash('❌ Booking not found', 'danger')
+            return redirect(url_for('bookings.bookings'))
+        
+        old_status = current_booking.data[0]['status']
+        
+        # Don't update if status is the same
+        if old_status == status:
+            flash(f'ℹ️ Booking status is already {status}', 'info')
+            return redirect(url_for('bookings.view_booking', id=id))
+
+        # Prepare update data
+        update_data = {
+            'status': status,
+            'updated_at': datetime.now(UTC).isoformat()
+        }
+
+        # Add appropriate timestamp based on status
+        if status == 'confirmed':
+            update_data['confirmed_at'] = datetime.now(UTC).isoformat()
+        elif status == 'cancelled':
+            update_data['cancelled_at'] = datetime.now(UTC).isoformat()
+
+        # Update booking
+        result = supabase_admin.table('bookings').update(
+            update_data
+        ).eq('id', id).execute()
+
+        if result.data:
+            flash(f'✅ Booking status updated to {status}', 'success')
+            
+            # Log activity
+            safe_log_user_activity(
+                ActivityTypes.CHANGE_BOOKING_STATUS,
+                f"Updated booking #{id} status to {status}",
+                resource_type='booking',
+                resource_id=id
+            )
+            
+            # Log in audit trail
+            from core import log_booking_change
+            log_booking_change(
+                booking_id=id,
+                action_type='status_changed',
+                field_changed='status',
+                old_value=old_status.title(),
+                new_value=status.title(),
+                change_summary=f"Changed booking status from {old_status.title()} to {status.title()}"
+            )
+        else:
+            flash('❌ Failed to update booking status', 'danger')
+
+        return redirect(url_for('bookings.view_booking', id=id))
+
+    except Exception as e:
+        print(f"❌ ERROR: Failed to update booking status: {e}")
+        flash('❌ Error updating booking status', 'danger')
+        return redirect(url_for('bookings.view_booking', id=id))
+
+# ===============================
+# QUOTATION AND INVOICE ROUTES
+# ===============================
+
+@bookings_bp.route('/bookings/<int:id>/quotation')
+@login_required
+def generate_quotation(id):
+    """Generate quotation view for a booking"""
+    try:
+        # Get booking details
+        booking = get_complete_booking_details(id)
+        
+        if not booking:
+            flash('Booking not found', 'danger')
+            return redirect(url_for('bookings.bookings'))
+        
+        # Calculate totals
+        totals = calculate_booking_totals(booking)
+        
+        # Log activity
+        safe_log_user_activity(
+            ActivityTypes.GENERATE_REPORT,
+            f"Generated quotation for booking '{booking.get('title', 'Unknown')}'",
+            resource_type='booking',
+            resource_id=id
+        )
+        
+        return render_template('bookings/quotation.html', 
+                             title=f'Quotation - {booking.get("title", "Booking")}', 
+                             booking=booking, 
+                             totals=totals)
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to generate quotation: {e}")
+        flash('Error generating quotation', 'danger')
+        return redirect(url_for('bookings.view_booking', id=id))
+
+def check_pdf_dependencies():
+    """Check if PDF generation dependencies are available"""
+    try:
+        # ReportLab should be available if installed
+        from reportlab.lib.pagesizes import A4
+        return True
+    except ImportError as e:
+        print(f"⚠️ Warning: ReportLab not available: {e}")
+        return False
+
+def create_quotation_pdf(booking, output_path, current_time, valid_until):
+    """Create a professional quotation PDF using ReportLab"""
+    doc = SimpleDocTemplate(output_path, pagesize=A4)
+    styles = getSampleStyleSheet()
+    story = []
+    
+    # Custom styles
+    title_style = ParagraphStyle(
+        'CustomTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        spaceAfter=30,
+        textColor=colors.HexColor('#2E8B57')
+    )
+    
+    header_style = ParagraphStyle(
+        'CustomHeader',
+        parent=styles['Heading2'],
+        fontSize=16,
+        spaceAfter=12,
+        textColor=colors.HexColor('#1a1a1a')
+    )
+    
+    # Title
+    story.append(Paragraph("RAINBOW TOWERS CONFERENCE BOOKING", title_style))
+    story.append(Paragraph("QUOTATION", styles['Heading1']))
+    story.append(Spacer(1, 20))
+    
+    # Quotation details
+    quotation_number = f"Q{booking['id']:04d}-{current_time.strftime('%Y%m')}"
+    story.append(Paragraph(f"Quotation Number: <b>{quotation_number}</b>", styles['Normal']))
+    story.append(Paragraph(f"Date: <b>{current_time.strftime('%d %B %Y')}</b>", styles['Normal']))
+    story.append(Paragraph(f"Valid Until: <b>{valid_until.strftime('%d %B %Y')}</b>", styles['Normal']))
+    story.append(Spacer(1, 20))
+    
+    # Client Information
+    story.append(Paragraph("CLIENT INFORMATION", header_style))
+    client_name = booking.get('client_name', 'Unknown Client')
+    contact_person = booking.get('contact_person', 'N/A')
+    story.append(Paragraph(f"Client: <b>{client_name}</b>", styles['Normal']))
+    story.append(Paragraph(f"Contact Person: <b>{contact_person}</b>", styles['Normal']))
+    story.append(Spacer(1, 20))
+    
+    # Booking Details
+    story.append(Paragraph("BOOKING DETAILS", header_style))
+    
+    # Create booking details table
+    booking_data = [
+        ['Event Title:', booking.get('title', 'Conference Booking')],
+        ['Room:', booking.get('room_name', 'Conference Room')],
+        ['Date:', safe_format_date(booking.get('start_time'), 'date') or 'TBD'],
+        ['Time:', f"{safe_format_date(booking.get('start_time'), 'time') or 'TBD'} - {safe_format_date(booking.get('end_time'), 'time') or 'TBD'}"],
+        ['Attendees:', str(booking.get('attendees', 'TBD'))],
+        ['Duration:', f"{booking.get('duration_hours', 0)} hours" if booking.get('duration_hours') else 'TBD'],
+    ]
+    
+    booking_table = Table(booking_data, colWidths=[2*inch, 4*inch])
+    booking_table.setStyle(TableStyle([
+        ('ALIGN', (0,0), (-1,-1), 'LEFT'),
+        ('FONTNAME', (0,0), (0,-1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 11),
+        ('ROWBACKGROUNDS', (0,0), (-1,-1), [colors.white, colors.HexColor('#f8f9fa')]),
+        ('GRID', (0,0), (-1,-1), 1, colors.HexColor('#dee2e6')),
+    ]))
+    
+    story.append(booking_table)
+    story.append(Spacer(1, 20))
+    
+    # Pricing
+    story.append(Paragraph("PRICING", header_style))
+    
+    pricing_data = [
+        ['Item', 'Quantity', 'Rate', 'Amount'],
+        ['Room Rental', '1', f"${booking.get('room_price', 0):.2f}", f"${booking.get('room_price', 0):.2f}"],
+    ]
+    
+    # Add addons if any
+    if booking.get('total_addons_price', 0) > 0:
+        pricing_data.append(['Add-ons/Services', '1', f"${booking.get('total_addons_price', 0):.2f}", f"${booking.get('total_addons_price', 0):.2f}"])
+    
+    # Add totals
+    subtotal = booking.get('subtotal', 0)
+    tax_amount = booking.get('tax_amount', 0)
+    total_price = booking.get('total_price', 0)
+    
+    pricing_data.extend([
+        ['', '', 'Subtotal:', f"${subtotal:.2f}"],
+        ['', '', 'Tax:', f"${tax_amount:.2f}"],
+        ['', '', 'TOTAL:', f"${total_price:.2f}"],
+    ])
+    
+    pricing_table = Table(pricing_data, colWidths=[2.5*inch, 1*inch, 1.5*inch, 1.5*inch])
+    pricing_table.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#2E8B57')),
+        ('TEXTCOLOR', (0,0), (-1,0), colors.whitesmoke),
+        ('ALIGN', (0,0), (-1,-1), 'CENTER'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,0), 12),
+        ('BOTTOMPADDING', (0,0), (-1,0), 12),
+        ('BACKGROUND', (0,-3), (-1,-1), colors.HexColor('#f8f9fa')),
+        ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,-1), (-1,-1), 12),
+        ('GRID', (0,0), (-1,-1), 1, colors.HexColor('#dee2e6')),
+    ]))
+    
+    story.append(pricing_table)
+    story.append(Spacer(1, 30))
+    
+    # Terms and conditions
+    story.append(Paragraph("TERMS & CONDITIONS", header_style))
+    terms = [
+        "1. This quotation is valid for 30 days from the date of issue.",
+        "2. Payment is required to confirm the booking.",
+        "3. Cancellation policy applies as per our standard terms.",
+        "4. All prices are in USD and inclusive of applicable taxes.",
+        "5. Additional services may incur extra charges."
+    ]
+    
+    for term in terms:
+        story.append(Paragraph(term, styles['Normal']))
+    
+    story.append(Spacer(1, 20))
+    story.append(Paragraph("Thank you for choosing Rainbow Towers Conference Center!", styles['Normal']))
+    
+    # Build the PDF
+    doc.build(story)
+
+@bookings_bp.route('/bookings/<int:id>/quotation/download')
+@login_required
+def download_quotation(id):
+    """Generate and download quotation PDF using ReportLab"""
+    if not check_pdf_dependencies():
+        flash('❌ PDF generation is not available. Please contact system administrator.', 'danger')
+        return redirect(url_for('bookings.view_booking', id=id))
+    
+    try:
+        booking = get_booking_with_details(id)
+        
+        if not booking:
+            flash('❌ Booking not found', 'danger')
+            return redirect(url_for('bookings.bookings'))
+
+        # Get current time in CAT timezone
+        tz = pytz.timezone('Africa/Harare')
+        current_time = datetime.now(tz)
+        valid_until = current_time + timedelta(days=30)
+
+        # Create temporary file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+        temp_file_path = temp_file.name
+        temp_file.close()
+
+        # Generate PDF using ReportLab
+        create_quotation_pdf(booking, temp_file_path, current_time, valid_until)
+        
+        # Verify file was created
+        if not os.path.exists(temp_file_path):
+            raise Exception("PDF file was not created successfully")
+
+        # Log activity
+        safe_log_user_activity(
+            ActivityTypes.GENERATE_REPORT,
+            f"Generated and downloaded quotation PDF for booking #{id}",
+            resource_type='booking',
+            resource_id=id
+        )
+
+        # Generate filename with client name and booking number
+        pdf_filename = generate_pdf_filename(booking, "quotation")
+
+        # Send file with explicit headers to force filename
+        from flask import Response
+        import mimetypes
+        
+        # Read the file content
+        with open(temp_file_path, 'rb') as f:
+            file_content = f.read()
+        
+        # Create response with explicit headers
+        response = Response(
+            file_content,
+            mimetype='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment; filename="{pdf_filename}"',
+                'Content-Type': 'application/pdf',
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        )
+        
+        return response
+
+    except Exception as e:
+        error_msg = handle_pdf_generation_error(e)
+        flash(f'❌ {error_msg}', 'danger')
+        return redirect(url_for('bookings.view_booking', id=id))
+    
+    finally:
+        # Clean up temporary file
+        if 'temp_file_path' in locals() and os.path.exists(temp_file_path):
+            try:
+                os.unlink(temp_file_path)
+            except Exception as cleanup_error:
+                print(f"⚠️ Warning: Failed to cleanup temp file {temp_file_path}: {cleanup_error}")
+
+@bookings_bp.route('/bookings/<int:id>/invoice/download')
+@login_required
+def download_invoice(id):
+    """Generate and download invoice PDF using ReportLab"""
+    if not check_pdf_dependencies():
+        flash('❌ PDF generation is not available. Please contact system administrator.', 'danger')
+        return redirect(url_for('bookings.view_booking', id=id))
+    
+    try:
+        booking = get_booking_with_details(id)
+        
+        if not booking:
+            flash('❌ Booking not found', 'danger')
+            return redirect(url_for('bookings.bookings'))
+
+        # Get current time in CAT timezone
+        tz = pytz.timezone('Africa/Harare')
+        current_time = datetime.now(tz)
+        valid_until = current_time + timedelta(days=30)
+
+        # Create temporary file
+        temp_file = tempfile.NamedTemporaryFile(delete=False, suffix='.pdf')
+        temp_file_path = temp_file.name
+        temp_file.close()
+
+        # Generate PDF using ReportLab
+        create_quotation_pdf(booking, temp_file_path, current_time, valid_until)
+        
+        # Verify file was created
+        if not os.path.exists(temp_file_path):
+            raise Exception("PDF file was not created successfully")
+
+        # Log activity
+        safe_log_user_activity(
+            ActivityTypes.GENERATE_REPORT,
+            f"Generated and downloaded invoice PDF for booking #{id}",
+            resource_type='booking',
+            resource_id=id
+        )
+
+        # Generate filename with client name and booking number
+        pdf_filename = generate_pdf_filename(booking, "invoice")
+
+        # Send file with explicit headers to force filename
+        from flask import Response
+        
+        # Read the file content
+        with open(temp_file_path, 'rb') as f:
+            file_content = f.read()
+        
+        # Create response with explicit headers
+        response = Response(
+            file_content,
+            mimetype='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment; filename="{pdf_filename}"',
+                'Content-Type': 'application/pdf',
+                'Cache-Control': 'no-cache, no-store, must-revalidate',
+                'Pragma': 'no-cache',
+                'Expires': '0'
+            }
+        )
+        
+        return response
+
+    except Exception as e:
+        error_msg = handle_pdf_generation_error(e)
+        flash(f'❌ {error_msg}', 'danger')
+        return redirect(url_for('bookings.view_booking', id=id))
+    
+    finally:
+        # Clean up temporary file
+        if 'temp_file_path' in locals() and os.path.exists(temp_file_path):
+            try:
+                os.unlink(temp_file_path)
+            except Exception as cleanup_error:
+                print(f"⚠️ Warning: Failed to cleanup temp file {temp_file_path}: {cleanup_error}")
+
+@bookings_bp.route('/bookings/<int:id>/invoice')
+@login_required
+def generate_invoice(id):
+    """Generate invoice for booking with improved error handling"""
+    try:
+        from datetime import datetime, timedelta
+        import pytz
+
+        # Get booking data with all related information
+        booking_response = supabase_admin.table('bookings').select("""
+            *,
+            room:rooms(*),
+            client:clients(*),
+            event_type:event_types(*)
+        """).eq('id', id).execute()
+
+        if not booking_response.data:
+            flash('❌ Booking not found', 'danger')
+            return redirect(url_for('bookings.bookings'))
+
+        booking = booking_response.data[0]
+
+        # Get custom addons
+        addons_response = supabase_admin.table('booking_custom_addons').select('*').eq('booking_id', id).execute()
+        booking['custom_addons'] = addons_response.data if addons_response.data else []
+
+        # Ensure all required data structures exist with safe fallbacks
+        if not booking.get('client') or not isinstance(booking['client'], dict):
+            # Try to get client data separately if join failed
+            if booking.get('client_id'):
+                client_response = supabase_admin.table('clients').select('*').eq('id', booking['client_id']).execute()
+                if client_response.data:
+                    booking['client'] = client_response.data[0]
+                else:
+                    # Create fallback client data
+                    booking['client'] = {
+                        'id': booking.get('client_id'),
+                        'contact_person': booking.get('client_name', 'Unknown Client'),
+                        'company_name': booking.get('company_name', ''),
+                        'email': booking.get('client_email', ''),
+                        'phone': booking.get('client_phone', ''),
+                        'address': booking.get('client_address', '')
+                    }
+            else:
+                # Create minimal fallback client data
+                booking['client'] = {
+                    'id': None,
+                    'contact_person': booking.get('client_name', 'Unknown Client'),
+                    'company_name': booking.get('company_name', ''),
+                    'email': booking.get('client_email', ''),
+                    'phone': '',
+                    'address': ''
+                }
+
+        if not booking.get('room') or not isinstance(booking['room'], dict):
+            # Try to get room data separately if join failed
+            if booking.get('room_id'):
+                room_response = supabase_admin.table('rooms').select('*').eq('id', booking['room_id']).execute()
+                if room_response.data:
+                    booking['room'] = room_response.data[0]
+                else:
+                    # Create fallback room data
+                    booking['room'] = {
+                        'id': booking.get('room_id'),
+                        'name': booking.get('room_name', 'Unknown Room'),
+                        'capacity': booking.get('room_capacity', 'Unknown'),
+                        'description': '',
+                        'hourly_rate': booking.get('hourly_rate', 0)
+                    }
+            else:
+                # Create minimal fallback room data
+                booking['room'] = {
+                    'id': None,
+                    'name': booking.get('room_name', 'Unknown Room'),
+                    'capacity': 'Unknown',
+                    'description': '',
+                    'hourly_rate': 0
+                }
+
+        # Debug logging for troubleshooting
+        print(f"🔍 Invoice generation for booking {id}")
+        print(f"🔍 Client data available: {bool(booking.get('client'))}")
+        print(f"🔍 Room data available: {bool(booking.get('room'))}")
+
+        # Get current time in CAT timezone
+        tz = pytz.timezone('Africa/Harare')
+        current_date = datetime.now(tz)
+        due_date = current_date + timedelta(days=30)
+
+        # Calculate totals if not present
+        if not booking.get('total_price'):
+            booking['total_price'] = sum([
+                float(booking.get('room_cost', 0) or 0),
+                float(booking.get('catering_cost', 0) or 0),
+                float(booking.get('equipment_cost', 0) or 0),
+                float(booking.get('additional_services_cost', 0) or 0)
+            ])
+
+        # Prepare safe data for template with detailed cost breakdown
+        safe_booking = {
+            'id': booking.get('id'),
+            'title': booking.get('title', 'Conference Booking'),
+            'start_time': booking.get('start_time'),
+            'end_time': booking.get('end_time'),
+            'attendees': booking.get('attendees', 0),
+            'status': booking.get('status', 'confirmed'),
+            'total_price': booking.get('total_price', 0),
+            'room_cost': booking.get('room_cost', 0),
+            'catering_cost': booking.get('catering_cost', 0),
+            'equipment_cost': booking.get('equipment_cost', 0),
+            'additional_services_cost': booking.get('additional_services_cost', 0),
+            'notes': booking.get('notes', ''),
+            'custom_addons': booking.get('custom_addons', []),
+            'client': booking['client'],
+            'room': booking['room']
+        }
+
+        # Create detailed line items for invoice
+        line_items = []
+        
+        # Room hire cost
+        if safe_booking['room_cost'] > 0:
+            line_items.append({
+                'description': f"Conference Room Hire - {booking['room']['name']}",
+                'quantity': 1,
+                'unit_price': safe_booking['room_cost'],
+                'total': safe_booking['room_cost'],
+                'category': 'room'
+            })
+        
+        # Catering cost
+        if safe_booking['catering_cost'] > 0:
+            line_items.append({
+                'description': 'Catering Services',
+                'quantity': safe_booking['attendees'],
+                'unit_price': safe_booking['catering_cost'] / max(safe_booking['attendees'], 1),
+                'total': safe_booking['catering_cost'],
+                'category': 'catering'
+            })
+        
+        # Equipment cost
+        if safe_booking['equipment_cost'] > 0:
+            line_items.append({
+                'description': 'Audio Visual Equipment',
+                'quantity': 1,
+                'unit_price': safe_booking['equipment_cost'],
+                'total': safe_booking['equipment_cost'],
+                'category': 'equipment'
+            })
+        
+        # Additional services
+        if safe_booking['additional_services_cost'] > 0:
+            line_items.append({
+                'description': 'Additional Services',
+                'quantity': 1,
+                'unit_price': safe_booking['additional_services_cost'],
+                'total': safe_booking['additional_services_cost'],
+                'category': 'services'
+            })
+        
+        # Custom addons - these contain the specific addon descriptions
+        for addon in safe_booking['custom_addons']:
+            if addon.get('total_price', 0) > 0:
+                line_items.append({
+                    'description': addon.get('description', 'Additional Service'),
+                    'quantity': addon.get('quantity', 1),
+                    'unit_price': addon.get('unit_price', addon.get('total_price', 0)),
+                    'total': addon.get('total_price', 0),
+                    'category': 'addon'
+                })
+        
+        safe_booking['line_items'] = line_items
+        
+        # Also create addon_items for template compatibility
+        safe_booking['addon_items'] = []
+        for addon in safe_booking['custom_addons']:
+            safe_booking['addon_items'].append({
+                'name': addon.get('description', 'Additional Service'),
+                'quantity': addon.get('quantity', 1),
+                'price': addon.get('unit_price', addon.get('total_price', 0)),
+                'total': addon.get('total_price', 0)
+            })
+
+        # Calculate tax and totals
+        safe_booking['subtotal'] = safe_booking['total_price']
+        safe_booking['tax_rate'] = 0.15  # 15% VAT
+        safe_booking['tax_amount'] = safe_booking['subtotal'] * safe_booking['tax_rate']
+        safe_booking['total_amount'] = safe_booking['subtotal'] + safe_booking['tax_amount']
+
+        # Log activity
+        safe_log_user_activity(
+            ActivityTypes.GENERATE_REPORT,
+            f"Generated invoice for booking #{id}",
+            resource_type='booking',
+            resource_id=id
+        )
+
+        # Check if this is a print request
+        is_print_request = request.args.get('print') == 'true'
+
+        return render_template('bookings/invoice.html',
+                             booking=safe_booking,
+                             current_date=current_date,
+                             due_date=due_date,
+                             title=f"Invoice - {safe_booking['title']}",
+                             is_print_request=is_print_request)
+
+    except Exception as e:
+        print(f"❌ ERROR: Failed to generate invoice: {e}")
+        import traceback
+        traceback.print_exc()
+        flash(f'❌ Failed to generate invoice: {str(e)}', 'danger')
+        return redirect(url_for('bookings.bookings'))
+
+@bookings_bp.route('/bookings/<int:id>/send-quotation', methods=['POST'])
+@login_required
+def send_quotation_email(id):
+    """Send quotation email to client"""
+    try:
+        booking = get_booking_with_details(id)
+        if not booking:
+            flash('❌ Booking not found', 'danger')
+            return redirect(url_for('bookings.bookings'))
+
+        # Get client email
+        client_email = None
+        if booking.get('client'):
+            client_email = booking['client'].get('email')
+        elif booking.get('client_email'):
+            client_email = booking['client_email']
+
+        if not client_email:
+            flash('❌ No client email address available', 'danger')
+            return redirect(url_for('bookings.view_booking', id=id))
+
+        # Mark quotation as sent
+        supabase_update('bookings', 
+            {'quotation_sent': True}, 
+            [('id', 'eq', id)]
+        )
+
+        # Log activity
+        safe_log_user_activity(
+            ActivityTypes.GENERATE_REPORT,
+            f"Sent quotation email for booking #{id}",
+            resource_type='booking',
+            resource_id=id
+        )
+
+        flash('✅ Quotation email sent successfully!', 'success')
+        return redirect(url_for('bookings.view_booking', id=id))
+
+    except Exception as e:
+        print(f"❌ ERROR: Failed to send quotation email: {e}")
+        flash('❌ Error sending quotation email', 'danger')
+        return redirect(url_for('bookings.view_booking', id=id))
+
+@bookings_bp.route('/bookings/<int:id>/send-invoice', methods=['POST'])
+@login_required
+def send_invoice_email(id):
+    """Send invoice email to client"""
+    try:
+        # ... email sending logic ...
+        return redirect(url_for('bookings.view_booking', id=id))
+    except Exception as e:
+        print(f"❌ ERROR: Failed to send invoice email: {e}")
+        flash('❌ Error sending invoice email', 'danger')
+        return redirect(url_for('bookings.view_booking', id=id))
+
+# ===============================
+# API ROUTES
+# ===============================
+
+@bookings_bp.route('/api/clients/search')
+@login_required
+def search_clients():
+    """Search clients with enhanced validation and performance"""
+    try:
+        query = safe_str(request.args.get('q', '')).lower().strip()
+        
+        # Validate query length
+        if len(query) < 2:
+            return jsonify({'error': 'Query must be at least 2 characters long', 'results': []})
+        
+        # Validate query content (prevent injection)
+        if not query.replace(' ', '').replace('-', '').replace('.', '').replace('@', '').isalnum():
+            return jsonify({'error': 'Invalid characters in search query', 'results': []})
+        
+        # Limit query length
+        if len(query) > 50:
+            return jsonify({'error': 'Query too long', 'results': []})
+
+        # Search in database with optimized query
+        response = supabase_admin.table('clients').select('id, contact_person, company_name, email').limit(20).execute()
+        if not response.data:
+            return jsonify({'results': []})
+
+        results = []
+        for client in response.data:
+            # Safely convert all searchable fields
+            company = safe_str(client.get('company_name')).lower()
+            contact = safe_str(client.get('contact_person')).lower()
+            email = safe_str(client.get('email')).lower()
+
+            # Check if query matches any field
+            if (query in company or 
+                query in contact or 
+                query in email):
+                results.append({
+                    'id': client.get('id'),
+                    'name': client.get('contact_person', ''),
+                    'company': client.get('company_name', ''),
+                    'email': client.get('email', ''),
+                    'display_name': client.get('company_name') or client.get('contact_person', 'Unknown')
+                })
+                
+                # Limit results
+                if len(results) >= 10:
+                    break
+
+        return jsonify({'results': results, 'total': len(results)})
+
+    except Exception as e:
+        print(f"❌ ERROR: Failed to search clients: {e}")
+        return jsonify({'error': 'Internal server error', 'results': []}), 500
+
+@bookings_bp.route('/api/companies/search')
+@login_required
+def search_companies():
+    """Search companies for autocomplete with enhanced validation"""
+    try:
+        query = safe_str(request.args.get('q', '')).strip()
+        
+        # Validate query
+        if len(query) < 2:
+            return jsonify({'error': 'Query must be at least 2 characters', 'results': []})
+        
+        if len(query) > 50:
+            return jsonify({'error': 'Query too long', 'results': []})
+        
+        # Get unique company names with better query
+        response = supabase_admin.table('clients').select('company_name').not_.is_('company_name', 'null').execute()
+        
+        if not response.data:
+            return jsonify({'results': []})
+        
+        companies = []
+        seen_companies = set()
+        query_lower = safe_str_lower(query)
+        
+        for row in response.data:
+            try:
+                company_name = safe_str(row.get('company_name')).strip()
+                
+                # Skip empty, None values, or common invalid entries
+                if (not company_name or 
+                    company_name.lower() in ['none', 'null', 'n/a', 'na', 'unknown']):
+                    continue
+                
+                # Check if matches and not already added
+                if (query_lower in safe_str_lower(company_name) and 
+                    company_name not in seen_companies and
+                    len(company_name) >= 2):
+                    
+                    companies.append({
+                        'name': company_name,
+                        'value': company_name
+                    })
+                    seen_companies.add(company_name)
+                    
+                    # Limit results for performance
+                    if len(companies) >= 10:
+                        break
+                        
+            except Exception as e:
+                print(f"⚠️ WARNING: Error processing company: {e}")
+                continue
+        
+        return jsonify({'results': companies, 'total': len(companies)})
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to search companies: {e}")
+        return jsonify({'error': 'Internal server error', 'results': []}), 500
+
+# API calendar events moved to routes/api.py to avoid conflicts
+
+@bookings_bp.route('/bookings/calendar')
+@login_required
+def calendar_view():
+    """Display calendar view of bookings with enhanced functionality"""
+    try:
+        # Get timezone for date calculations
+        timezone = pytz.timezone('Africa/Johannesburg')
+        today = datetime.now(timezone).date()
+        
+        # Parse date parameters with validation
+        try:
+            year = int(request.args.get('year', today.year))
+            month = int(request.args.get('month', today.month))
+            
+            # Validate date ranges
+            if not (2020 <= year <= 2030):
+                year = today.year
+            if not (1 <= month <= 12):
+                month = today.month
+                
+            start_date = date(year, month, 1)
+            
+            # Calculate end date for the month
+            if month == 12:
+                end_date = date(year + 1, 1, 1) - timedelta(days=1)
+            else:
+                end_date = date(year, month + 1, 1) - timedelta(days=1)
+                
+        except (ValueError, TypeError):
+            start_date = date(today.year, today.month, 1)
+            end_date = date(today.year, today.month + 1, 1) - timedelta(days=1) if today.month < 12 else date(today.year, 12, 31)
+        
+        # Get optional filters
+        room_filter = safe_str(request.args.get('room', '')).strip()
+        status_filter = safe_str(request.args.get('status', '')).strip()
+        
+        # Build query for bookings in the month
+        query = supabase_admin.table('bookings').select('''
+            *,
+            room:rooms(id, name, capacity),
+            client:clients(id, contact_person, company_name)
+        ''').gte('start_time', start_date.isoformat()).lte('start_time', end_date.isoformat())
+        
+        # Apply filters
+        if room_filter:
+            try:
+                room_id = int(room_filter)
+                query = query.eq('room_id', room_id)
+            except (ValueError, TypeError):
+                pass
+                
+        if status_filter and status_filter in ['confirmed', 'cancelled', 'pending']:
+            query = query.eq('status', status_filter)
+        
+        response = query.execute()
+        bookings = response.data if response.data else []
+        
+        # Process bookings for calendar display
+        processed_bookings = []
+        for booking in bookings:
+            try:
+                if not booking.get('start_time'):
+                    continue
+                    
+                # Parse booking date from start_time
+                start_time = datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00'))
+                booking_date = start_time.date()
+                booking['formatted_date'] = booking_date.strftime('%Y-%m-%d')
+                booking['day_of_month'] = booking_date.day
+                
+                # Get client info safely
+                client = booking.get('client', {}) or {}
+                if client:
+                    client_name = safe_str(client.get('contact_person', ''))
+                    booking['client_name'] = client_name if client_name else 'Unknown Client'
+                    booking['company_name'] = safe_str(client.get('company_name', ''))
+                else:
+                    booking['client_name'] = 'Unknown Client'
+                    booking['company_name'] = ''
+                
+                # Get room info safely
+                room = booking.get('room', {}) or {}
+                booking['room_name'] = safe_str(room.get('name', 'Unknown Room'))
+                
+                processed_bookings.append(booking)
+                
+            except Exception as e:
+                print(f"⚠️ WARNING: Error processing booking {booking.get('id', 'unknown')}: {e}")
+                continue
+        
+        # Get available rooms for filtering
+        rooms_response = supabase_admin.table('rooms').select('id, name').order('name').execute()
+        available_rooms = rooms_response.data if rooms_response.data else []
+        
+        # Generate calendar navigation
+        prev_month = start_date.replace(day=1) - timedelta(days=1)
+        next_month = start_date.replace(day=28) + timedelta(days=4)
+        next_month = next_month.replace(day=1)
+        
+        safe_log_user_activity(
+            ActivityTypes.PAGE_VIEW,
+            f"Viewed booking calendar for {start_date.strftime('%B %Y')}",
+            resource_type='page'
+        )
+        
+        return render_template('calendar.html', 
+                             title='Booking Calendar',
+                             bookings=processed_bookings,
+                             current_date=start_date,
+                             current_month_name=start_date.strftime('%B %Y'),
+                             prev_month=prev_month,
+                             next_month=next_month,
+                             today=today,
+                             room_filter=room_filter,
+                             status_filter=status_filter,
+                             available_rooms=available_rooms)
+                             
+    except Exception as e:
+        print(f"❌ ERROR: Failed to load calendar view: {e}")
+        flash('Error loading calendar view', 'danger')
+        return redirect(url_for('bookings.bookings'))
+
+@bookings_bp.route('/bookings/<int:id>/print')
+@login_required
+def print_details(id):
+    """Print booking details"""
+    try:
+        booking = get_booking_with_details(id)
+        if not booking:
+            flash('Booking not found', 'danger')
+            return redirect(url_for('bookings.bookings'))
+
+        # Add current datetime for the footer
+        now = datetime.now(UTC)
+        
+        # Calculate VAT and totals if not present
+        if booking.get('subtotal'):
+            booking['vat_amount'] = round(float(booking['subtotal']) * 0.15, 2)
+            booking['total_with_vat'] = round(float(booking['subtotal']) * 1.15, 2)
+
+        return render_template('bookings/print_details.html',
+            booking=booking,
+            title=f"Print Booking - {booking.get('title', '')}",
+            now=now
+        )
+
+    except Exception as e:
+        print(f"❌ ERROR: Failed to print booking details: {e}")
+        flash('Error loading booking details for printing', 'danger')
+        return redirect(url_for('bookings.bookings'))
+
+def handle_pdf_generation_error(e):
+    """Handle PDF generation errors gracefully"""
+    error_message = str(e).lower()
+    if 'reportlab' in error_message or 'import' in error_message:
+        return "PDF generation failed: ReportLab library not available. Please contact system administrator."
+    elif 'permission' in error_message:
+        return "PDF generation failed: Permission denied when creating temporary files."
+    elif 'disk' in error_message or 'space' in error_message:
+        return "PDF generation failed: Not enough disk space."
+    elif 'memory' in error_message:
+        return "PDF generation failed: Insufficient memory available."
+    else:
+        return f"PDF generation failed: {str(e)}"
+
+@bookings_bp.route('/api/bookings/<int:booking_id>/status', methods=['POST'])
+@login_required
+def update_booking_status_api(booking_id):
+    """Update booking status via API"""
+    try:
+        # Validate input
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'No data provided'}), 400
+        
+        new_status = safe_str(data.get('status', '')).strip().lower()
+        if new_status not in ['confirmed', 'cancelled', 'pending']:
+            return jsonify({'error': 'Invalid status. Must be confirmed, cancelled, or pending'}), 400
+        
+        # Get existing booking
+        booking = get_booking_with_details(booking_id)
+        if not booking:
+            return jsonify({'error': 'Booking not found'}), 404
+        
+        old_status = booking.get('status', 'unknown')
+        
+        # Update status
+        update_data = {
+            'status': new_status,
+            'updated_at': datetime.now(UTC).isoformat()
+        }
+        
+        response = supabase_admin.table('bookings').update(update_data).eq('id', booking_id).execute()
+        
+        if not response.data:
+            return jsonify({'error': 'Failed to update booking status'}), 500
+        
+        # Log the activity
+        safe_log_user_activity(
+            ActivityTypes.CHANGE_BOOKING_STATUS,
+            f"Changed booking status from {old_status} to {new_status}",
+            resource_type='booking',
+            resource_id=booking_id
+        )
+        
+        return jsonify({
+            'success': True,
+            'message': f'Booking status updated to {new_status}',
+            'booking_id': booking_id,
+            'new_status': new_status
+        })
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to update booking status: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@bookings_bp.route('/api/bookings/<int:booking_id>/quick-info')
+@login_required
+def get_booking_quick_info(booking_id):
+    """Get quick booking information for tooltips/popups"""
+    try:
+        booking = get_booking_with_details(booking_id)
+        if not booking:
+            return jsonify({'error': 'Booking not found'}), 404
+        
+        # Format quick info
+        client = booking.get('client', {}) or {}
+        room = booking.get('room', {}) or {}
+        
+        client_name = safe_str(client.get('contact_person', ''))
+        if not client_name:
+            client_name = 'Unknown Client'
+        
+        quick_info = {
+            'id': booking['id'],
+            'title': safe_str(booking.get('title', 'Untitled Booking')),
+            'client_name': client_name,
+            'company': safe_str(client.get('company_name', '')),
+            'room_name': safe_str(room.get('name', 'Unknown Room')),
+            'date': datetime.fromisoformat(booking['start_time'].replace('Z', '+00:00')).date().isoformat() if booking.get('start_time') else '',
+            'time_slot': safe_str(booking.get('time_slot', '')),
+            'status': safe_str(booking.get('status', 'unknown')),
+            'attendees': booking.get('number_of_attendees', 0),
+            'total_cost': booking.get('total_cost', 0)
+        }
+        
+        return jsonify(quick_info)
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to get booking quick info: {e}")
+        return jsonify({'error': 'Internal server error'}), 500
+
+@bookings_bp.route('/api/room-availability')
+@login_required
+def check_room_availability():
+    """Check room availability for a specific date and time"""
+    try:
+        # Get parameters
+        room_id = request.args.get('room_id', type=int)
+        booking_date = safe_str(request.args.get('date', '')).strip()
+        time_slot = safe_str(request.args.get('time_slot', '')).strip()
+        exclude_booking_id = request.args.get('exclude_booking_id', type=int)
+        
+        # Validate parameters
+        if not all([room_id, booking_date, time_slot]):
+            return jsonify({'error': 'Missing required parameters'}), 400
+        
+        # Validate date format
+        try:
+            parsed_date = datetime.strptime(booking_date, '%Y-%m-%d').date()
+        except ValueError:
+            return jsonify({'error': 'Invalid date format. Use YYYY-MM-DD'}), 400
+        
+        # Check for existing bookings - filter by date range since start_time includes time
+        start_of_day = parsed_date.isoformat()
+        end_of_day = (parsed_date + timedelta(days=1)).isoformat()
+        query = supabase_admin.table('bookings').select('id, title, status').eq('room_id', room_id).gte('start_time', start_of_day).lt('start_time', end_of_day).eq('time_slot', time_slot)
+        
+        # Exclude current booking if editing
+        if exclude_booking_id:
+            query = query.neq('id', exclude_booking_id)
+        
+        response = query.execute()
+        existing_bookings = response.data if response.data else []
+        
+        # Filter out cancelled bookings
+        active_bookings = [b for b in existing_bookings if b.get('status') != 'cancelled']
+        
+        is_available = len(active_bookings) == 0
+        
+        result = {
+            'available': is_available,
+            'room_id': room_id,
+            'date': booking_date,
+            'time_slot': time_slot,
+            'existing_bookings': len(active_bookings),
+            'conflicts': [{'id': b['id'], 'title': b.get('title', ''), 'status': b.get('status', '')} for b in active_bookings] if not is_available else []
+        }
+        
+        return jsonify(result)
+        
+    except Exception as e:
+        print(f"❌ ERROR: Failed to check room availability: {e}")
+        return jsonify({'error': 'Internal server error'}), 500

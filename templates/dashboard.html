@@ -3,16 +3,23 @@ Conference Booking{% endblock %} {% block extra_css %}
 <style>
   .stats-card {
     border-left: 4px solid;
-    transition: transform 0.2s;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
   }
 
   .stats-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-8px);
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.15);
   }
 
   .stats-card .icon {
-    opacity: 0.3;
-    font-size: 2rem;
+    opacity: 0.4;
+    font-size: 2.5rem;
+    transition: opacity 0.3s ease;
+  }
+
+  .stats-card:hover .icon {
+    opacity: 0.6;
   }
 
   .stats-card-bookings {
@@ -30,11 +37,22 @@ Conference Booking{% endblock %} {% block extra_css %}
 
   .booking-item {
     border-left: 4px solid;
-    transition: transform 0.2s;
+    transition: all 0.3s ease;
+    background: linear-gradient(
+      to right,
+      rgba(255, 255, 255, 0.9),
+      rgba(248, 249, 250, 0.9)
+    );
   }
 
   .booking-item:hover {
-    transform: translateX(5px);
+    transform: translateX(12px);
+    background: linear-gradient(
+      to right,
+      rgba(248, 249, 250, 1),
+      rgba(233, 236, 239, 1)
+    );
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
   }
 
   .booking-tentative {
@@ -51,45 +69,227 @@ Conference Booking{% endblock %} {% block extra_css %}
     background-color: #fff3cd;
     border: 1px solid #ffeaa7;
     border-radius: 4px;
-    padding: 0.5rem;
+    padding: 0.75rem;
     margin: 0.5rem 0;
   }
 
   .fallback-text {
     color: #6c757d;
     font-style: italic;
+    font-size: 0.9em;
+  }
+
+  .revenue-highlight {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .revenue-highlight::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
+    transition: left 0.5s;
+  }
+
+  .revenue-highlight:hover::before {
+    left: 100%;
+  }
+
+  .tentative-revenue-highlight {
+    background: linear-gradient(135deg, #f7931e 0%, #f39801 100%);
+    color: white;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .tentative-revenue-highlight::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
+    transition: left 0.5s;
+  }
+
+  .tentative-revenue-highlight:hover::before {
+    left: 100%;
+  }
+
+  .metric-card {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  .metric-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+  }
+
+  .quick-action-btn {
+    transition: all 0.3s ease;
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-weight: 500;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .quick-action-btn:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+  }
+
+  .quick-action-btn::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.2),
+      transparent
+    );
+    transition: left 0.5s;
+  }
+
+  .quick-action-btn:hover::before {
+    left: 100%;
+  }
+
+  .loading-placeholder {
+    background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+  }
+
+  @keyframes loading {
+    0% {
+      background-position: 200% 0;
+    }
+    100% {
+      background-position: -200% 0;
+    }
+  }
+
+  /* Enhanced status badges */
+  .badge {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    border-radius: 8px;
+  }
+
+  /* Improved card headers */
+  .card-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%) !important;
+    border-bottom: 1px solid #dee2e6 !important;
+    padding: 1rem 1.5rem;
+  }
+
+  /* Enhanced hover effects for list items */
+  .list-group-item {
+    transition: all 0.3s ease;
+    border: none !important;
+    margin-bottom: 2px;
+  }
+
+  .list-group-item:hover {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 50%, #f8f9fa 100%);
+    border-radius: 8px;
+  }
+
+  /* Improved icons */
+  .fas {
+    transition: color 0.3s ease;
+  }
+
+  /* Status indicator animations */
+  .status-indicator {
+    position: relative;
+  }
+
+  .status-indicator.ongoing::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    right: -15px;
+    width: 8px;
+    height: 8px;
+    background: #28a745;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0% {
+      transform: translateY(-50%) scale(1);
+      opacity: 1;
+    }
+    50% {
+      transform: translateY(-50%) scale(1.2);
+      opacity: 0.7;
+    }
+    100% {
+      transform: translateY(-50%) scale(1);
+      opacity: 1;
+    }
   }
 </style>
 {% endblock %} {% block content %}
-<h1 class="mb-4">
-  <i class="fas fa-tachometer-alt text-primary me-2"></i>Dashboard
-</h1>
-
-<!-- Debug Information (only show if there are errors) -->
-{% if critical_error %}
-<div class="alert alert-danger" role="alert">
-  <h4 class="alert-heading">Dashboard Error</h4>
-  <p>
-    There was an issue loading the dashboard data. Please contact support if
-    this persists.
-  </p>
-  {% if debug_mode %}
-  <hr />
-  <p class="mb-0"><small>Error details: {{ error_message }}</small></p>
-  {% endif %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="mb-0">
+    <i class="fas fa-tachometer-alt text-primary me-2"></i>Dashboard
+  </h1>
+  <div>
+    <button
+      class="btn btn-outline-primary btn-sm me-2"
+      onclick="refreshDashboard()"
+      id="refreshBtn"
+    >
+      <i class="fas fa-sync-alt me-1"></i>Refresh
+    </button>
+    <small class="text-muted">
+      Last updated:
+      <span id="lastUpdated">{{ now.strftime('%H:%M') if now else '' }}</span>
+    </small>
+  </div>
 </div>
-{% endif %} {% if connection_error %}
-<div class="alert alert-warning" role="alert">
-  <h4 class="alert-heading">Connection Issue</h4>
-  <p>Unable to connect to the database. Some information may not be current.</p>
-  {% if debug_mode %}
-  <hr />
-  <p class="mb-0"><small>Connection error: {{ connection_error }}</small></p>
-  {% endif %}
+
+<!-- Alert for any errors -->
+{% if error %}
+<div class="alert alert-warning alert-dismissible fade show" role="alert">
+  <i class="fas fa-exclamation-triangle me-2"></i>
+  <strong>Warning:</strong> {{ error }}
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
 </div>
 {% endif %}
 
-<!-- Stats Cards -->
+<!-- Main Statistics Cards -->
 <div class="row mb-4">
   <div class="col-xl-3 col-md-6 mb-4">
     <div class="card border-0 shadow stats-card stats-card-bookings h-100">
@@ -99,11 +299,24 @@ Conference Booking{% endblock %} {% block extra_css %}
             <div
               class="text-xs font-weight-bold text-primary text-uppercase mb-1"
             >
-              Active Bookings
+              Total Bookings
             </div>
-            <div class="h5 mb-0 font-weight-bold text-gray-800">
-              {{ total_active_bookings if total_active_bookings is not none else
-              0 }}
+            <div
+              class="h5 mb-0 font-weight-bold text-gray-800"
+              id="totalBookings"
+            >
+              {{ stats.total_bookings if stats and stats.total_bookings is not
+              none else 0 }}
+            </div>
+            <div class="text-xs text-muted mt-1">
+              <span class="text-success"
+                >{{ stats.confirmed_bookings if stats else 0 }}</span
+              >
+              confirmed,
+              <span class="text-warning"
+                >{{ stats.tentative_bookings if stats else 0 }}</span
+              >
+              tentative
             </div>
           </div>
           <div class="col-auto">
@@ -124,9 +337,14 @@ Conference Booking{% endblock %} {% block extra_css %}
             >
               Total Clients
             </div>
-            <div class="h5 mb-0 font-weight-bold text-gray-800">
-              {{ total_clients if total_clients is not none else 0 }}
+            <div
+              class="h5 mb-0 font-weight-bold text-gray-800"
+              id="totalClients"
+            >
+              {{ stats.total_clients if stats and stats.total_clients is not
+              none else 0 }}
             </div>
+            <div class="text-xs text-muted mt-1">Active client base</div>
           </div>
           <div class="col-auto">
             <i class="fas fa-users fa-2x text-gray-300 icon"></i>
@@ -144,8 +362,15 @@ Conference Booking{% endblock %} {% block extra_css %}
             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">
               Conference Rooms
             </div>
-            <div class="h5 mb-0 font-weight-bold text-gray-800">
-              {{ total_rooms if total_rooms is not none else 0 }}
+            <div class="h5 mb-0 font-weight-bold text-gray-800" id="totalRooms">
+              {{ stats.total_rooms if stats and stats.total_rooms is not none
+              else 0 }}
+            </div>
+            <div class="text-xs text-muted mt-1">
+              <span class="text-success"
+                >{{ stats.available_rooms if stats else 0 }}</span
+              >
+              available
             </div>
           </div>
           <div class="col-auto">
@@ -166,9 +391,13 @@ Conference Booking{% endblock %} {% block extra_css %}
             >
               Today's Events
             </div>
-            <div class="h5 mb-0 font-weight-bold text-gray-800">
-              {{ today_bookings|length if today_bookings else 0 }}
+            <div
+              class="h5 mb-0 font-weight-bold text-gray-800"
+              id="todayEvents"
+            >
+              {{ todays_bookings|length if todays_bookings else 0 }}
             </div>
+            <div class="text-xs text-muted mt-1">Scheduled for today</div>
           </div>
           <div class="col-auto">
             <i class="fas fa-clock fa-2x text-gray-300 icon"></i>
@@ -179,157 +408,314 @@ Conference Booking{% endblock %} {% block extra_css %}
   </div>
 </div>
 
+<!-- Revenue and Performance Row -->
+{% if stats %}
+<div class="row mb-4">
+  <!-- Confirmed Revenue -->
+  <div class="col-lg-3 mb-3">
+    <div class="card border-0 shadow revenue-highlight h-100">
+      <div class="card-body text-center">
+        <i class="fas fa-check-circle fa-3x mb-3 text-white-50"></i>
+        <h4 class="text-white">
+          {{ stats.confirmed_revenue|format_currency }}
+        </h4>
+        <p class="text-white-50 mb-0">Confirmed Revenue</p>
+        <small class="text-white-75"
+          >This Month: {{ stats.confirmed_revenue_this_month|format_currency
+          }}</small
+        >
+      </div>
+    </div>
+  </div>
+
+  <!-- Tentative Revenue -->
+  <div class="col-lg-3 mb-3">
+    <div class="card border-0 shadow tentative-revenue-highlight h-100">
+      <div class="card-body text-center">
+        <i class="fas fa-clock fa-3x mb-3 text-white-50"></i>
+        <h4 class="text-white">
+          {{ stats.tentative_revenue|format_currency }}
+        </h4>
+        <p class="text-white-50 mb-0">Tentative Revenue</p>
+        <small class="text-white-75"
+          >This Month: {{ stats.tentative_revenue_this_month|format_currency
+          }}</small
+        >
+      </div>
+    </div>
+  </div>
+
+  <!-- Occupancy Rate -->
+  <div class="col-lg-3 mb-3">
+    <div class="card border-0 shadow h-100">
+      <div class="card-body text-center">
+        <i class="fas fa-chart-line fa-3x mb-3 text-success"></i>
+        <h4 class="text-gray-800">
+          {% if stats and stats.occupancy_rate is not none %} {{
+          stats.occupancy_rate|format_percentage }} {% else %}
+          <span class="text-muted">0.0%</span>
+          {% endif %}
+        </h4>
+        <p class="text-muted mb-0">Occupancy Rate</p>
+        <small class="text-muted">(30 days)</small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Average Booking Value -->
+  <div class="col-lg-3 mb-3">
+    <div class="card border-0 shadow h-100">
+      <div class="card-body text-center">
+        <i class="fas fa-calculator fa-3x mb-3 text-info"></i>
+        <h4 class="text-gray-800">
+          {{ stats.average_booking_value|format_currency }}
+        </h4>
+        <p class="text-muted mb-0">Avg. Booking Value</p>
+        <small class="text-muted">All Bookings</small>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Total Revenue Summary Row -->
+<div class="row mb-4">
+  <div class="col-lg-6 mb-3">
+    <div class="card border-0 shadow h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="me-3">
+            <i class="fas fa-dollar-sign fa-2x text-primary"></i>
+          </div>
+          <div>
+            <h4 class="text-gray-800 mb-1">
+              {{ stats.total_revenue|format_currency }}
+            </h4>
+            <p class="text-muted mb-0">Total Revenue (All Time)</p>
+            <small class="text-muted">Confirmed + Tentative</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-6 mb-3">
+    <div class="card border-0 shadow h-100">
+      <div class="card-body">
+        <div class="d-flex align-items-center">
+          <div class="me-3">
+            <i
+              class="fas fa-trend-up fa-2x {{ 'text-success' if stats.revenue_growth >= 0 else 'text-danger' }}"
+            ></i>
+          </div>
+          <div>
+            <h4 class="text-gray-800 mb-1">
+              {{ stats.revenue_growth|format_percentage }}
+            </h4>
+            <p class="text-muted mb-0">Revenue Growth</p>
+            <small class="text-muted">Month-over-month (Confirmed)</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 <div class="row">
   <!-- Upcoming Bookings -->
   <div class="col-lg-8 mb-4">
     <div class="card border-0 shadow h-100">
-      <div class="card-header bg-white">
-        <h5 class="m-0 font-weight-bold text-primary">
-          <i class="fas fa-calendar-alt me-2"></i>Upcoming Bookings
-        </h5>
+      <div class="card-header bg-white border-bottom-0">
+        <div class="d-flex justify-content-between align-items-center">
+          <h5 class="m-0 font-weight-bold text-primary">
+            <i class="fas fa-calendar-alt me-2"></i>Upcoming Bookings
+          </h5>
+          <small class="text-muted"
+            >Next {{ upcoming_bookings|length if upcoming_bookings else 0 }}
+            events</small
+          >
+        </div>
       </div>
       <div class="card-body p-0">
+        {% if upcoming_bookings and upcoming_bookings|length > 0 %}
         <div class="list-group list-group-flush">
-          {% if upcoming_bookings %} {% for booking in upcoming_bookings %}
+          {% for booking in upcoming_bookings %}
           <a
-            href="{{ url_for('view_booking', id=booking.id) }}"
-            class="list-group-item list-group-item-action booking-item booking-{{ booking.status or 'tentative' }}"
+            href="{{ url_for('bookings.view_booking', id=booking.id) }}"
+            class="list-group-item list-group-item-action booking-item booking-{{ booking.status|default('tentative') }}"
+            data-booking-id="{{ booking.id }}"
           >
-            <div
-              class="d-flex w-100 justify-content-between align-items-center"
-            >
-              <div>
-                <h5 class="mb-1">{{ booking.title or 'Untitled Booking' }}</h5>
-                <p class="mb-1 text-muted">
-                  <i class="fas fa-door-open me-1"></i>
-                  {% if booking.room and booking.room.name %} {{
-                  booking.room.name }} {% elif booking.room_id %}
-                  <span class="fallback-text"
-                    >Room ID: {{ booking.room_id }}</span
+            <div class="d-flex w-100 justify-content-between align-items-start">
+              <div class="flex-grow-1">
+                <div class="d-flex w-100 justify-content-between">
+                  <h6 class="mb-1 text-dark">
+                    {{ booking.title|default('Untitled Booking') }}
+                  </h6>
+                  <small class="text-muted"
+                    >{{ booking.days_until|default('Unknown') }}</small
                   >
-                  {% else %}
-                  <span class="fallback-text">Unknown Room</span>
-                  {% endif %} |
-                  <i class="fas fa-user me-1"></i>
-                  {% if booking.client and (booking.client.company_name or
-                  booking.client.contact_person) %} {{
-                  booking.client.company_name or booking.client.contact_person
-                  }} {% elif booking.client_id %}
-                  <span class="fallback-text"
-                    >Client ID: {{ booking.client_id }}</span
-                  >
-                  {% else %}
-                  <span class="fallback-text">Unknown Client</span>
+                </div>
+                <div class="d-flex align-items-center mb-1">
+                  <i class="fas fa-door-open me-2 text-muted"></i>
+                  <span class="me-3">
+                    {% if booking.room_name and booking.room_name != 'Unknown
+                    Room' %} {{ booking.room_name }} {% if booking.room_capacity
+                    %}
+                    <small class="text-muted"
+                      >({{ booking.room_capacity }} capacity)</small
+                    >
+                    {% endif %} {% else %}
+                    <span class="text-muted">Room details loading...</span>
+                    {% endif %}
+                  </span>
+                </div>
+                <div class="d-flex align-items-center">
+                  <i class="fas fa-building me-2 text-muted"></i>
+                  <span class="me-3">
+                    {% if booking.client_name and booking.client_name !=
+                    'Unknown Client' %} {{ booking.client_name }} {% else %}
+                    <span class="text-muted">Client details loading...</span>
+                    {% endif %}
+                  </span>
+                  {% if booking.attendees %}
+                  <i class="fas fa-users me-1 text-muted"></i>
+                  <span class="me-3">{{ booking.attendees }} attendees</span>
                   {% endif %}
-                </p>
+                </div>
               </div>
-              <div class="text-end">
+              <div class="text-end ms-3">
                 <span
-                  class="badge bg-{% if booking.status == 'tentative' %}warning{% elif booking.status == 'confirmed' %}success{% else %}danger{% endif %}"
+                  class="badge bg-{{ 'warning' if booking.status == 'tentative' else ('success' if booking.status == 'confirmed' else 'danger') }}"
                 >
-                  {{ (booking.status or 'tentative')|capitalize }}
+                  {{ booking.status|default('tentative')|capitalize }}
                 </span>
                 <div class="small text-muted mt-1">
-                  {% if booking.start_time %} {% if booking.start_time is string
-                  %} {{ booking.start_time[:16]|replace('T', ' ') }} {% else %}
-                  {{ booking.start_time.strftime('%d %b %Y, %H:%M') }} {% endif
-                  %} {% else %}
+                  {% if booking.start_time and booking.start_time != 'Unknown'
+                  %} {{ booking.start_time }} {% else %}
                   <span class="fallback-text">Time TBD</span>
                   {% endif %}
                 </div>
               </div>
             </div>
           </a>
-          {% endfor %} {% else %}
-          <div class="list-group-item text-center py-4">
-            <p class="text-muted mb-0">No upcoming bookings</p>
-          </div>
-          {% endif %}
+          {% endfor %}
         </div>
+        {% else %}
+        <div class="text-center py-5">
+          <i class="fas fa-calendar-times fa-3x text-muted mb-3"></i>
+          <h5 class="text-muted">No Upcoming Bookings</h5>
+          <p class="text-muted mb-3">
+            You don't have any scheduled events coming up.
+          </p>
+          <a
+            href="{{ url_for('bookings.new_booking') }}"
+            class="btn btn-primary"
+          >
+            <i class="fas fa-plus me-1"></i>Create New Booking
+          </a>
+        </div>
+        {% endif %}
       </div>
-      <div class="card-footer bg-white">
-        <a href="{{ url_for('bookings') }}" class="btn btn-sm btn-primary">
-          <i class="fas fa-list me-1"></i>View All Bookings
-        </a>
-        <a href="{{ url_for('new_booking') }}" class="btn btn-sm btn-success">
-          <i class="fas fa-plus me-1"></i>New Booking
-        </a>
+      <div class="card-footer bg-white border-top">
+        <div class="d-flex justify-content-between">
+          <a
+            href="{{ url_for('bookings.bookings') }}"
+            class="btn btn-sm btn-outline-primary"
+          >
+            <i class="fas fa-list me-1"></i>View All Bookings
+          </a>
+          <a
+            href="{{ url_for('bookings.new_booking') }}"
+            class="btn btn-sm btn-success"
+          >
+            <i class="fas fa-plus me-1"></i>New Booking
+          </a>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- Today's Events -->
-  <div class="col-lg-4 mb-4">
-    <div class="card border-0 shadow h-100">
-      <div class="card-header bg-white">
+  <!-- Today's Events & Quick Actions -->
+  <div class="col-lg-4">
+    <!-- Today's Events -->
+    <div class="card border-0 shadow mb-4">
+      <div class="card-header bg-white border-bottom-0">
         <h5 class="m-0 font-weight-bold text-primary">
           <i class="fas fa-clock me-2"></i>Today's Events
         </h5>
       </div>
       <div class="card-body p-0">
+        {% if todays_bookings and todays_bookings|length > 0 %}
         <div class="list-group list-group-flush">
-          {% if today_bookings %} {% for booking in today_bookings %}
+          {% for booking in todays_bookings %}
           <a
-            href="{{ url_for('view_booking', id=booking.id) }}"
+            href="{{ url_for('bookings.view_booking', id=booking.id) }}"
             class="list-group-item list-group-item-action"
+            data-booking-id="{{ booking.id }}"
           >
-            <div class="d-flex w-100 justify-content-between">
-              <h6 class="mb-1">{{ booking.title or 'Untitled Event' }}</h6>
-              <span
-                class="badge bg-{% if booking.status == 'tentative' %}warning{% elif booking.status == 'confirmed' %}success{% else %}danger{% endif %}"
-              >
-                {{ (booking.status or 'tentative')|capitalize }}
-              </span>
-            </div>
-            <div class="d-flex w-100 justify-content-between">
-              <p class="mb-1 small">
-                <i class="fas fa-door-open me-1"></i>
-                {% if booking.room and booking.room.name %} {{ booking.room.name
-                }} {% elif booking.room_id %}
-                <span class="fallback-text"
-                  >Room ID: {{ booking.room_id }}</span
+            <div class="d-flex w-100 justify-content-between align-items-start">
+              <div class="flex-grow-1">
+                <h6 class="mb-1">
+                  {{ booking.title|default('Untitled Event') }}
+                </h6>
+                <p class="mb-1 small text-muted">
+                  <i class="fas fa-door-open me-1"></i>
+                  {% if booking.room_name and booking.room_name != 'Unknown
+                  Room' %} {{ booking.room_name }} {% else %}
+                  <span class="text-muted">Room loading...</span>
+                  {% endif %}
+                </p>
+                <p class="mb-0 small text-muted">
+                  <i class="fas fa-building me-1"></i>
+                  {% if booking.client_name and booking.client_name != 'Unknown
+                  Client' %} {{ booking.client_name }} {% else %}
+                  <span class="text-muted">Client loading...</span>
+                  {% endif %}
+                </p>
+              </div>
+              <div class="text-end">
+                <span
+                  class="badge bg-{{ 'warning' if booking.status == 'tentative' else ('success' if booking.status == 'confirmed' else 'danger') }}"
                 >
-                {% else %}
-                <span class="fallback-text">Unknown Room</span>
-                {% endif %}
-              </p>
-              <small class="text-muted">
-                {% if booking.start_time and booking.end_time %} {% if
-                booking.start_time is string %} {{ booking.start_time[11:16] }}
-                - {{ booking.end_time[11:16] }} {% else %} {{
-                booking.start_time.strftime('%H:%M') }} - {{
-                booking.end_time.strftime('%H:%M') }} {% endif %} {% else %}
-                <span class="fallback-text">Time TBD</span>
-                {% endif %}
-              </small>
+                  {{ booking.status|default('tentative')|capitalize }}
+                </span>
+                <div class="small text-muted mt-1">
+                  {% if booking.time_range and booking.time_range != 'Time TBD'
+                  %} {{ booking.time_range }} {% else %}
+                  <span class="text-muted">Time TBD</span>
+                  {% endif %}
+                </div>
+              </div>
             </div>
           </a>
-          {% endfor %} {% else %}
-          <div class="list-group-item text-center py-4">
-            <p class="text-muted mb-0">No events scheduled for today</p>
-          </div>
-          {% endif %}
+          {% endfor %}
         </div>
+        {% else %}
+        <div class="text-center py-4">
+          <i class="fas fa-coffee fa-2x text-muted mb-2"></i>
+          <p class="text-muted mb-0">No events scheduled for today</p>
+          <small class="text-muted">Enjoy your day!</small>
+        </div>
+        {% endif %}
       </div>
-      <div class="card-footer bg-white text-center">
-        <a href="{{ url_for('calendar') }}" class="btn btn-sm btn-primary">
+      <div class="card-footer bg-white text-center border-top">
+        <a
+          href="{{ url_for('bookings.calendar_view') }}"
+          class="btn btn-sm btn-outline-primary"
+        >
           <i class="fas fa-calendar-alt me-1"></i>View Calendar
         </a>
       </div>
     </div>
-  </div>
-</div>
 
-<!-- Quick Actions -->
-<div class="row mb-4">
-  <div class="col-12">
+    <!-- Quick Actions -->
     <div class="card border-0 shadow">
-      <div class="card-header bg-white">
+      <div class="card-header bg-white border-bottom-0">
         <h5 class="m-0 font-weight-bold text-primary">
           <i class="fas fa-bolt me-2"></i>Quick Actions
         </h5>
       </div>
       <div class="card-body">
+<<<<<<< HEAD
         <div class="row">
           <div class="col-md-3 mb-3">
             <a
@@ -369,15 +755,90 @@ Conference Booking{% endblock %} {% block extra_css %}
               <div>Reports</div>
             </a>
           </div>
+=======
+        <div class="d-grid gap-2">
+          <a
+            href="{{ url_for('bookings.new_booking') }}"
+            class="btn btn-success quick-action-btn"
+          >
+            <i class="fas fa-calendar-plus me-2"></i>New Booking
+          </a>
+          <a
+            href="{{ url_for('bookings.calendar_view') }}"
+            class="btn btn-primary quick-action-btn"
+          >
+            <i class="fas fa-calendar-alt me-2"></i>Calendar View
+          </a>
+          <a
+            href="{{ url_for('bookings.bookings') }}"
+            class="btn btn-info quick-action-btn"
+          >
+            <i class="fas fa-list me-2"></i>All Bookings
+          </a>
+          {% if current_user.role in ['admin', 'manager'] %}
+          <a
+            href="{{ url_for('reports.reports') }}"
+            class="btn btn-secondary quick-action-btn"
+          >
+            <i class="fas fa-chart-bar me-2"></i>Reports
+          </a>
+          {% endif %}
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
         </div>
       </div>
     </div>
   </div>
 </div>
 
-<!-- Debug Information Panel (only in debug mode) -->
-{% if debug_mode and (upcoming_bookings or today_bookings) %}
-<div class="row mb-4">
+<!-- Recent Activity Summary -->
+{% if recent_bookings and recent_bookings|length > 0 %}
+<div class="row mt-4">
+  <div class="col-12">
+    <div class="card border-0 shadow">
+      <div class="card-header bg-white border-bottom-0">
+        <h5 class="m-0 font-weight-bold text-primary">
+          <i class="fas fa-history me-2"></i>Recent Activity
+        </h5>
+      </div>
+      <div class="card-body">
+        <div class="row">
+          {% for booking in recent_bookings[:4] %}
+          <div class="col-md-6 col-lg-3 mb-3">
+            <div
+              class="card border-left-{{ 'success' if booking.status == 'confirmed' else ('warning' if booking.status == 'tentative' else 'danger') }}"
+            >
+              <div class="card-body">
+                <a
+                  href="{{ url_for('bookings.view_booking', id=booking.id) }}"
+                  class="text-decoration-none"
+                >
+                  <h6 class="card-title text-dark">
+                    {{ booking.title|default('Untitled') }}
+                  </h6>
+                  <p class="card-text small text-muted mb-1">
+                    {{ booking.client_name|default('Unknown Client') }}
+                  </p>
+                  <p class="card-text small text-muted mb-1">
+                    {{ booking.room_name|default('Unknown Room') }}
+                  </p>
+                  <small class="text-muted"
+                    >{{ booking.time_ago|default('Recently') }}</small
+                  >
+                </a>
+              </div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- Debug Panel (only shown in development) -->
+{% if config.DEBUG and request.args.get('debug') %}
+<div class="row mt-4">
   <div class="col-12">
     <div class="card border-warning">
       <div class="card-header bg-warning text-dark">
@@ -385,18 +846,31 @@ Conference Booking{% endblock %} {% block extra_css %}
       </div>
       <div class="card-body">
         <div class="row">
-          <div class="col-md-6">
-            <h6>Upcoming Bookings Data Structure:</h6>
-            <pre class="small">
-{{ upcoming_bookings[:1]|tojson(indent=2) if upcoming_bookings else 'No data' }}</pre
+          <div class="col-md-4">
+            <h6>Stats:</h6>
+            <pre class="small bg-light p-2">
+{{ stats|tojson(indent=2) if stats else 'No stats data' }}</pre
             >
           </div>
-          <div class="col-md-6">
-            <h6>Today's Bookings Data Structure:</h6>
-            <pre class="small">
-{{ today_bookings[:1]|tojson(indent=2) if today_bookings else 'No data' }}</pre
+          <div class="col-md-4">
+            <h6>Sample Upcoming Booking:</h6>
+            <pre class="small bg-light p-2">
+{{ upcoming_bookings[0]|tojson(indent=2) if upcoming_bookings else 'No upcoming bookings' }}</pre
             >
           </div>
+          <div class="col-md-4">
+            <h6>Sample Today's Booking:</h6>
+            <pre class="small bg-light p-2">
+{{ todays_bookings[0]|tojson(indent=2) if todays_bookings else 'No today bookings' }}</pre
+            >
+          </div>
+        </div>
+        <div class="mt-3">
+          <small class="text-muted">
+            Template variables: stats={{ 'available' if stats else 'missing' }},
+            upcoming={{ upcoming_bookings|length if upcoming_bookings else 0 }},
+            today={{ todays_bookings|length if todays_bookings else 0 }}
+          </small>
         </div>
       </div>
     </div>
@@ -404,50 +878,224 @@ Conference Booking{% endblock %} {% block extra_css %}
 </div>
 {% endif %} {% endblock %} {% block extra_js %}
 <script>
-  document.addEventListener("DOMContentLoaded", function () {
-    // Add some interactive features
+  document.addEventListener('DOMContentLoaded', function() {
+    // Initialize dashboard functionality
+    initializeDashboard();
 
-    // Smooth scroll for internal links
-    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-      anchor.addEventListener('click', function (e) {
-        e.preventDefault();
-        const target = document.querySelector(this.getAttribute('href'));
-        if (target) {
-          target.scrollIntoView({
-            behavior: 'smooth'
-          });
+    // Set up auto-refresh (every 5 minutes)
+    if (!document.hidden) {
+      setInterval(function() {
+        if (!document.hidden) {
+          refreshDashboardData();
         }
+      }, 300000); // 5 minutes
+    }
+
+    // Add click tracking for analytics
+    trackDashboardInteractions();
+  });
+
+  function initializeDashboard() {
+    // Add loading states to cards
+    const statsCards = document.querySelectorAll('.stats-card');
+    statsCards.forEach(card => {
+      card.addEventListener('click', function() {
+        // Add click animations or actions if needed
       });
     });
 
-    // Auto-refresh dashboard data every 5 minutes (optional)
-    // Uncomment the following lines if you want auto-refresh
-    /*
-    setInterval(function() {
-      // Only refresh if the page is visible
-      if (!document.hidden) {
-        window.location.reload();
-      }
-    }, 300000); // 5 minutes
-    */
-
-    // Add tooltip for fallback text
+    // Initialize tooltips for fallback text
     const fallbackElements = document.querySelectorAll('.fallback-text');
     fallbackElements.forEach(element => {
-      element.title = 'Data temporarily unavailable - will update automatically';
+      element.title = 'Data is being loaded. This will update automatically.';
     });
 
-    // Log debug information to console (only in debug mode)
-    {% if debug_mode %}
-    console.log('Dashboard Debug Info:', {
-      upcoming_bookings_count: {{ upcoming_bookings|length if upcoming_bookings else 0 }},
-      today_bookings_count: {{ today_bookings|length if today_bookings else 0 }},
-      total_rooms: {{ total_rooms if total_rooms is not none else 0 }},
-      total_clients: {{ total_clients if total_clients is not none else 0 }},
-      total_active_bookings: {{ total_active_bookings if total_active_bookings is not none else 0 }},
-      timestamp: new Date().toISOString()
+    // Add smooth hover effects
+    addHoverEffects();
+  }
+
+  function refreshDashboard() {
+    const refreshBtn = document.getElementById('refreshBtn');
+    const originalText = refreshBtn.innerHTML;
+
+    // Show loading state
+    refreshBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Refreshing...';
+    refreshBtn.disabled = true;
+
+    // Try AJAX refresh first
+    fetch('/api/dashboard/refresh')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.success && data.stats) {
+          updateDashboardStats(data.stats);
+          updateLastUpdated();
+          showRefreshStatus('success', 'Dashboard refreshed successfully');
+        } else {
+          throw new Error('Invalid response data');
+        }
+      })
+      .catch(error => {
+        console.error('AJAX refresh failed, falling back to page reload:', error);
+        // Fallback to page reload if AJAX fails
+        window.location.reload();
+      })
+      .finally(() => {
+        // Restore button state
+        refreshBtn.innerHTML = originalText;
+        refreshBtn.disabled = false;
+      });
+  }
+
+  function refreshDashboardData() {
+    // AJAX refresh of dashboard data without full page reload
+    fetch('/api/dashboard/refresh')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        if (data.success && data.stats) {
+          updateDashboardStats(data.stats);
+          updateLastUpdated();
+          console.log('Dashboard data refreshed successfully');
+
+          // Show success feedback
+          showRefreshStatus('success', 'Dashboard updated successfully');
+        } else {
+          throw new Error(data.message || 'Failed to refresh dashboard data');
+        }
+      })
+      .catch(error => {
+        console.error('Error refreshing dashboard data:', error);
+        showRefreshStatus('error', `Failed to refresh: ${error.message}`);
+      });
+  }
+
+  function updateDashboardStats(stats) {
+    // Update statistics cards with better error handling
+    if (stats) {
+      // Update main stats
+      const elements = {
+        'totalBookings': stats.total_bookings || 0,
+        'totalClients': stats.total_clients || 0,
+        'totalRooms': stats.total_rooms || 0,
+        'todayEvents': stats.todays_bookings || 0
+      };
+
+      Object.entries(elements).forEach(([id, value]) => {
+        const element = document.getElementById(id);
+        if (element) {
+          element.textContent = value;
+        }
+      });
+
+      console.log('Dashboard stats updated:', stats);
+    } else {
+      console.warn('No stats data provided for update');
+    }
+  }
+
+  function showRefreshStatus(type, message) {
+    // Create or update status message
+    let statusDiv = document.getElementById('refresh-status');
+    if (!statusDiv) {
+      statusDiv = document.createElement('div');
+      statusDiv.id = 'refresh-status';
+      statusDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 10px 15px;
+        border-radius: 4px;
+        z-index: 1050;
+        max-width: 300px;
+        font-size: 14px;
+        transition: all 0.3s ease;
+      `;
+      document.body.appendChild(statusDiv);
+    }
+
+    // Style based on type
+    if (type === 'success') {
+      statusDiv.className = 'alert alert-success';
+      statusDiv.innerHTML = `<i class="fas fa-check-circle me-2"></i>${message}`;
+    } else {
+      statusDiv.className = 'alert alert-danger';
+      statusDiv.innerHTML = `<i class="fas fa-exclamation-circle me-2"></i>${message}`;
+    }
+
+    // Auto-hide after 3 seconds
+    setTimeout(() => {
+      if (statusDiv) {
+        statusDiv.style.opacity = '0';
+        setTimeout(() => statusDiv.remove(), 300);
+      }
+    }, 3000);
+  }
+
+  function updateLastUpdated() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('en-US', {
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit'
     });
-    {% endif %}
+    document.getElementById('lastUpdated').textContent = timeString;
+  }
+
+  function addHoverEffects() {
+    // Add enhanced hover effects for interactive elements
+    const interactiveElements = document.querySelectorAll('.booking-item, .quick-action-btn, .stats-card');
+
+    interactiveElements.forEach(element => {
+      element.addEventListener('mouseenter', function() {
+        this.style.transition = 'all 0.3s ease';
+      });
+    });
+  }
+
+  function trackDashboardInteractions() {
+    // Track clicks on booking items for analytics
+    const bookingItems = document.querySelectorAll('[data-booking-id]');
+
+    bookingItems.forEach(item => {
+      item.addEventListener('click', function() {
+        const bookingId = this.getAttribute('data-booking-id');
+        console.log('Booking clicked:', bookingId);
+        // You can send analytics data here
+      });
+    });
+  }
+
+  // Handle visibility change for auto-refresh
+  document.addEventListener('visibilitychange', function() {
+    if (!document.hidden) {
+      // Page became visible, refresh data
+      refreshDashboardData();
+    }
   });
+
+  // Error handling for failed data loads
+  window.addEventListener('error', function(e) {
+    console.error('Dashboard error:', e.error);
+  });
+
+  // Debug mode logging
+  {% if config.DEBUG %}
+  console.log('Dashboard Debug Mode Active');
+  console.log('Dashboard loaded with data:', {
+    stats: {{ stats|tojson if stats else 'null' }},
+    upcoming_bookings_count: {{ upcoming_bookings|length if upcoming_bookings else 0 }},
+    today_bookings_count: {{ today_bookings|length if today_bookings else 0 }},
+    timestamp: new Date().toISOString()
+  });
+  {% endif %}
 </script>
 {% endblock %}

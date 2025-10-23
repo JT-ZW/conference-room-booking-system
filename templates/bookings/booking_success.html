@@ -1,0 +1,411 @@
+{% extends "layout.html" %} {% block title %}Booking Created Successfully |
+Rainbow Towers Conference Booking{% endblock %} {% block extra_css %}
+<style>
+  .success-container {
+    min-height: 80vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #f8f9fc 0%, #e3e6f0 100%);
+    margin: -2rem -1rem;
+    padding: 2rem;
+  }
+
+  .success-card {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+    padding: 3rem;
+    max-width: 800px;
+    width: 100%;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .success-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 5px;
+    background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
+  }
+
+  .success-icon {
+    color: #1cc88a;
+    font-size: 4rem;
+    margin-bottom: 1.5rem;
+    animation: bounceIn 0.8s ease-out;
+  }
+
+  .success-title {
+    color: #2c3e50;
+    font-size: 2.5rem;
+    font-weight: bold;
+    margin-bottom: 1rem;
+    animation: fadeInUp 0.6s ease-out;
+  }
+
+  .success-subtitle {
+    color: #6c757d;
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    animation: fadeInUp 0.6s ease-out 0.2s both;
+  }
+
+  .booking-summary {
+    background: linear-gradient(135deg, #f8f9fc 0%, #eaecf4 100%);
+    border-radius: 15px;
+    padding: 2rem;
+    margin: 2rem 0;
+    text-align: left;
+    animation: fadeInUp 0.6s ease-out 0.4s both;
+  }
+
+  .booking-detail {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid #e9ecef;
+  }
+
+  .booking-detail:last-child {
+    border-bottom: none;
+  }
+
+  .booking-detail-label {
+    font-weight: 600;
+    color: #4e73df;
+  }
+
+  .booking-detail-value {
+    color: #2c3e50;
+    font-weight: 500;
+  }
+
+  .action-buttons {
+    margin-top: 2rem;
+    animation: fadeInUp 0.6s ease-out 0.6s both;
+  }
+
+  .btn-enhanced {
+    border-radius: 25px;
+    padding: 12px 30px;
+    font-weight: 600;
+    margin: 0.5rem;
+    transition: all 0.3s ease;
+    text-decoration: none;
+    display: inline-block;
+  }
+
+  .btn-enhanced:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+  }
+
+  .btn-primary-enhanced {
+    background: linear-gradient(135deg, #4e73df 0%, #3c5aa6 100%);
+    border: none;
+    color: white;
+  }
+
+  .btn-success-enhanced {
+    background: linear-gradient(135deg, #1cc88a 0%, #13855c 100%);
+    border: none;
+    color: white;
+  }
+
+  .btn-outline-enhanced {
+    border: 2px solid #4e73df;
+    color: #4e73df;
+    background: transparent;
+  }
+
+  .btn-outline-enhanced:hover {
+    background: #4e73df;
+    color: white;
+  }
+
+  .next-steps {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin: 2rem 0;
+    text-align: left;
+    animation: fadeInUp 0.6s ease-out 0.8s both;
+  }
+
+  .step-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 1rem;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+  }
+
+  .step-item:last-child {
+    margin-bottom: 0;
+  }
+
+  .step-number {
+    background: rgba(255, 255, 255, 0.2);
+    color: white;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    margin-right: 1rem;
+    flex-shrink: 0;
+  }
+
+  .countdown-timer {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    padding: 1rem;
+    border-radius: 10px;
+    margin: 1rem 0;
+    font-weight: 600;
+    animation: fadeInUp 0.6s ease-out 1s both;
+  }
+
+  @keyframes bounceIn {
+    0% {
+      transform: scale(0.3);
+      opacity: 0;
+    }
+    50% {
+      transform: scale(1.05);
+    }
+    70% {
+      transform: scale(0.9);
+    }
+    100% {
+      transform: scale(1);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeInUp {
+    from {
+      opacity: 0;
+      transform: translateY(30px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .floating-animation {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  @keyframes float {
+    0%,
+    100% {
+      transform: translateY(0px);
+    }
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="success-container">
+  <div class="success-card">
+    <div class="success-icon floating-animation">
+      <i class="fas fa-check-circle"></i>
+    </div>
+
+    <h1 class="success-title">Booking Created Successfully!</h1>
+    <p class="success-subtitle">
+      Your conference room booking has been created and is ready for management.
+    </p>
+
+    <!-- Booking Summary -->
+    <div class="booking-summary">
+      <h5 class="text-primary mb-3">
+        <i class="fas fa-clipboard-list me-2"></i>Booking Summary
+      </h5>
+
+      <div class="booking-detail">
+        <span class="booking-detail-label">Booking Reference:</span>
+        <span class="booking-detail-value">
+          <code>BK-{{ booking.id }}</code>
+        </span>
+      </div>
+
+      <div class="booking-detail">
+        <span class="booking-detail-label">Event Title:</span>
+        <span class="booking-detail-value"
+          >{{ booking.title or 'Conference Room Booking' }}</span
+        >
+      </div>
+
+      <div class="booking-detail">
+        <span class="booking-detail-label">Client:</span>
+        <span class="booking-detail-value">
+          {% if booking.client %} {{ booking.client.company_name or
+          booking.client.contact_person or 'Client' }} {% else %} New Client {%
+          endif %}
+        </span>
+      </div>
+
+      <div class="booking-detail">
+        <span class="booking-detail-label">Room:</span>
+        <span class="booking-detail-value">
+          {% if booking.room %} {{ booking.room.name }} {% else %} Conference
+          Room {% endif %}
+        </span>
+      </div>
+
+      <div class="booking-detail">
+        <span class="booking-detail-label">Date:</span>
+        <span class="booking-detail-value">
+          {% if booking.start_time %} {% if booking.start_time is string %} {{
+          booking.start_time[:10] }} {% else %} {{
+          booking.start_time.strftime('%d %B %Y') }} {% endif %} {% else %} To
+          be determined {% endif %}
+        </span>
+      </div>
+
+      <div class="booking-detail">
+        <span class="booking-detail-label">Status:</span>
+        <span class="booking-detail-value">
+          <span class="badge bg-warning px-3 py-2">
+            <i class="fas fa-clock me-1"></i>Tentative
+          </span>
+        </span>
+      </div>
+
+      <div class="booking-detail">
+        <span class="booking-detail-label">Total Amount:</span>
+        <span class="booking-detail-value">
+          <strong class="text-primary fs-5"
+            >${{ "%.2f"|format(booking.total_price or 0) }}</strong
+          >
+        </span>
+      </div>
+    </div>
+
+    <!-- Next Steps -->
+    <div class="next-steps">
+      <h5 class="mb-3"><i class="fas fa-route me-2"></i>What's Next?</h5>
+
+      <div class="step-item">
+        <div class="step-number">1</div>
+        <div>
+          <strong>Generate Quotation</strong><br />
+          <small>Create a professional quotation to send to your client</small>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-number">2</div>
+        <div>
+          <strong>Client Approval</strong><br />
+          <small>Wait for client confirmation and any modifications</small>
+        </div>
+      </div>
+
+      <div class="step-item">
+        <div class="step-number">3</div>
+        <div>
+          <strong>Confirm Booking</strong><br />
+          <small>Mark the booking as confirmed once approved</small>
+        </div>
+      </div>
+    </div>
+
+    <!-- Countdown Timer -->
+    <div class="countdown-timer">
+      <i class="fas fa-clock me-2"></i>
+      <span id="countdown"
+        >Redirecting to booking details in <strong>10</strong> seconds...</span
+      >
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="action-buttons">
+      <a
+        href="{{ url_for('bookings.view_booking', id=booking.id) }}?created=true"
+        class="btn btn-primary-enhanced btn-enhanced"
+      >
+        <i class="fas fa-eye me-2"></i>View Booking Details
+      </a>
+
+      <a
+        href="{{ url_for('bookings.generate_invoice', id=booking.id) }}"
+        class="btn btn-success-enhanced btn-enhanced"
+      >
+        <i class="fas fa-file-alt me-2"></i>Generate Quotation
+      </a>
+
+      <a
+        href="{{ url_for('bookings.edit_booking', id=booking.id) }}"
+        class="btn btn-outline-enhanced btn-enhanced"
+      >
+        <i class="fas fa-edit me-2"></i>Edit Booking
+      </a>
+
+      <a
+        href="{{ url_for('dashboard.index') }}"
+        class="btn btn-outline-enhanced btn-enhanced"
+      >
+        <i class="fas fa-home me-2"></i>Go to Dashboard
+      </a>
+    </div>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Countdown timer for auto-redirect
+    let timeLeft = 10;
+    const countdownElement = document.getElementById('countdown');
+
+    const timer = setInterval(() => {
+      timeLeft--;
+      countdownElement.innerHTML = `Redirecting to booking details in <strong>${timeLeft}</strong> seconds...`;
+
+      if (timeLeft <= 0) {
+        clearInterval(timer);
+        window.location.href = "{{ url_for('bookings.view_booking', id=booking.id) }}?created=true";
+      }
+    }, 1000);
+
+    // Cancel timer if user clicks any link
+    document.querySelectorAll('a').forEach(link => {
+      link.addEventListener('click', () => {
+        clearInterval(timer);
+      });
+    });
+
+    // Play success sound if available
+    try {
+      const audio = new Audio('/static/sounds/success.mp3');
+      audio.volume = 0.3;
+      audio.play().catch(e => console.log('Sound not available'));
+    } catch (e) {
+      console.log('Sound not available');
+    }
+
+    // Log successful booking creation
+    console.log('✅ Booking created successfully:', {
+      id: {{ booking.id }},
+      title: "{{ booking.title or 'Conference Room Booking' }}",
+      status: 'tentative',
+      total: {{ booking.total_price or 0 }}
+    });
+  });
+</script>
+{% endblock %}

@@ -1,10 +1,14 @@
 import functools
 from flask import request, session
 from flask_login import current_user
+<<<<<<< HEAD
 from datetime import datetime, timezone, timedelta
 
 # Central Africa Time (CAT) UTC+2
 CAT = timezone(timedelta(hours=2))
+=======
+from datetime import datetime, UTC
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
 from .logging import log_user_activity
 
 def activity_logged(activity_type, description_template=None, resource_type=None, status='success'):
@@ -14,7 +18,11 @@ def activity_logged(activity_type, description_template=None, resource_type=None
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
+<<<<<<< HEAD
             start_time = datetime.now(CAT)
+=======
+            start_time = datetime.now(UTC)
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
             activity_status = status
             result = None
             error_info = None
@@ -39,7 +47,11 @@ def activity_logged(activity_type, description_template=None, resource_type=None
                         description = f"Executed {func.__name__}"
                     metadata = {
                         'function_name': func.__name__,
+<<<<<<< HEAD
                         'execution_time_ms': int((datetime.now(CAT) - start_time).total_seconds() * 1000),
+=======
+                        'execution_time_ms': int((datetime.now(UTC) - start_time).total_seconds() * 1000),
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
                         'args_count': len(args),
                         'kwargs_keys': list(kwargs.keys()) if kwargs else []
                     }
@@ -70,6 +82,10 @@ def require_admin_or_manager(f):
         if not current_user.is_authenticated or current_user.role not in ['admin', 'manager']:
             from flask import flash, redirect, url_for
             flash('You do not have permission to access this page.', 'danger')
+<<<<<<< HEAD
             return redirect(url_for('dashboard'))
+=======
+            return redirect(url_for('dashboard.dashboard'))
+>>>>>>> 095b69e2baeff84440be421321549fe1a01b5cda
         return f(*args, **kwargs)
     return decorated_function 

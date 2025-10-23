@@ -107,7 +107,7 @@ Booking{% endblock %} {% block extra_css %}
     >
       <i class="fas fa-folder-plus me-1"></i>New Category
     </button>
-    <a href="{{ url_for('new_addon') }}" class="btn btn-success ms-2">
+    <a href="{{ url_for('addons.new_addon') }}" class="btn btn-success ms-2">
       <i class="fas fa-plus me-1"></i>New Add-on
     </a>
   </div>
@@ -302,7 +302,7 @@ Booking{% endblock %} {% block extra_css %}
         <li>
           <a
             class="dropdown-item"
-            href="{{ url_for('new_addon') }}?category={{ category.id }}"
+            href="{{ url_for('addons.new_addon') }}?category={{ category.id }}"
           >
             <i class="fas fa-plus me-1"></i>Add to Category
           </a>
@@ -325,7 +325,7 @@ Booking{% endblock %} {% block extra_css %}
           </span>
         </li>
         <li>
-          <a class="dropdown-item" href="{{ url_for('new_addon') }}">
+          <a class="dropdown-item" href="{{ url_for('addons.new_addon') }}">
             <i class="fas fa-plus me-1"></i>Create Add-on
           </a>
         </li>
@@ -417,14 +417,14 @@ Booking{% endblock %} {% block extra_css %}
           </p>
           {% if category.id %}
           <a
-            href="{{ url_for('new_addon') }}?category={{ category.id }}"
+            href="{{ url_for('addons.new_addon') }}?category={{ category.id }}"
             class="btn btn-sm btn-outline-primary"
           >
             <i class="fas fa-plus me-1"></i>Add to This Category
           </a>
           {% else %}
           <a
-            href="{{ url_for('new_addon') }}"
+            href="{{ url_for('addons.new_addon') }}"
             class="btn btn-sm btn-outline-primary"
           >
             <i class="fas fa-plus me-1"></i>Create Add-on
@@ -686,7 +686,7 @@ Booking{% endblock %} {% block extra_css %}
           aria-label="Close"
         ></button>
       </div>
-      <form action="{{ url_for('new_addon_category') }}" method="POST">
+      <form action="{{ url_for('addons.new_addon_category') }}" method="POST">
         {{ csrf_token() }}
         <div class="modal-body">
           <div class="mb-3">

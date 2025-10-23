@@ -8240,17 +8240,10 @@ def internal_server_error(e):
     return render_template('errors/500.html'), 500
 
 # ===============================
-# Health Check and Basic Routes
+# Basic Routes
 # ===============================
-
-@app.route('/health')
-def health_check():
-    """Simple health check for monitoring"""
-    return jsonify({
-        'status': 'healthy',
-        'timestamp': datetime.now(UTC).isoformat(),
-        'database_connected': bool(SUPABASE_URL and SUPABASE_ANON_KEY)
-    })
+# NOTE: /health route is defined earlier in the file (around line 8198)
+# This duplicate has been removed to avoid endpoint conflicts
 
 @app.route('/')
 def index():

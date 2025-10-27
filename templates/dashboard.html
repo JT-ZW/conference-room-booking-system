@@ -718,7 +718,7 @@ Conference Booking{% endblock %} {% block extra_css %}
         <div class="row">
           <div class="col-md-3 mb-3">
             <a
-              href="{{ url_for('new_booking') }}"
+              href="{{ url_for('bookings.new_booking') }}"
               class="btn btn-success w-100 py-3"
             >
               <i class="fas fa-calendar-plus fa-2x mb-2"></i>
@@ -727,18 +727,16 @@ Conference Booking{% endblock %} {% block extra_css %}
           </div>
           <div class="col-md-3 mb-3">
             <a
-              href="{{ url_for('new_booking') }}"
+              href="{{ url_for('clients.new_client') }}"
               class="btn btn-info w-100 py-3"
-              title="Add clients while creating bookings"
             >
               <i class="fas fa-user-plus fa-2x mb-2"></i>
               <div>Add Client</div>
-              <small class="text-muted">via Booking</small>
             </a>
           </div>
           <div class="col-md-3 mb-3">
             <a
-              href="{{ url_for('calendar') }}"
+              href="{{ url_for('bookings.calendar_view') }}"
               class="btn btn-primary w-100 py-3"
             >
               <i class="fas fa-calendar-alt fa-2x mb-2"></i>
@@ -747,40 +745,13 @@ Conference Booking{% endblock %} {% block extra_css %}
           </div>
           <div class="col-md-3 mb-3">
             <a
-              href="{{ url_for('reports') }}"
+              href="{{ url_for('reports.reports') }}"
               class="btn btn-secondary w-100 py-3"
             >
               <i class="fas fa-chart-bar fa-2x mb-2"></i>
               <div>Reports</div>
             </a>
           </div>
-        <div class="d-grid gap-2">
-          <a
-            href="{{ url_for('bookings.new_booking') }}"
-            class="btn btn-success quick-action-btn"
-          >
-            <i class="fas fa-calendar-plus me-2"></i>New Booking
-          </a>
-          <a
-            href="{{ url_for('bookings.calendar_view') }}"
-            class="btn btn-primary quick-action-btn"
-          >
-            <i class="fas fa-calendar-alt me-2"></i>Calendar View
-          </a>
-          <a
-            href="{{ url_for('bookings.bookings') }}"
-            class="btn btn-info quick-action-btn"
-          >
-            <i class="fas fa-list me-2"></i>All Bookings
-          </a>
-          {% if current_user.role in ['admin', 'manager'] %}
-          <a
-            href="{{ url_for('reports.reports') }}"
-            class="btn btn-secondary quick-action-btn"
-          >
-            <i class="fas fa-chart-bar me-2"></i>Reports
-          </a>
-          {% endif %}
         </div>
       </div>
     </div>

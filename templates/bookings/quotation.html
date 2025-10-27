@@ -1,6 +1,5 @@
-{% extends "layout.html" %} 
-{% block title %}Proforma Invoice - {{ booking.title or 'Booking' }} | Rainbow Towers{% endblock %} 
-{% block extra_css %}
+{% extends "layout.html" %} {% block title %}Proforma Invoice - {{ booking.title
+or 'Booking' }} | Rainbow Towers{% endblock %} {% block extra_css %}
 <style>
   /* Print-specific styles */
   @media print {
@@ -508,714 +507,741 @@
       <button type="button" class="btn btn-success btn-sm" id="downloadPdf">
         <i class="fas fa-download me-1"></i>Download PDF
       </button>
-  <a
-    href="{{ url_for('bookings.view_booking', id=booking.id) }}"
-    class="btn btn-secondary"
-  >
-    ← Back to Booking
-  </a>
-  <button class="btn" onclick="window.print()">🖨️ Print Invoice</button>
-  <button class="btn" onclick="downloadPDF()">📄 Download PDF</button>
-  <button class="btn" onclick="sendEmail()">📧 Send to Client</button>
-</div>
-
-<div class="quotation-container" id="quotation-content">
-  <!-- Header with Logo -->
-  <div class="header">
-    <img
-      src="{{ url_for('static', filename='img/rainbow-towers-logo.png') }}"
-      alt="Rainbow Towers Logo"
-      class="logo"
-    />
-    <div class="hotel-info">
-      HARARE'S LEISURE HOTEL & CONFERENCE CENTRE<br />
-      1 Pennefather Avenue, P.O. Box 3033, Causeway, Harare, Zimbabwe<br />
-      Tel: +263 242 772633 - 9<br />
-      Email: reservations@rtg.co.zw<br />
-      Website: www.rtgafrica.com
-    </div>
-  </div>
-
-  <!-- Invoice Title -->
-  <div class="invoice-title">PROFORMA INVOICE</div>
-
-  <!-- Date -->
-  <div class="date-section">DATE: {{ current_date.strftime('%d %B %Y') }}</div>
-
-  <!-- Client Information -->
-  <div class="client-info">
-    <div class="client-column">
-      <h4>CONTACT PERSON</h4>
-      <div class="client-details">
-        {% if booking.client %}
-        <strong>Contact Person:</strong> {{ booking.client.contact_person or
-        booking.client_name or 'Not specified' }}<br />
-        <strong>Company:</strong> {{ booking.client.company_name or
-        booking.company_name or 'Individual Client' }}<br />
-        <strong>Phone:</strong> {{ booking.client.phone or 'Not provided' }}<br />
-        <strong>Address:</strong> {{ booking.client.address or 'Not provided'
-        }}<br />
-        <strong>Email:</strong> {{ booking.client.email or booking.client_email
-        or 'Not provided' }}<br />
-        <strong>Mobile:</strong> {{ booking.client.phone or 'Not provided' }} {%
-        else %} <strong>Contact Person:</strong> {{ booking.client_name or 'Not
-        specified' }}<br />
-        <strong>Company:</strong> {{ booking.company_name or 'Individual Client'
-        }}<br />
-        <strong>Phone:</strong> Not provided<br />
-        <strong>Address:</strong> Not provided<br />
-        <strong>Email:</strong> {{ booking.client_email or 'Not provided' }}<br />
-        <strong>Mobile:</strong> Not provided {% endif %}
-      </div>
-    </div>
-    <div class="client-column">
-      <h4>VAT REG NUMBER</h4>
-      <div class="client-details">10001189</div>
-      <h4 style="margin-top: 20px">BANK DETAILS</h4>
-      <div class="client-details">
-        <strong>Account Name:</strong> The Rainbow Towers<br />
-        <strong>Bank Name:</strong> Stanbic<br />
-        <strong>Branch:</strong> Nelson Mandela<br />
-        <strong>Acc Number:</strong> 9140000892512<br />
-        <strong>Nostro FCA</strong>
-      </div>
-    </div>
-  </div>
-
-  <!-- Hotel Contact -->
-  <div class="client-info" style="border-bottom: 2px solid #d4a843">
-    <div class="client-column">
-      <h4>CONTACT PERSON</h4>
-      <div class="client-details">
-        <strong>Contact Person:</strong> Tandiwe<br />
-        <strong>Address:</strong> 1 Pennefather Ave, Harare<br />
-        <strong>Phone:</strong> 0242 772633<br />
-        <strong>Mobile:</strong> 782705301<br />
-        <strong>Website:</strong> www.rtgafrica.com<br />
-        <strong>Facebook:</strong> rtgreservations<br />
-        <strong>Skype:</strong> reservations
-      </div>
-    </div>
-    <div class="client-column">
-      <!-- Empty column for spacing -->
-    </div>
-  </div>
-
-  <!-- Event Details -->
-  <div class="event-section">
-    <div class="event-title">{{ booking.title or 'Event Booking' }}</div>
-    <div style="margin-top: 10px; font-weight: bold">
-      THE RAINBOW TOWERS HOTEL
-    </div>
-  </div>
-
-  <!-- Services Table -->
-  <table class="services-table">
-    <thead>
-      <tr>
-        <th style="width: 40%">REQUESTED SERVICE</th>
-        <th style="width: 12%">NO. OF PAX</th>
-        <th style="width: 12%">NO. OF ROOMS</th>
-        <th style="width: 16%">UNIT PRICE/PER PERSON</th>
-        <th style="width: 12%">NO. OF DAYS</th>
-        <th style="width: 18%">TOTAL AMOUNT US$</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% set total_amount = 0 %}
-
-      <!-- Use custom addons if available -->
-      {% if booking.custom_addons %} {% for addon in booking.custom_addons %}
-      <tr>
-        <td style="text-align: left">
-          {{ addon.description or 'Service Item' }}
-        </td>
-        <td>{{ booking.attendees or '-' }}</td>
-        <td>{{ addon.quantity or 1 }}</td>
-        <td>{{ "%.2f"|format(addon.unit_price or 0) }}</td>
-        <td>1</td>
-        <td>{{ "%.2f"|format(addon.total_price or 0) }}</td>
-      </tr>
-      {% set total_amount = total_amount + (addon.total_price or 0) %} {% endfor
-      %} {% else %}
-      <!-- Fallback: Use room rental as main service -->
-      {% set room_name = booking.room.name if booking.room else 'Conference
-      Room' %} {% set room_rate = booking.total_price or totals.total or 0 %}
-      <tr>
-        <td style="text-align: left">
-          {{ room_name }} - Conference Room Rental
-        </td>
-        <td>{{ booking.attendees or '-' }}</td>
-        <td>1</td>
-        <td>{{ "%.2f"|format(room_rate) }}</td>
-        <td>1</td>
-        <td>{{ "%.2f"|format(room_rate) }}</td>
-      </tr>
-      {% set total_amount = room_rate %} {% endif %}
-    </tbody>
-    <tfoot>
-      <tr class="total-row">
-        <td colspan="5" style="text-align: right; font-weight: bold">
-          TOTAL US$
-        </td>
-        <td style="font-weight: bold">{{ "%.2f"|format(total_amount) }}</td>
-      </tr>
-    </tfoot>
-  </table>
-
-  <!-- Terms and Conditions -->
-  <div class="terms-section">
-    <h4>TERMS AND CONDITIONS</h4>
-    <ol>
-      <li>
-        The hotel will provide all required equipment for the conference at a
-        cost.
-      </li>
-      <li>
-        The hotel shall not allow clients to bring own equipment as this is a
-        service provided by the hotel. Equipment shall include but not limited
-        to PA systems, screens, translation equipment.
-      </li>
-      <li>
-        All Equipment needs to be communicated at the point of making a
-        reservation.
-      </li>
-      <li>
-        100% of the total amount quoted is required within 48 hours of making an
-        enquiry to guarantee your booking.
-      </li>
-      <li>Full payment is required for confirmation of the booking.</li>
-      <li>Rates are subject to change without notice.</li>
-    </ol>
-
-    <h4>AIRPORT TRANSFERS AND ACTIVITIES</h4>
-    <p>
-      The hotel through its subsidiary Heritage Expeditions Africa (HExA)
-      provides the following ground handling services:
-    </p>
-    <ul style="margin: 5px 0; padding-left: 18px">
-      <li>Shuttle Services</li>
-      <li>City Tours</li>
-      <li>Day Trips</li>
-      <li>Various Activities</li>
-    </ul>
-
-    <h4>CANCELLATION POLICY</h4>
-    <p>
-      Accommodation and conference rooms booked are subject to the following
-      policy:
-    </p>
-    <ul style="margin: 5px 0; padding-left: 18px">
-      <li>15 - 29 Days: 50% refund is made</li>
-      <li>8 - 14 Days: 25% refund is made</li>
-      <li>0 - 7 Days: No refund</li>
-    </ul>
-
-    <h4>PAYMENT</h4>
-    <p>
-      We require confirmation of payment 2 weeks before arrival to secure your
-      booking. Payment can be a purchase order, cash or bank transfer.
-    </p>
-    <p>
-      Please note that we hold the right to cancel your reservation if we have
-      not received your full payment, an order or letter of commitment to pay.
-    </p>
-    <p>
-      This quotation does not constitute an undertaking by RTG to provide the
-      requested services. It will only remain a quotation and may only
-      constitute an undertaking to provide services after both payment has been
-      made and the booking confirmed.
-    </p>
-
-    <h4>INCREASE IN NUMBERS OR ADDITIONAL SERVICES</h4>
-    <ul style="margin: 5px 0; padding-left: 18px">
-      <li>Day conferences – numbers to be communicated by 0900hrs</li>
-      <li>Lunch Bookings – numbers to be communicated by 0900hrs</li>
-      <li>Dinner/Cocktail bookings – numbers to be communicated by 1200hrs</li>
-    </ul>
-    <p>
-      Please note that if there is no communication regarding the reduction of
-      numbers, the hotel will charge as per original booking numbers.
-    </p>
-    <p>
-      In the event of an increase in numbers for either conferencing or
-      accommodation bookings, the hotel will charge accordingly and your
-      organisation will be required to provide order, commitment letter or
-      payment within 24 hours.
-    </p>
-
-    <h4>NO SHOWS</h4>
-    <p>
-      Guests with a valid room reservation who do not arrive on the day of the
-      reservation will be considered no-shows and the applicable room rate equal
-      to one night stay will be charged.
-    </p>
-  </div>
-
-  <!-- Signature Section -->
-  <div class="signature-section">
-    <p>
-      <strong
-        >If in agreement, please sign and return copy to certify
-        confirmation</strong
+      <a
+        href="{{ url_for('bookings.view_booking', id=booking.id) }}"
+        class="btn btn-secondary"
       >
-    </p>
-    <div style="margin-top: 30px">
-      <span>Name </span><span class="signature-line"></span>
-      <span> Signature </span><span class="signature-line"></span>
-      <span> Date </span><span class="signature-line"></span>
+        ← Back to Booking
+      </a>
+      <button class="btn" onclick="window.print()">🖨️ Print Invoice</button>
+      <button class="btn" onclick="downloadPDF()">📄 Download PDF</button>
+      <button class="btn" onclick="sendEmail()">📧 Send to Client</button>
     </div>
-  </div>
-</div>
 
-<!-- Quotation Document -->
-<div class="card shadow-sm border-0">
-  <div class="card-body p-0">
-    <div class="quotation-document" id="quotation-content">
-      <div class="document-container">
-        <!-- Page 1: Invoice Details -->
+    <div class="quotation-container" id="quotation-content">
+      <!-- Header with Logo -->
+      <div class="header">
+        <img
+          src="{{ url_for('static', filename='img/rainbow-towers-logo.png') }}"
+          alt="Rainbow Towers Logo"
+          class="logo"
+        />
+        <div class="hotel-info">
+          HARARE'S LEISURE HOTEL & CONFERENCE CENTRE<br />
+          1 Pennefather Avenue, P.O. Box 3033, Causeway, Harare, Zimbabwe<br />
+          Tel: +263 242 772633 - 9<br />
+          Email: reservations@rtg.co.zw<br />
+          Website: www.rtgafrica.com
+        </div>
+      </div>
 
-        <!-- Logo and Company Info -->
-        <div class="logo-section">
-          <img
-            src="{{ url_for('static', filename='img/rainbow-towers-logo.png') }}"
-            alt="The Rainbow Towers"
-            class="company-logo"
-          />
-          <div class="company-address">
-            1 Pennefather Avenue, P.O. Box 3033, Causeway, Harare, Zimbabwe<br />
-            Tel: +263 242 2772633 - 9<br />
-            Email: reservations@rtg.co.zw<br />
-            Website: www.rtgafrica.com
+      <!-- Invoice Title -->
+      <div class="invoice-title">PROFORMA INVOICE</div>
+
+      <!-- Date -->
+      <div class="date-section">
+        DATE: {{ current_date.strftime('%d %B %Y') }}
+      </div>
+
+      <!-- Client Information -->
+      <div class="client-info">
+        <div class="client-column">
+          <h4>CONTACT PERSON</h4>
+          <div class="client-details">
+            {% if booking.client %}
+            <strong>Contact Person:</strong> {{ booking.client.contact_person or
+            booking.client_name or 'Not specified' }}<br />
+            <strong>Company:</strong> {{ booking.client.company_name or
+            booking.company_name or 'Individual Client' }}<br />
+            <strong>Phone:</strong> {{ booking.client.phone or 'Not provided'
+            }}<br />
+            <strong>Address:</strong> {{ booking.client.address or 'Not
+            provided' }}<br />
+            <strong>Email:</strong> {{ booking.client.email or
+            booking.client_email or 'Not provided' }}<br />
+            <strong>Mobile:</strong> {{ booking.client.phone or 'Not provided'
+            }} {% else %} <strong>Contact Person:</strong> {{
+            booking.client_name or 'Not specified' }}<br />
+            <strong>Company:</strong> {{ booking.company_name or 'Individual
+            Client' }}<br />
+            <strong>Phone:</strong> Not provided<br />
+            <strong>Address:</strong> Not provided<br />
+            <strong>Email:</strong> {{ booking.client_email or 'Not provided'
+            }}<br />
+            <strong>Mobile:</strong> Not provided {% endif %}
           </div>
         </div>
-
-        <!-- Date -->
-        <div class="date-section">DATE: {{ now.strftime('%d %B %Y') }}</div>
-
-        <!-- Gold Header Bar -->
-        <div class="gold-header">PROFORMA INVOICE</div>
-
-        <!-- Two Column Information -->
-        <div class="info-columns">
-          <!-- Left Column: Client Info -->
-          <div class="info-column">
-            <div class="info-row">
-              <div class="info-label">Contact Person</div>
-              <div>
-                {% if booking.client %}{{ booking.client.contact_person or ''
-                }}{% endif %}
-              </div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Company</div>
-              <div>
-                {% if booking.client %}{{ booking.client.company_name or '' }}{%
-                endif %}
-              </div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Phone</div>
-              <div>
-                {% if booking.client %}{{ booking.client.phone or '' }}{% endif
-                %}
-              </div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Address</div>
-              <div>
-                {% if booking.client %}{{ booking.client.address or '' }}{%
-                endif %}
-              </div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Email</div>
-              <div>
-                {% if booking.client %}{{ booking.client.email or '' }}{% endif
-                %}
-              </div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Mobile</div>
-              <div>
-                {% if booking.client %}{{ booking.client.mobile or '' }}{% endif
-                %}
-              </div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Website</div>
-              <div></div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Facebook</div>
-              <div></div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Skype</div>
-              <div></div>
-            </div>
-          </div>
-
-          <!-- Right Column: Rainbow Towers Banking -->
-          <div class="info-column">
-            <h3>VAT REG NUMBER</h3>
-            <div class="info-row">
-              <div class="info-label"></div>
-              <div>10001189</div>
-            </div>
-            <br />
-            <h3>BANK DETAILS</h3>
-            <div class="info-row">
-              <div class="info-label">Account Name:</div>
-              <div>The Rainbow Towers</div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Bank Name:</div>
-              <div>Stanbic</div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Branch:</div>
-              <div>Nelson Mandela</div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Acc Number:</div>
-              <div>9140000892512</div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Nostro FCA</div>
-              <div></div>
-            </div>
-            <br />
-            <div class="info-row">
-              <div class="info-label">Contact Person</div>
-              <div>{{ booking.created_by_name or 'Reservations Team' }}</div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Address</div>
-              <div>1 Pennefather Ave, Harare</div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Phone</div>
-              <div>0242 772633</div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Mobile</div>
-              <div>782705301</div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Website</div>
-              <div>www.rtgafrica.com</div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Facebook</div>
-              <div>rtgreservations</div>
-            </div>
-            <div class="info-row">
-              <div class="info-label">Skype</div>
-              <div></div>
-            </div>
+        <div class="client-column">
+          <h4>VAT REG NUMBER</h4>
+          <div class="client-details">10001189</div>
+          <h4 style="margin-top: 20px">BANK DETAILS</h4>
+          <div class="client-details">
+            <strong>Account Name:</strong> The Rainbow Towers<br />
+            <strong>Bank Name:</strong> Stanbic<br />
+            <strong>Branch:</strong> Nelson Mandela<br />
+            <strong>Acc Number:</strong> 9140000892512<br />
+            <strong>Nostro FCA</strong>
           </div>
         </div>
+      </div>
 
-        <!-- Event Details -->
-        <div class="content-label">
-          {% if booking.event_name %} {{ booking.event_name }} {% else %} Event
-          {% endif %} {% if booking.start_time %} {% if booking.start_time is
-          string %} {{ booking.start_time[:10] }} {% else %} {{
-          booking.start_time.strftime('%d/%m/%Y') }} {% endif %} {% endif %}
-        </div>
-
-        <div class="hotel-name">THE RAINBOW TOWERS HOTEL</div>
-
-        <!-- Items Table -->
-        <table class="items-table">
-          <thead class="table-header">
-            <tr>
-              <th>REQUESTED SERVICE</th>
-              <th class="center">NO. OF PAX</th>
-              <th class="center">NO. OF ROOMS</th>
-              <th class="right">UNIT PRICE/PER PERSON</th>
-              <th class="center">NO. OF DAYS</th>
-              <th class="right">
-                TOTAL AMOUNT {{ booking.currency or 'US$' }}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            <!-- Venue Name Header Row (No Pricing) -->
-            {% if booking.room %}
-            <tr style="background-color: #f8f9fa">
-              <td colspan="6" style="font-weight: bold; padding: 8px">
-                {{ booking.room.name }} - Conference Room
-              </td>
-            </tr>
-            {% endif %}
-
-            <!-- Custom Addons Line Items -->
-            {% if booking.custom_addons %} {% for item in booking.custom_addons
-            %}
-            <tr>
-              <td>{{ item.description or 'Service Item' }}</td>
-              <td class="center">
-                {% if item.pax %} {{ item.pax }} {% elif 'pax' in
-                (item.description or '').lower() or 'person' in
-                (item.description or '').lower() %} {{ booking.attendees or
-                item.quantity or '-' }} {% else %} - {% endif %}
-              </td>
-              <td class="center">
-                {% if item.rooms %} {{ item.rooms }} {% elif 'room' in
-                (item.description or '').lower() %} {{ item.quantity or 1 }} {%
-                else %} - {% endif %}
-              </td>
-              <td class="right">{{ "%.2f"|format(item.unit_price or 0) }}</td>
-              <td class="center">{{ item.quantity or 1 }}</td>
-              <td class="right">{{ "%.2f"|format(item.total_price or 0) }}</td>
-            </tr>
-            {% endfor %}
-
-            <!-- Fallback to pricing_details -->
-            {% elif booking.pricing_details %} {% if booking.pricing_details is
-            string %} {% set pricing_data = booking.pricing_details|from_json %}
-            {% else %} {% set pricing_data = booking.pricing_details %} {% endif
-            %} {% if pricing_data and pricing_data.items %} {% for item in
-            pricing_data.items %}
-            <tr>
-              <td>{{ item.description or 'Service Item' }}</td>
-              <td class="center">{{ booking.attendees or '' }}</td>
-              <td class="center"></td>
-              <td class="right">{{ "%.2f"|format(item.unit_price or 0) }}</td>
-              <td class="center">{{ item.quantity or 1 }}</td>
-              <td class="right">{{ "%.2f"|format(item.total or 0) }}</td>
-            </tr>
-            {% endfor %} {% endif %}
-
-            <!-- Fallback to total_price ONLY if no custom_addons or pricing_details -->
-            {% elif booking.total_price %}
-            <tr>
-              <td>Conference Room Booking</td>
-              <td class="center">{{ booking.attendees or '' }}</td>
-              <td class="center">1</td>
-              <td class="right">
-                {{ "%.2f"|format(booking.total_price or 0) }}
-              </td>
-              <td class="center">1</td>
-              <td class="right">
-                {{ "%.2f"|format(booking.total_price or 0) }}
-              </td>
-            </tr>
-            {% endif %}
-
-            <!-- Total Row - Use booking.total_price directly -->
-            <tr class="total-row">
-              <td
-                colspan="5"
-                style="
-                  text-align: right;
-                  padding-right: 10px;
-                  font-weight: bold;
-                "
-              >
-                TOTAL {{ booking.currency or 'US$' }}
-              </td>
-              <td class="right" style="font-weight: bold">
-                {{ "%.2f"|format(booking.total_price or 0) }}
-              </td>
-            </tr>
-          </tbody>
-        </table>
-
-        <!-- Page Break for Terms -->
-        <div class="page-break"></div>
-
-        <!-- Page 2: Terms and Conditions -->
-        <div class="terms-section">
-          <h2>TERMS AND CONDITIONS</h2>
-
-          <ol>
-            <li>
-              The hotel will provide all required equipment for the conference
-              at a cost.
-            </li>
-            <li>
-              The hotel shall not allow clients to bring own equipment as this
-              is a service provided by the hotel. Equipment shall include but
-              not limited to PA systems, screens, translation equipment…………
-            </li>
-            <li>
-              All Equipment needs to be communicated at the point of making a
-              reservation.
-            </li>
-            <li>
-              100% of the total amount quoted is required within 48 hours of
-              making an enquiry to guarantee your booking.
-            </li>
-            <li>Full payment is required for confirmation of the booking.</li>
-            <li>Rates are subject to change without notice</li>
-          </ol>
-
-          <h3>AIRPORT TRANSFERS AND ACTIVITIES</h3>
-          <p>
-            The hotel through it's subsidiary Heritage Expeditions Africa (
-            HExA) provides the following ground handling services
-          </p>
-          <p>
-            Shuttle Services<br />
-            City Tours<br />
-            Day Trips<br />
-            Various Activities
-          </p>
-
-          <h3>CANCELLATION POLICY</h3>
-          <p>
-            Accommodation and conference rooms booked are subject to the
-            following policy.
-          </p>
-          <table class="cancel-table">
-            <tr>
-              <td>15 - 29 Days</td>
-              <td>50% refund is made</td>
-            </tr>
-            <tr>
-              <td>8 - 14 Days</td>
-              <td>25% refund is made</td>
-            </tr>
-            <tr>
-              <td>0 - 7 Days</td>
-              <td>No refund</td>
-            </tr>
-          </table>
-
-          <h3>PAYMENT</h3>
-          <p>
-            We require confirmation of payment 2 weeks before arrival to secure
-            your booking. Payment can be a purchase order, cash or bank tranfer.
-          </p>
-          <p>
-            Please note that we hold the right to cancel your reservation if we
-            have not received your full payment,an order or letter of commitment
-            to pay
-          </p>
-          <p>
-            This quotation does not constitute an undertaking by RTG to provide
-            the requested services.
-          </p>
-          <p>
-            It will only remain a quotation and may only constitute an
-            undertaking to provide services after both payment has been made and
-            the booking confirmed.
-          </p>
-
-          <h3>INCREASE IN NUMBERS OR ADDITIONAL SERVICES</h3>
-          <p>
-            Day conferences – numbers to be communicated by 0900hrs<br />
-            Lunch Bookings – numbers to be communicated by 0900hrs<br />
-            Dinner/ Cocktail bookings – numbers to be communicated by 1200hrs
-          </p>
-          <p>
-            Please note that if there is no communication regarding the
-            reduction of numbers, the hotel will charge as per original booking
-            numbers.
-          </p>
-          <p>
-            In the event of an increase in numbers for either conferencing or
-            accommodation bookings, the hotel will charge accordingly and your
-            organisation will be required to provide order, commitment letter or
-            payment within 24 hours.
-          </p>
-
-          <h3>NO SHOWS</h3>
-          <p>
-            Guests with a valid room reservation who do not arrive on the day of
-            the reservation will be considered no-shows and the applicable room
-            rate equal to one night stay will be charged.
-          </p>
-
-          <!-- Signature Section -->
-          <div class="signature-section">
-            <p style="font-weight: bold; margin-top: 30px">
-              If in agreement, please sign and return copy to certify
-              confirmation
-            </p>
-
-            <div class="signature-line">
-              Name
-              ………………………..............................................Signature
-              …………………………………................................
-              Date………………………………................
-            </div>
+      <!-- Hotel Contact -->
+      <div class="client-info" style="border-bottom: 2px solid #d4a843">
+        <div class="client-column">
+          <h4>CONTACT PERSON</h4>
+          <div class="client-details">
+            <strong>Contact Person:</strong> Tandiwe<br />
+            <strong>Address:</strong> 1 Pennefather Ave, Harare<br />
+            <strong>Phone:</strong> 0242 772633<br />
+            <strong>Mobile:</strong> 782705301<br />
+            <strong>Website:</strong> www.rtgafrica.com<br />
+            <strong>Facebook:</strong> rtgreservations<br />
+            <strong>Skype:</strong> reservations
           </div>
         </div>
+        <div class="client-column">
+          <!-- Empty column for spacing -->
+        </div>
+      </div>
 
-        <!-- Gold Footer Bar -->
-        <div class="gold-bar"></div>
+      <!-- Event Details -->
+      <div class="event-section">
+        <div class="event-title">{{ booking.title or 'Event Booking' }}</div>
+        <div style="margin-top: 10px; font-weight: bold">
+          THE RAINBOW TOWERS HOTEL
+        </div>
+      </div>
+
+      <!-- Services Table -->
+      <table class="services-table">
+        <thead>
+          <tr>
+            <th style="width: 40%">REQUESTED SERVICE</th>
+            <th style="width: 12%">NO. OF PAX</th>
+            <th style="width: 12%">NO. OF ROOMS</th>
+            <th style="width: 16%">UNIT PRICE/PER PERSON</th>
+            <th style="width: 12%">NO. OF DAYS</th>
+            <th style="width: 18%">TOTAL AMOUNT US$</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% set total_amount = 0 %}
+
+          <!-- Use custom addons if available -->
+          {% if booking.custom_addons %} {% for addon in booking.custom_addons
+          %}
+          <tr>
+            <td style="text-align: left">
+              {{ addon.description or 'Service Item' }}
+            </td>
+            <td>{{ booking.attendees or '-' }}</td>
+            <td>{{ addon.quantity or 1 }}</td>
+            <td>{{ "%.2f"|format(addon.unit_price or 0) }}</td>
+            <td>1</td>
+            <td>{{ "%.2f"|format(addon.total_price or 0) }}</td>
+          </tr>
+          {% set total_amount = total_amount + (addon.total_price or 0) %} {%
+          endfor %} {% else %}
+          <!-- Fallback: Use room rental as main service -->
+          {% set room_name = booking.room.name if booking.room else 'Conference
+          Room' %} {% set room_rate = booking.total_price or totals.total or 0
+          %}
+          <tr>
+            <td style="text-align: left">
+              {{ room_name }} - Conference Room Rental
+            </td>
+            <td>{{ booking.attendees or '-' }}</td>
+            <td>1</td>
+            <td>{{ "%.2f"|format(room_rate) }}</td>
+            <td>1</td>
+            <td>{{ "%.2f"|format(room_rate) }}</td>
+          </tr>
+          {% set total_amount = room_rate %} {% endif %}
+        </tbody>
+        <tfoot>
+          <tr class="total-row">
+            <td colspan="5" style="text-align: right; font-weight: bold">
+              TOTAL US$
+            </td>
+            <td style="font-weight: bold">{{ "%.2f"|format(total_amount) }}</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <!-- Terms and Conditions -->
+      <div class="terms-section">
+        <h4>TERMS AND CONDITIONS</h4>
+        <ol>
+          <li>
+            The hotel will provide all required equipment for the conference at
+            a cost.
+          </li>
+          <li>
+            The hotel shall not allow clients to bring own equipment as this is
+            a service provided by the hotel. Equipment shall include but not
+            limited to PA systems, screens, translation equipment.
+          </li>
+          <li>
+            All Equipment needs to be communicated at the point of making a
+            reservation.
+          </li>
+          <li>
+            100% of the total amount quoted is required within 48 hours of
+            making an enquiry to guarantee your booking.
+          </li>
+          <li>Full payment is required for confirmation of the booking.</li>
+          <li>Rates are subject to change without notice.</li>
+        </ol>
+
+        <h4>AIRPORT TRANSFERS AND ACTIVITIES</h4>
+        <p>
+          The hotel through its subsidiary Heritage Expeditions Africa (HExA)
+          provides the following ground handling services:
+        </p>
+        <ul style="margin: 5px 0; padding-left: 18px">
+          <li>Shuttle Services</li>
+          <li>City Tours</li>
+          <li>Day Trips</li>
+          <li>Various Activities</li>
+        </ul>
+
+        <h4>CANCELLATION POLICY</h4>
+        <p>
+          Accommodation and conference rooms booked are subject to the following
+          policy:
+        </p>
+        <ul style="margin: 5px 0; padding-left: 18px">
+          <li>15 - 29 Days: 50% refund is made</li>
+          <li>8 - 14 Days: 25% refund is made</li>
+          <li>0 - 7 Days: No refund</li>
+        </ul>
+
+        <h4>PAYMENT</h4>
+        <p>
+          We require confirmation of payment 2 weeks before arrival to secure
+          your booking. Payment can be a purchase order, cash or bank transfer.
+        </p>
+        <p>
+          Please note that we hold the right to cancel your reservation if we
+          have not received your full payment, an order or letter of commitment
+          to pay.
+        </p>
+        <p>
+          This quotation does not constitute an undertaking by RTG to provide
+          the requested services. It will only remain a quotation and may only
+          constitute an undertaking to provide services after both payment has
+          been made and the booking confirmed.
+        </p>
+
+        <h4>INCREASE IN NUMBERS OR ADDITIONAL SERVICES</h4>
+        <ul style="margin: 5px 0; padding-left: 18px">
+          <li>Day conferences – numbers to be communicated by 0900hrs</li>
+          <li>Lunch Bookings – numbers to be communicated by 0900hrs</li>
+          <li>
+            Dinner/Cocktail bookings – numbers to be communicated by 1200hrs
+          </li>
+        </ul>
+        <p>
+          Please note that if there is no communication regarding the reduction
+          of numbers, the hotel will charge as per original booking numbers.
+        </p>
+        <p>
+          In the event of an increase in numbers for either conferencing or
+          accommodation bookings, the hotel will charge accordingly and your
+          organisation will be required to provide order, commitment letter or
+          payment within 24 hours.
+        </p>
+
+        <h4>NO SHOWS</h4>
+        <p>
+          Guests with a valid room reservation who do not arrive on the day of
+          the reservation will be considered no-shows and the applicable room
+          rate equal to one night stay will be charged.
+        </p>
+      </div>
+
+      <!-- Signature Section -->
+      <div class="signature-section">
+        <p>
+          <strong
+            >If in agreement, please sign and return copy to certify
+            confirmation</strong
+          >
+        </p>
+        <div style="margin-top: 30px">
+          <span>Name </span><span class="signature-line"></span>
+          <span> Signature </span><span class="signature-line"></span>
+          <span> Date </span><span class="signature-line"></span>
+        </div>
       </div>
     </div>
+
+    <!-- Quotation Document -->
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-0">
+        <div class="quotation-document" id="quotation-content">
+          <div class="document-container">
+            <!-- Page 1: Invoice Details -->
+
+            <!-- Logo and Company Info -->
+            <div class="logo-section">
+              <img
+                src="{{ url_for('static', filename='img/rainbow-towers-logo.png') }}"
+                alt="The Rainbow Towers"
+                class="company-logo"
+              />
+              <div class="company-address">
+                1 Pennefather Avenue, P.O. Box 3033, Causeway, Harare,
+                Zimbabwe<br />
+                Tel: +263 242 2772633 - 9<br />
+                Email: reservations@rtg.co.zw<br />
+                Website: www.rtgafrica.com
+              </div>
+            </div>
+
+            <!-- Date -->
+            <div class="date-section">DATE: {{ now.strftime('%d %B %Y') }}</div>
+
+            <!-- Gold Header Bar -->
+            <div class="gold-header">PROFORMA INVOICE</div>
+
+            <!-- Two Column Information -->
+            <div class="info-columns">
+              <!-- Left Column: Client Info -->
+              <div class="info-column">
+                <div class="info-row">
+                  <div class="info-label">Contact Person</div>
+                  <div>
+                    {% if booking.client %}{{ booking.client.contact_person or
+                    '' }}{% endif %}
+                  </div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Company</div>
+                  <div>
+                    {% if booking.client %}{{ booking.client.company_name or ''
+                    }}{% endif %}
+                  </div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Phone</div>
+                  <div>
+                    {% if booking.client %}{{ booking.client.phone or '' }}{%
+                    endif %}
+                  </div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Address</div>
+                  <div>
+                    {% if booking.client %}{{ booking.client.address or '' }}{%
+                    endif %}
+                  </div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Email</div>
+                  <div>
+                    {% if booking.client %}{{ booking.client.email or '' }}{%
+                    endif %}
+                  </div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Mobile</div>
+                  <div>
+                    {% if booking.client %}{{ booking.client.mobile or '' }}{%
+                    endif %}
+                  </div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Website</div>
+                  <div></div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Facebook</div>
+                  <div></div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Skype</div>
+                  <div></div>
+                </div>
+              </div>
+
+              <!-- Right Column: Rainbow Towers Banking -->
+              <div class="info-column">
+                <h3>VAT REG NUMBER</h3>
+                <div class="info-row">
+                  <div class="info-label"></div>
+                  <div>10001189</div>
+                </div>
+                <br />
+                <h3>BANK DETAILS</h3>
+                <div class="info-row">
+                  <div class="info-label">Account Name:</div>
+                  <div>The Rainbow Towers</div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Bank Name:</div>
+                  <div>Stanbic</div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Branch:</div>
+                  <div>Nelson Mandela</div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Acc Number:</div>
+                  <div>9140000892512</div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Nostro FCA</div>
+                  <div></div>
+                </div>
+                <br />
+                <div class="info-row">
+                  <div class="info-label">Contact Person</div>
+                  <div>
+                    {{ booking.created_by_name or 'Reservations Team' }}
+                  </div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Address</div>
+                  <div>1 Pennefather Ave, Harare</div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Phone</div>
+                  <div>0242 772633</div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Mobile</div>
+                  <div>782705301</div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Website</div>
+                  <div>www.rtgafrica.com</div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Facebook</div>
+                  <div>rtgreservations</div>
+                </div>
+                <div class="info-row">
+                  <div class="info-label">Skype</div>
+                  <div></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Event Details -->
+            <div class="content-label">
+              {% if booking.event_name %} {{ booking.event_name }} {% else %}
+              Event {% endif %} {% if booking.start_time %} {% if
+              booking.start_time is string %} {{ booking.start_time[:10] }} {%
+              else %} {{ booking.start_time.strftime('%d/%m/%Y') }} {% endif %}
+              {% endif %}
+            </div>
+
+            <div class="hotel-name">THE RAINBOW TOWERS HOTEL</div>
+
+            <!-- Items Table -->
+            <table class="items-table">
+              <thead class="table-header">
+                <tr>
+                  <th>REQUESTED SERVICE</th>
+                  <th class="center">NO. OF PAX</th>
+                  <th class="center">NO. OF ROOMS</th>
+                  <th class="right">UNIT PRICE/PER PERSON</th>
+                  <th class="center">NO. OF DAYS</th>
+                  <th class="right">
+                    TOTAL AMOUNT {{ booking.currency or 'US$' }}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                <!-- Venue Name Header Row (No Pricing) -->
+                {% if booking.room %}
+                <tr style="background-color: #f8f9fa">
+                  <td colspan="6" style="font-weight: bold; padding: 8px">
+                    {{ booking.room.name }} - Conference Room
+                  </td>
+                </tr>
+                {% endif %}
+
+                <!-- Custom Addons Line Items -->
+                {% if booking.custom_addons %} {% for item in
+                booking.custom_addons %}
+                <tr>
+                  <td>{{ item.description or 'Service Item' }}</td>
+                  <td class="center">
+                    {% if item.pax %} {{ item.pax }} {% elif 'pax' in
+                    (item.description or '').lower() or 'person' in
+                    (item.description or '').lower() %} {{ booking.attendees or
+                    item.quantity or '-' }} {% else %} - {% endif %}
+                  </td>
+                  <td class="center">
+                    {% if item.rooms %} {{ item.rooms }} {% elif 'room' in
+                    (item.description or '').lower() %} {{ item.quantity or 1 }}
+                    {% else %} - {% endif %}
+                  </td>
+                  <td class="right">
+                    {{ "%.2f"|format(item.unit_price or 0) }}
+                  </td>
+                  <td class="center">{{ item.quantity or 1 }}</td>
+                  <td class="right">
+                    {{ "%.2f"|format(item.total_price or 0) }}
+                  </td>
+                </tr>
+                {% endfor %}
+
+                <!-- Fallback to pricing_details -->
+                {% elif booking.pricing_details %} {% if booking.pricing_details
+                is string %} {% set pricing_data =
+                booking.pricing_details|from_json %} {% else %} {% set
+                pricing_data = booking.pricing_details %} {% endif %} {% if
+                pricing_data and pricing_data.items %} {% for item in
+                pricing_data.items %}
+                <tr>
+                  <td>{{ item.description or 'Service Item' }}</td>
+                  <td class="center">{{ booking.attendees or '' }}</td>
+                  <td class="center"></td>
+                  <td class="right">
+                    {{ "%.2f"|format(item.unit_price or 0) }}
+                  </td>
+                  <td class="center">{{ item.quantity or 1 }}</td>
+                  <td class="right">{{ "%.2f"|format(item.total or 0) }}</td>
+                </tr>
+                {% endfor %} {% endif %}
+
+                <!-- Fallback to total_price ONLY if no custom_addons or pricing_details -->
+                {% elif booking.total_price %}
+                <tr>
+                  <td>Conference Room Booking</td>
+                  <td class="center">{{ booking.attendees or '' }}</td>
+                  <td class="center">1</td>
+                  <td class="right">
+                    {{ "%.2f"|format(booking.total_price or 0) }}
+                  </td>
+                  <td class="center">1</td>
+                  <td class="right">
+                    {{ "%.2f"|format(booking.total_price or 0) }}
+                  </td>
+                </tr>
+                {% endif %}
+
+                <!-- Total Row - Use booking.total_price directly -->
+                <tr class="total-row">
+                  <td
+                    colspan="5"
+                    style="
+                      text-align: right;
+                      padding-right: 10px;
+                      font-weight: bold;
+                    "
+                  >
+                    TOTAL {{ booking.currency or 'US$' }}
+                  </td>
+                  <td class="right" style="font-weight: bold">
+                    {{ "%.2f"|format(booking.total_price or 0) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+
+            <!-- Page Break for Terms -->
+            <div class="page-break"></div>
+
+            <!-- Page 2: Terms and Conditions -->
+            <div class="terms-section">
+              <h2>TERMS AND CONDITIONS</h2>
+
+              <ol>
+                <li>
+                  The hotel will provide all required equipment for the
+                  conference at a cost.
+                </li>
+                <li>
+                  The hotel shall not allow clients to bring own equipment as
+                  this is a service provided by the hotel. Equipment shall
+                  include but not limited to PA systems, screens, translation
+                  equipment…………
+                </li>
+                <li>
+                  All Equipment needs to be communicated at the point of making
+                  a reservation.
+                </li>
+                <li>
+                  100% of the total amount quoted is required within 48 hours of
+                  making an enquiry to guarantee your booking.
+                </li>
+                <li>
+                  Full payment is required for confirmation of the booking.
+                </li>
+                <li>Rates are subject to change without notice</li>
+              </ol>
+
+              <h3>AIRPORT TRANSFERS AND ACTIVITIES</h3>
+              <p>
+                The hotel through it's subsidiary Heritage Expeditions Africa (
+                HExA) provides the following ground handling services
+              </p>
+              <p>
+                Shuttle Services<br />
+                City Tours<br />
+                Day Trips<br />
+                Various Activities
+              </p>
+
+              <h3>CANCELLATION POLICY</h3>
+              <p>
+                Accommodation and conference rooms booked are subject to the
+                following policy.
+              </p>
+              <table class="cancel-table">
+                <tr>
+                  <td>15 - 29 Days</td>
+                  <td>50% refund is made</td>
+                </tr>
+                <tr>
+                  <td>8 - 14 Days</td>
+                  <td>25% refund is made</td>
+                </tr>
+                <tr>
+                  <td>0 - 7 Days</td>
+                  <td>No refund</td>
+                </tr>
+              </table>
+
+              <h3>PAYMENT</h3>
+              <p>
+                We require confirmation of payment 2 weeks before arrival to
+                secure your booking. Payment can be a purchase order, cash or
+                bank tranfer.
+              </p>
+              <p>
+                Please note that we hold the right to cancel your reservation if
+                we have not received your full payment,an order or letter of
+                commitment to pay
+              </p>
+              <p>
+                This quotation does not constitute an undertaking by RTG to
+                provide the requested services.
+              </p>
+              <p>
+                It will only remain a quotation and may only constitute an
+                undertaking to provide services after both payment has been made
+                and the booking confirmed.
+              </p>
+
+              <h3>INCREASE IN NUMBERS OR ADDITIONAL SERVICES</h3>
+              <p>
+                Day conferences – numbers to be communicated by 0900hrs<br />
+                Lunch Bookings – numbers to be communicated by 0900hrs<br />
+                Dinner/ Cocktail bookings – numbers to be communicated by
+                1200hrs
+              </p>
+              <p>
+                Please note that if there is no communication regarding the
+                reduction of numbers, the hotel will charge as per original
+                booking numbers.
+              </p>
+              <p>
+                In the event of an increase in numbers for either conferencing
+                or accommodation bookings, the hotel will charge accordingly and
+                your organisation will be required to provide order, commitment
+                letter or payment within 24 hours.
+              </p>
+
+              <h3>NO SHOWS</h3>
+              <p>
+                Guests with a valid room reservation who do not arrive on the
+                day of the reservation will be considered no-shows and the
+                applicable room rate equal to one night stay will be charged.
+              </p>
+
+              <!-- Signature Section -->
+              <div class="signature-section">
+                <p style="font-weight: bold; margin-top: 30px">
+                  If in agreement, please sign and return copy to certify
+                  confirmation
+                </p>
+
+                <div class="signature-line">
+                  Name
+                  ………………………..............................................Signature
+                  …………………………………................................
+                  Date………………………………................
+                </div>
+              </div>
+            </div>
+
+            <!-- Gold Footer Bar -->
+            <div class="gold-bar"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    {% endblock %} {% block extra_js %}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+          document
+            .getElementById("downloadPdf")
+            .addEventListener("click", function () {
+              const button = this;
+              const originalText = button.innerHTML;
+
+              button.innerHTML =
+                '<i class="fas fa-spinner fa-spin me-1"></i>Generating...';
+              button.disabled = true;
+
+              // Use pre-processed filename from server
+              const filename = "{{ pdf_filename }}.pdf";
+
+              const options = {
+                margin: 15,
+                filename: filename,
+                image: { type: "jpeg", quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true, letterRendering: true },
+                jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
+                pagebreak: { mode: ["avoid-all", "css", "legacy"] },
+              };
+
+              const element = document.getElementById("quotation-content");
+
+              html2pdf()
+                .set(options)
+                .from(element)
+                .save()
+                .then(() => {
+                  button.innerHTML = originalText;
+                  button.disabled = false;
+                })
+                .catch((error) => {
+                  console.error("PDF generation error:", error);
+                  button.innerHTML = originalText;
+                  button.disabled = false;
+                  alert("Error generating PDF. Please try printing instead.");
+                });
+            });
+        });
+      <script>
+        function downloadPDF() {
+            // Navigate to the PDF download route
+            window.location.href = "{{ url_for('bookings.download_quotation', id=booking.id) }}";
+        }
+
+        function sendEmail() {
+            // Integrate with your email sending functionality
+            {% if booking.client and booking.client.email %}
+                if (confirm('Send quotation to {{ booking.client.email }}?')) {
+                    // Add your email sending logic here
+                    alert('Email functionality to be implemented');
+                }
+            {% else %}
+                alert('No client email available. Please update client contact information.');
+            {% endif %}
+        }
+
+        // Log activity when quotation is viewed
+        console.log('Quotation viewed for booking ID: {{ booking.id }}');
+    </script>
+    {% endblock %}
   </div>
 </div>
-
-{% endblock %} {% block extra_js %}
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-<script>
-  document.addEventListener("DOMContentLoaded", function () {
-    document
-      .getElementById("downloadPdf")
-      .addEventListener("click", function () {
-        const button = this;
-        const originalText = button.innerHTML;
-
-        button.innerHTML =
-          '<i class="fas fa-spinner fa-spin me-1"></i>Generating...';
-        button.disabled = true;
-
-        // Use pre-processed filename from server
-        const filename = "{{ pdf_filename }}.pdf";
-
-        const options = {
-          margin: 15,
-          filename: filename,
-          image: { type: "jpeg", quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, letterRendering: true },
-          jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
-          pagebreak: { mode: ["avoid-all", "css", "legacy"] },
-        };
-
-        const element = document.getElementById("quotation-content");
-
-        html2pdf()
-          .set(options)
-          .from(element)
-          .save()
-          .then(() => {
-            button.innerHTML = originalText;
-            button.disabled = false;
-          })
-          .catch((error) => {
-            console.error("PDF generation error:", error);
-            button.innerHTML = originalText;
-            button.disabled = false;
-            alert("Error generating PDF. Please try printing instead.");
-          });
-      });
-  });
-<script>
-  function downloadPDF() {
-      // Navigate to the PDF download route
-      window.location.href = "{{ url_for('bookings.download_quotation', id=booking.id) }}";
-  }
-
-  function sendEmail() {
-      // Integrate with your email sending functionality
-      {% if booking.client and booking.client.email %}
-          if (confirm('Send quotation to {{ booking.client.email }}?')) {
-              // Add your email sending logic here
-              alert('Email functionality to be implemented');
-          }
-      {% else %}
-          alert('No client email available. Please update client contact information.');
-      {% endif %}
-  }
-
-  // Log activity when quotation is viewed
-  console.log('Quotation viewed for booking ID: {{ booking.id }}');
-</script>
-{% endblock %}

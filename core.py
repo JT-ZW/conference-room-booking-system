@@ -1315,6 +1315,7 @@ def extract_booking_form_data(form_data, is_update=False):
             'end_time': end_time,
             'notes': form_data.get('notes', '').strip() or None,
             'status': form_data.get('status', 'tentative'),
+            'currency': form_data.get('currency', 'ZWG').strip(),  # Add currency field
             'pricing_items': pricing_items,
             'total_price': total_price
         }
@@ -1578,6 +1579,7 @@ def create_complete_booking(booking_data, client_id, event_type_id):
             'room_rate': room_rate,
             'addons_total': addons_total,
             'total_price': booking_data['total_price'],
+            'currency': booking_data.get('currency', 'ZWG'),
             'created_by': current_user.id,
             'created_at': datetime.now(UTC).isoformat(),
             'client_name': booking_data['client_name'],
@@ -1710,6 +1712,7 @@ def update_complete_booking(booking_id, booking_data, existing_booking):
             'room_rate': room_rate,
             'addons_total': addons_total,
             'total_price': booking_data['total_price'],
+            'currency': booking_data.get('currency', 'ZWG'),
             'updated_at': datetime.now(UTC).isoformat(),
             'client_name': booking_data['client_name'],
             'company_name': booking_data['company_name'],

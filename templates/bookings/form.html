@@ -506,6 +506,19 @@
                      placeholder="Enter number of attendees">
               <div class="invalid-feedback">Please enter the number of attendees.</div>
             </div>
+
+            <div class="col-md-6">
+              <label class="form-label required-field">
+                <i class="fas fa-dollar-sign text-primary me-1"></i>
+                Currency
+              </label>
+              <select class="form-select" id="currency" name="currency" required>
+                <option value="">Select currency...</option>
+                <option value="ZWG" {% if booking and booking.currency == 'ZWG' %}selected{% elif not booking %}selected{% endif %}>ZWG (Zimbabwe Gold)</option>
+                <option value="USD" {% if booking and booking.currency == 'USD' %}selected{% endif %}>USD (US Dollar)</option>
+              </select>
+              <div class="invalid-feedback">Please select a currency.</div>
+            </div>
           </div>
 
           <!-- Capacity Indicator -->
@@ -1583,12 +1596,17 @@ document.addEventListener('DOMContentLoaded', function() {
             availabilityAlert.innerHTML = '<div class="alert alert-info">🔍 Checking availability...</div>';
         }
         
-        // Make API call
+        // Build API call parameters
         const params = new URLSearchParams({
             room_id: roomSelect.value,
             start_time: startDateTime,
             end_time: endDateTime
         });
+        
+        // If editing an existing booking, exclude it from conflict checks
+        {% if booking and booking.id %}
+        params.append('exclude_booking_id', {{ booking.id }});
+        {% endif %}
         
         fetch(`/api/rooms/availability?${params}`)
             .then(response => response.json())

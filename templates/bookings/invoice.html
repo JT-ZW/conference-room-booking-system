@@ -391,7 +391,7 @@
         <th>NO. OF ROOMS</th>
         <th>UNIT PRICE/PER PERSON</th>
         <th>NO. OF DAYS</th>
-        <th>TOTAL AMOUNT US$</th>
+        <th>TOTAL AMOUNT {{ booking.currency or 'US$' }}</th>
       </tr>
     </thead>
     <tbody>
@@ -491,7 +491,7 @@
       <!-- Total Row -->
       <tr class="total-row">
         <td colspan="5" style="text-align: right; padding-right: 20px">
-          <strong>TOTAL US$</strong>
+          <strong>TOTAL {{ booking.currency or 'US$' }}</strong>
         </td>
         <td class="amount total-amount">
           {{ "%.2f"|format(booking.total_price or booking.subtotal or 0) }}
@@ -659,7 +659,7 @@
               or booking.company_name or 'Individual Client' }}<br />
               <i class="fas fa-envelope me-1"></i>{{ booking.client.email or
               booking.client_email }}<br />
-              <i class="fas fa-dollar-sign me-1"></i>Amount: ${{
+              <i class="fas fa-dollar-sign me-1"></i>Amount: {{ booking.currency or 'US$' }} {{
               "%.2f"|format(booking.total_price or 0) }}
             </p>
           </div>

@@ -621,7 +621,9 @@ or 'Booking' }} | Rainbow Towers{% endblock %} {% block extra_css %}
             <th style="width: 12%">NO. OF ROOMS</th>
             <th style="width: 16%">UNIT PRICE/PER PERSON</th>
             <th style="width: 12%">NO. OF DAYS</th>
-            <th style="width: 18%">TOTAL AMOUNT {{ booking.currency or 'US$' }}</th>
+            <th style="width: 18%">
+              TOTAL AMOUNT {{ booking.currency or 'US$' }}
+            </th>
           </tr>
         </thead>
         <tbody>

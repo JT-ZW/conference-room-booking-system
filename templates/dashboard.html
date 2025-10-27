@@ -715,41 +715,41 @@ Conference Booking{% endblock %} {% block extra_css %}
         </h5>
       </div>
       <div class="card-body">
-        <div class="row">
-          <div class="col-md-3 mb-3">
+        <div class="row g-3">
+          <div class="col-6 mb-2">
             <a
               href="{{ url_for('bookings.new_booking') }}"
-              class="btn btn-success w-100 py-3"
+              class="btn btn-success w-100 py-3 quick-action-btn text-center"
             >
-              <i class="fas fa-calendar-plus fa-2x mb-2"></i>
-              <div>New Booking</div>
+              <i class="fas fa-calendar-plus fa-2x mb-2 d-block"></i>
+              <div class="small fw-bold">New Booking</div>
             </a>
           </div>
-          <div class="col-md-3 mb-3">
+          <div class="col-6 mb-2">
             <a
               href="{{ url_for('clients.new_client') }}"
-              class="btn btn-info w-100 py-3"
+              class="btn btn-info w-100 py-3 quick-action-btn text-center"
             >
-              <i class="fas fa-user-plus fa-2x mb-2"></i>
-              <div>Add Client</div>
+              <i class="fas fa-user-plus fa-2x mb-2 d-block"></i>
+              <div class="small fw-bold">Add Client</div>
             </a>
           </div>
-          <div class="col-md-3 mb-3">
+          <div class="col-6 mb-2">
             <a
               href="{{ url_for('bookings.calendar_view') }}"
-              class="btn btn-primary w-100 py-3"
+              class="btn btn-primary w-100 py-3 quick-action-btn text-center"
             >
-              <i class="fas fa-calendar-alt fa-2x mb-2"></i>
-              <div>Calendar View</div>
+              <i class="fas fa-calendar-alt fa-2x mb-2 d-block"></i>
+              <div class="small fw-bold">Calendar View</div>
             </a>
           </div>
-          <div class="col-md-3 mb-3">
+          <div class="col-6 mb-2">
             <a
               href="{{ url_for('reports.reports') }}"
-              class="btn btn-secondary w-100 py-3"
+              class="btn btn-secondary w-100 py-3 quick-action-btn text-center"
             >
-              <i class="fas fa-chart-bar fa-2x mb-2"></i>
-              <div>Reports</div>
+              <i class="fas fa-chart-bar fa-2x mb-2 d-block"></i>
+              <div class="small fw-bold">Reports</div>
             </a>
           </div>
         </div>

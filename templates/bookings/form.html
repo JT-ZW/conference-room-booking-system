@@ -522,13 +522,13 @@
           </div>
 
           <!-- Capacity Indicator -->
-          <div class="capacity-indicator" id="capacityIndicator">
+          <div class="capacity-indicator" id="capacityIndicator" style="display: none;">
             <div class="d-flex justify-content-between mb-2">
               <span id="capacityText">Room capacity</span>
               <span id="capacityPercentage">0%</span>
             </div>
             <div class="capacity-progress">
-              <div class="capacity-bar" id="capacityBar">0%</div>
+              <div class="capacity-bar capacity-green" id="capacityProgressBar" style="width: 0%;">0%</div>
             </div>
             <div id="capacityAlert" class="mt-2"></div>
           </div>
@@ -870,15 +870,20 @@
 
     // Initialize venue selection
     function initializeVenueSelect() {
-      $("#venueSelect").select2({
+      $("#room_id").select2({
         theme: "bootstrap-5",
         placeholder: "Choose a venue...",
         allowClear: true,
       });
 
-      $("#venueSelect").on("change", function () {
+      $("#room_id").on("change", function () {
         updateCapacityIndicator();
         calculatePricing();
+      });
+      
+      // Also set up attendees input handler
+      $("#attendees").on("input", function() {
+        updateCapacityIndicator();
       });
     }
 
@@ -1128,15 +1133,16 @@
 
     // Enhanced capacity indicator with improved color coding
     function updateCapacityIndicator() {
-      const selectedVenue = $("#venueSelect option:selected");
+      const selectedVenue = $("#room_id option:selected");
       const capacity = parseInt(selectedVenue.data("capacity")) || 0;
-      const pax = parseInt($("#paxInput").val()) || 0;
+      const pax = parseInt($("#attendees").val()) || 0;
 
       if (capacity && pax > 0) {
         $("#capacityIndicator").show();
         const utilizationPct = Math.min(Math.round((pax / capacity) * 100), 150); // Allow up to 150% for display
 
         $("#capacityText").text(`${selectedVenue.text()}`);
+        $("#capacityPercentage").text(`${utilizationPct}%`);
         $("#capacityProgressBar")
           .css("width", `${Math.min(utilizationPct, 100)}%`)
           .attr("aria-valuenow", utilizationPct)
@@ -1187,9 +1193,6 @@
         $("#capacityIndicator").hide();
       }
     }
-
-    // PAX input handler
-    $("#paxInput").on("input", updateCapacityIndicator);
 
     // Simplified pricing calculation (no tax or discount)
     function initializePricingCalculation() {

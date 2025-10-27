@@ -20,11 +20,18 @@ from core import (
 )
 from httpx import TimeoutException
 from functools import wraps
-from reportlab.lib.pagesizes import A4
-from reportlab.lib import colors
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.units import inch
+
+# Try importing reportlab, but make it optional
+try:
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+    from reportlab.lib.units import inch
+    REPORTLAB_AVAILABLE = True
+except ImportError:
+    REPORTLAB_AVAILABLE = False
+    print("⚠️ WARNING: reportlab not available - PDF generation will be disabled")
 
 bookings_bp = Blueprint('bookings', __name__)
 
@@ -790,6 +797,10 @@ def create_quotation_pdf(booking, output_path, current_time, valid_until):
 @login_required
 def download_quotation(id):
     """Generate and download quotation PDF using ReportLab"""
+    if not REPORTLAB_AVAILABLE:
+        flash('❌ PDF generation is not available. Please install reportlab: pip install reportlab', 'danger')
+        return redirect(url_for('bookings.view_booking', id=id))
+    
     if not check_pdf_dependencies():
         flash('❌ PDF generation is not available. Please contact system administrator.', 'danger')
         return redirect(url_for('bookings.view_booking', id=id))

@@ -659,8 +659,8 @@
               or booking.company_name or 'Individual Client' }}<br />
               <i class="fas fa-envelope me-1"></i>{{ booking.client.email or
               booking.client_email }}<br />
-              <i class="fas fa-dollar-sign me-1"></i>Amount: {{ booking.currency or 'US$' }} {{
-              "%.2f"|format(booking.total_price or 0) }}
+              <i class="fas fa-dollar-sign me-1"></i>Amount: {{ booking.currency
+              or 'US$' }} {{ "%.2f"|format(booking.total_price or 0) }}
             </p>
           </div>
         </div>

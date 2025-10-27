@@ -122,22 +122,34 @@ function initializeUI() {
     }
     
     // Initialize dropdown menus with search capability
-    initializeSearchableDropdowns();
+    if (typeof initializeSearchableDropdowns === 'function') {
+        initializeSearchableDropdowns();
+    }
     
     // Handle print button functionality
-    setupPrintButtons();
+    if (typeof setupPrintButtons === 'function') {
+        setupPrintButtons();
+    }
     
     // Setup custom scrollbars
-    setupCustomScrollbars();
+    if (typeof setupCustomScrollbars === 'function') {
+        setupCustomScrollbars();
+    }
     
     // Handle fixed header on scroll
-    handleFixedHeader();
+    if (typeof handleFixedHeader === 'function') {
+        handleFixedHeader();
+    }
     
     // Initialize notifications bell
-    initializeNotificationSystem();
+    if (typeof initializeNotificationSystem === 'function') {
+        initializeNotificationSystem();
+    }
     
     // Handle back to top button
-    setupBackToTopButton();
+    if (typeof setupBackToTopButton === 'function') {
+        setupBackToTopButton();
+    }
 }
 
 /**
@@ -1808,4 +1820,58 @@ if (document.readyState === 'loading') {
     });
 } else {
     console.log(`${SYSTEM.name} loading...`);
+}
+
+// Stub functions for missing implementations
+function initializeSearchableDropdowns() {
+    console.log('Searchable dropdowns initialized (stub)');
+}
+
+function setupPrintButtons() {
+    const printBtns = document.querySelectorAll('[data-print], .print-btn');
+    printBtns.forEach(btn => {
+        btn.addEventListener('click', () => window.print());
+    });
+}
+
+function setupCustomScrollbars() {
+    // Custom scrollbar styling handled by CSS
+    console.log('Custom scrollbars initialized');
+}
+
+function handleFixedHeader() {
+    const header = document.querySelector('.navbar');
+    if (!header) return;
+    
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 50) {
+            header.classList.add('fixed-header');
+        } else {
+            header.classList.remove('fixed-header');
+        }
+    });
+}
+
+function initializeNotificationSystem() {
+    console.log('Notification system initialized');
+}
+
+function setupBackToTopButton() {
+    const backToTop = document.createElement('button');
+    backToTop.innerHTML = '<i class="fas fa-arrow-up"></i>';
+    backToTop.className = 'back-to-top';
+    backToTop.style.cssText = 'position:fixed;bottom:20px;right:20px;display:none;z-index:1000;';
+    document.body.appendChild(backToTop);
+    
+    window.addEventListener('scroll', () => {
+        if (window.scrollY > 300) {
+            backToTop.style.display = 'block';
+        } else {
+            backToTop.style.display = 'none';
+        }
+    });
+    
+    backToTop.addEventListener('click', () => {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
 }

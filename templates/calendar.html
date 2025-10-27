@@ -93,9 +93,6 @@
       var(--primary-light) 100%
     );
     color: var(--white);
-    padding: 2rem;
-    background: var(--gradient-primary);
-    color: var(--white);
     padding: 2.5rem;
     position: relative;
     overflow: hidden;
@@ -211,7 +208,7 @@
     padding: 0.75rem 1.5rem;
     border: none;
     background: transparent;
-    color: var(--gray-600);
+    color: var(--gray-700) !important;
     font-size: 0.875rem;
     font-weight: 700;
     cursor: pointer;
@@ -224,13 +221,13 @@
 
   .view-btn:hover {
     background: var(--white);
-    color: var(--gray-800);
+    color: var(--gray-900) !important;
     box-shadow: var(--shadow-sm);
   }
 
   .view-btn.active {
     background: linear-gradient(135deg, #d4a574 0%, #b8935e 100%);
-    color: var(--white);
+    color: var(--white) !important;
     box-shadow: var(--shadow-md);
   }
 
@@ -251,7 +248,7 @@
   .control-label {
     font-size: 0.875rem;
     font-weight: 700;
-    color: var(--gray-700);
+    color: var(--gray-800) !important;
     min-width: 80px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -263,7 +260,7 @@
     padding: 0.75rem 1rem;
     font-size: 0.875rem;
     background: var(--white);
-    color: var(--gray-800);
+    color: var(--gray-900) !important;
     min-width: 160px;
     transition: all 0.2s ease;
     font-weight: 600;
@@ -281,7 +278,7 @@
     border: 2px solid var(--gray-200);
     border-radius: 10px;
     background: var(--white);
-    color: var(--gray-700);
+    color: var(--gray-800) !important;
     font-size: 0.875rem;
     font-weight: 700;
     cursor: pointer;
@@ -297,7 +294,7 @@
   .action-btn:hover {
     background: var(--gray-50);
     border-color: var(--primary-color);
-    color: var(--primary-color);
+    color: var(--primary-color) !important;
     text-decoration: none;
     transform: translateY(-2px);
     box-shadow: var(--shadow-md);
@@ -306,23 +303,23 @@
   .action-btn.primary {
     background: var(--primary-color);
     border-color: var(--primary-color);
-    color: var(--white);
+    color: var(--white) !important;
   }
 
   .action-btn.primary:hover {
     background: var(--primary-light);
-    color: var(--white);
+    color: var(--white) !important;
   }
 
   .action-btn.success {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     border-color: #10b981;
-    color: var(--white);
+    color: var(--white) !important;
   }
 
   .action-btn.success:hover {
     background: linear-gradient(135deg, #059669 0%, #047857 100%);
-    color: var(--white);
+    color: var(--white) !important;
     box-shadow: 0 6px 12px rgba(16, 185, 129, 0.3);
   }
 

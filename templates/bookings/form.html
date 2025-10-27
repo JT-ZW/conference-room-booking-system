@@ -454,161 +454,6 @@
     </div>
   </div>
 
-  <form method="POST" id="streamlinedBookingForm">
-    {{ form.hidden_tag() }}
-
-    <div class="row">
-      <!-- Main Form Column -->
-      <div class="col-lg-8">
-        <!-- Venue & Client Information -->
-        <div class="form-section">
-          <h4 class="section-title">
-            <i class="fas fa-building"></i>
-            Venue & Client Details
-          </h4>
-
-          <div class="row mb-3">
-            <div class="col-md-6">
-              <label class="form-label required-field">
-                <i class="fas fa-map-marker-alt text-primary me-1"></i>
-                Select Venue
-              </label>
-              <select
-                class="form-select"
-                id="venueSelect"
-                name="room_id"
-                required
-              >
-                <option value="">Choose a venue...</option>
-                {% for room in rooms %}
-                <option
-                  value="{{ room.id }}"
-                  data-capacity="{{ room.capacity }}"
-                  data-hourly="{{ room.hourly_rate or 25 }}"
-                  data-halfday="{{ room.half_day_rate or 100 }}"
-                  data-fullday="{{ room.full_day_rate or 180 }}"
-                  {% if booking and booking.room_id == room.id %}selected{% endif %}
-                >
-                  {{ room.name }} (Capacity: {{ room.capacity }})
-                </option>
-                {% endfor %}
-              </select>
-            </div>
-
-          <div class="row mb-3">
-            <div class="col-md-6">
-              <label class="form-label required-field">
-                <i class="fas fa-users text-primary me-1"></i>
-                Number of Guests (PAX)
-              </label>
-              <input
-                type="number"
-                class="form-control"
-                id="paxInput"
-                name="attendees"
-                placeholder="Enter expected number of guests"
-                min="1"
-                value="{{ booking.attendees if booking else '' }}"
-                required
-              />
-            </div>
-            <div class="col-md-6">
-              <label class="form-label required-field">
-                <i class="fas fa-dollar-sign text-primary me-1"></i>
-                Currency
-              </label>
-              <select class="form-select" id="currencyInput" name="currency" required>
-                <option value="">Select Currency</option>
-                <option value="USD" {% if booking and booking.currency == 'USD' %}selected{% elif not booking %}selected{% endif %}>US$ (United States Dollar)</option>
-                <option value="ZWG" {% if booking and booking.currency == 'ZWG' %}selected{% endif %}>ZWG (Zimbabwe Gold)</option>
-              </select>
-            </div>
-          </div>
-
-          <div class="row mb-3">
-            <div class="col-md-6">
-              <label class="form-label required-field">
-                <i class="fas fa-user text-primary me-1"></i>
-                Client Name
-              </label>
-              <div class="input-with-suggestions">
-                <input
-                  type="text"
-                  class="form-control"
-                  id="clientNameInput"
-                  name="client_name"
-                  placeholder="Start typing client name for suggestions..."
-                  value="{{ booking.client.contact_person if booking and booking.client else '' }}"
-                  autocomplete="off"
-                  required
-                />
-                <div id="clientSuggestions" class="client-suggestions" style="display: none;"></div>
-                <input type="hidden" id="clientIdInput" name="client_id" value="{{ booking.client.id if booking and booking.client else '' }}" />
-              </div>
-              <div class="creating-client-notice" id="creatingClientNotice">
-                <i class="fas fa-plus-circle text-success me-1"></i>
-                <small><strong>New Client:</strong> This client will be automatically created when you save the booking.</small>
-              </div>
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label">
-                <i class="fas fa-briefcase text-primary me-1"></i>
-                Company Name
-                <small class="text-muted">(Optional)</small>
-              </label>
-              <div class="input-with-suggestions">
-                <input
-                  type="text"
-                  class="form-control"
-                  id="companyNameInput"
-                  name="company_name"
-                  placeholder="Start typing company name for suggestions..."
-                  value="{{ booking.client.company_name if booking and booking.client else '' }}"
-                  autocomplete="off"
-                />
-                <div id="companySuggestions" class="client-suggestions" style="display: none;"></div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Room Capacity Indicator -->
-          <div
-            class="capacity-indicator"
-            id="capacityIndicator"
-            style="display: none"
-          >
-            <div class="capacity-text" id="capacityText">
-              Room capacity information
-            </div>
-            <div class="progress capacity-progress">
-              <div
-                class="progress-bar"
-                role="progressbar"
-                style="width: 0%"
-                id="capacityProgressBar"
-                aria-valuenow="0"
-                aria-valuemin="0"
-                aria-valuemax="100"
-              >
-                0%
-              </div>
-            </div>
-            <div class="mt-2" id="capacityAlert"></div>
-          </div>
-        </div>
-
-        <!-- Event Details -->
-        <div class="form-section">
-          <h4 class="section-title">
-            <i class="fas fa-calendar-alt"></i>
-            Event Information
-          </h4>
-    <a href="{{ url_for('bookings.bookings') }}" class="btn btn-outline-secondary">
-      <i class="fas fa-arrow-left me-1"></i>Back to Bookings
-    </a>
-  </div>
-
   <!-- Flash Messages -->
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% if messages %}
@@ -677,44 +522,6 @@
 
           <div class="row mb-3">
             <div class="col-md-6">
-              <label class="form-label required-field">
-                <i class="fas fa-tag text-primary me-1"></i>
-                Event Type
-              </label>
-              <select
-                class="form-select"
-                id="eventTypeSelect"
-                name="event_type"
-                required
-              >
-                <option value="">Select event type...</option>
-                <option value="conference" {% if booking and booking.event_type == 'conference' %}selected{% endif %}>Conference</option>
-                <option value="meeting" {% if booking and booking.event_type == 'meeting' %}selected{% endif %}>Business Meeting</option>
-                <option value="workshop" {% if booking and booking.event_type == 'workshop' %}selected{% endif %}>Workshop</option>
-                <option value="seminar" {% if booking and booking.event_type == 'seminar' %}selected{% endif %}>Seminar</option>
-                <option value="training" {% if booking and booking.event_type == 'training' %}selected{% endif %}>Training Session</option>
-                <option value="presentation" {% if booking and booking.event_type == 'presentation' %}selected{% endif %}>Presentation</option>
-                <option value="board_meeting" {% if booking and booking.event_type == 'board_meeting' %}selected{% endif %}>Board Meeting</option>
-                <option value="team_building" {% if booking and booking.event_type == 'team_building' %}selected{% endif %}>Team Building</option>
-                <option value="product_launch" {% if booking and booking.event_type == 'product_launch' %}selected{% endif %}>Product Launch</option>
-                <option value="other" {% if booking and booking.event_type == 'other' %}selected{% endif %}>Other (specify below)</option>
-              </select>
-            </div>
-
-            <div class="col-md-6">
-              <label class="form-label">
-                <i class="fas fa-plus-circle text-primary me-1"></i>
-                Custom Event Type
-              </label>
-              <input
-                type="text"
-                class="form-control"
-                id="customEventType"
-                name="custom_event_type"
-                placeholder="Enter custom event type..."
-                value="{{ booking.custom_event_type if booking else '' }}"
-                style="{% if not booking or booking.event_type != 'other' %}display: none{% endif %}"
-              />
               <label class="form-label required-field">Client Name</label>
               <div class="position-relative">
                 <input type="text" class="form-control" id="client_name" name="client_name" 
@@ -742,19 +549,6 @@
 
           <div class="row mb-3">
             <div class="col-md-6">
-              <label class="form-label required-field">
-                <i class="fas fa-calendar text-primary me-1"></i>
-                Start Date & Time
-              </label>
-              <input
-                type="text"
-                class="form-control flatpickr"
-                id="startDateTime"
-                name="start_time"
-                placeholder="Select start date and time"
-                value="{{ booking.start_time.strftime('%Y-%m-%d %H:%M') if booking and booking.start_time else '' }}"
-                required
-              />
               <label class="form-label">Client Email</label>
               <input type="email" class="form-control" id="client_email" name="client_email"
                      value="{{ booking.client.email if booking and booking.client else '' }}"
@@ -763,19 +557,6 @@
             </div>
 
             <div class="col-md-6">
-              <label class="form-label required-field">
-                <i class="fas fa-calendar-check text-primary me-1"></i>
-                End Date & Time
-              </label>
-              <input
-                type="text"
-                class="form-control flatpickr"
-                id="endDateTime"
-                name="end_time"
-                placeholder="Select end date and time"
-                value="{{ booking.end_time.strftime('%Y-%m-%d %H:%M') if booking and booking.end_time else '' }}"
-                required
-              />
               <label class="form-label">Client Phone</label>
               <input type="tel" class="form-control" id="client_phone" name="client_phone"
                      value="{{ booking.client.phone if booking and booking.client else '' }}"
@@ -797,23 +578,24 @@
               <label class="form-label required-field">Event Type</label>
               <select class="form-select" id="event_type" name="event_type" required>
                 <option value="">Select event type...</option>
-                <option value="conference">Conference</option>
-                <option value="meeting">Business Meeting</option>
-                <option value="workshop">Workshop</option>
-                <option value="seminar">Seminar</option>
-                <option value="training">Training Session</option>
-                <option value="presentation">Presentation</option>
-                <option value="board_meeting">Board Meeting</option>
-                <option value="team_building">Team Building</option>
-                <option value="product_launch">Product Launch</option>
-                <option value="other">Other</option>
+                <option value="conference" {% if booking and booking.event_type == 'conference' %}selected{% endif %}>Conference</option>
+                <option value="meeting" {% if booking and booking.event_type == 'meeting' %}selected{% endif %}>Business Meeting</option>
+                <option value="workshop" {% if booking and booking.event_type == 'workshop' %}selected{% endif %}>Workshop</option>
+                <option value="seminar" {% if booking and booking.event_type == 'seminar' %}selected{% endif %}>Seminar</option>
+                <option value="training" {% if booking and booking.event_type == 'training' %}selected{% endif %}>Training Session</option>
+                <option value="presentation" {% if booking and booking.event_type == 'presentation' %}selected{% endif %}>Presentation</option>
+                <option value="board_meeting" {% if booking and booking.event_type == 'board_meeting' %}selected{% endif %}>Board Meeting</option>
+                <option value="team_building" {% if booking and booking.event_type == 'team_building' %}selected{% endif %}>Team Building</option>
+                <option value="product_launch" {% if booking and booking.event_type == 'product_launch' %}selected{% endif %}>Product Launch</option>
+                <option value="other" {% if booking and booking.event_type == 'other' %}selected{% endif %}>Other</option>
               </select>
               <div class="invalid-feedback">Please select an event type.</div>
             </div>
 
-            <div class="col-md-6" id="customEventTypeDiv" style="display: none;">
+            <div class="col-md-6" id="customEventTypeDiv" style="{% if booking and booking.event_type == 'other' %}display: block;{% else %}display: none;{% endif %}">
               <label class="form-label">Custom Event Type</label>
               <input type="text" class="form-control" id="custom_event_type" name="custom_event_type"
+                     value="{{ booking.custom_event_type if booking else '' }}"
                      placeholder="Specify event type...">
             </div>
           </div>
@@ -821,7 +603,7 @@
           <div class="row mb-3">
             <div class="col-md-6">
               <label class="form-label required-field">Start Date & Time</label>
-              <input type="text" class="form-control" id="start_time" name="start_time" required
+              <input type="text" class="form-control flatpickr" id="start_time" name="start_time" required
                      placeholder="Select start date and time"
                      value="{{ booking.start_time.strftime('%Y-%m-%d %H:%M') if booking and booking.start_time else '' }}">
               <div class="invalid-feedback">Please select start date and time.</div>
@@ -829,7 +611,7 @@
 
             <div class="col-md-6">
               <label class="form-label required-field">End Date & Time</label>
-              <input type="text" class="form-control" id="end_time" name="end_time" required
+              <input type="text" class="form-control flatpickr" id="end_time" name="end_time" required
                      placeholder="Select end date and time"
                      value="{{ booking.end_time.strftime('%Y-%m-%d %H:%M') if booking and booking.end_time else '' }}">
               <div class="invalid-feedback">Please select end date and time.</div>
@@ -840,17 +622,6 @@
           <div id="availabilityAlert" class="mt-3"></div>
 
           <div class="mb-3">
-            <label class="form-label">
-              <i class="fas fa-clipboard-list text-primary me-1"></i>
-              Event Requirements / Special Notes
-            </label>
-            <textarea
-              class="form-control"
-              id="eventRequirements"
-              name="notes"
-              rows="4"
-              placeholder="Enter any special requirements, setup instructions, catering needs, technical requirements, etc."
-            >{{ booking.notes if booking else '' }}</textarea>
             <label class="form-label">Special Notes / Requirements</label>
             <textarea class="form-control" id="notes" name="notes" rows="3"
                       placeholder="Enter any special requirements or notes...">{{ booking.notes if booking else '' }}</textarea>
@@ -912,10 +683,6 @@
           {% endif %}
         </div>
 
-        <!-- Simplified Pricing -->
-        <div class="form-section">
-          <h4 class="section-title">
-            <i class="fas fa-dollar-sign"></i>
         <!-- Pricing -->
         <div class="form-section">
           <h4 class="section-title">
@@ -986,90 +753,21 @@
             <button
               type="button"
               class="btn btn-add-item"
-              onclick="addPricingItem()"
+              id="addPricingItem"
             >
               <i class="fas fa-plus me-1"></i>Add Another Item
             </button>
-            <!-- Pricing items will be added here dynamically -->
-            {% if booking and booking.custom_addons %}
-              {% for addon in booking.custom_addons %}
-              <div class="pricing-item" data-index="{{ loop.index0 }}">
-                <div class="row">
-                  <div class="col-md-5">
-                    <input type="text" class="form-control item-description" 
-                           name="pricing_items[{{ loop.index0 }}][description]"
-                           value="{{ addon.description }}" placeholder="Item description">
-                  </div>
-                  <div class="col-md-2">
-                    <input type="number" class="form-control item-quantity" 
-                           name="pricing_items[{{ loop.index0 }}][quantity]"
-                           value="{{ addon.quantity }}" min="1" placeholder="Qty">
-                  </div>
-                  <div class="col-md-3">
-                    <input type="number" class="form-control item-price" 
-                           name="pricing_items[{{ loop.index0 }}][price]"
-                           value="{{ addon.unit_price }}" min="0" step="0.01" placeholder="Unit price">
-                  </div>
-                  <div class="col-md-2">
-                    <button type="button" class="btn btn-sm btn-danger remove-item">
-                      <i class="fas fa-trash"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-              {% endfor %}
-            {% else %}
-              <div class="pricing-item" data-index="0">
-                <div class="row">
-                  <div class="col-md-5">
-                    <input type="text" class="form-control item-description" 
-                           name="pricing_items[0][description]" placeholder="Item description">
-                  </div>
-                  <div class="col-md-2">
-                    <input type="number" class="form-control item-quantity" 
-                           name="pricing_items[0][quantity]" value="1" min="1" placeholder="Qty">
-                  </div>
-                  <div class="col-md-3">
-                    <input type="number" class="form-control item-price" 
-                           name="pricing_items[0][price]" min="0" step="0.01" placeholder="Unit price">
-                  </div>
-                  <div class="col-md-2">
-                    <button type="button" class="btn btn-sm btn-danger remove-item" style="display: none;">
-                      <i class="fas fa-trash"></i>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            {% endif %}
           </div>
-
-          <button type="button" class="btn btn-sm btn-success mt-2" id="addPricingItem">
-            <i class="fas fa-plus me-1"></i>Add Item
-          </button>
         </div>
       </div>
 
-      <!-- Simplified Pricing Summary Column -->
-      <div class="col-lg-4">
-        <div class="pricing-summary">
-          <h5 class="mb-3 text-center">
-            <i class="fas fa-receipt me-2"></i>Pricing Summary
-          </h5>
-
-          <div class="d-flex justify-content-between mb-2">
-            <span>Subtotal:</span>
-            <strong id="summarySubtotal">$0.00</strong>
-          </div>
-
-          <hr class="bg-light" />
-
-          <div class="total-amount">
-            Total: <span id="summaryTotal">$0.00</span>
       <!-- Summary Column -->
       <div class="col-lg-4">
         <div class="pricing-summary">
-          <h5 class="mb-3">Booking Summary</h5>
-          
+          <h5 class="mb-3 text-center">
+            <i class="fas fa-receipt me-2"></i>Booking Summary
+          </h5>
+
           <div class="mb-3">
             <small class="text-light">Venue:</small>
             <div id="summaryVenue">Not selected</div>
@@ -1086,9 +784,16 @@
           </div>
           
           <hr class="bg-light">
-          
+
+          <div class="d-flex justify-content-between mb-2">
+            <span>Subtotal:</span>
+            <strong id="summarySubtotal">$0.00</strong>
+          </div>
+
+          <hr class="bg-light" />
+
           <div class="total-amount">
-            Total: $<span id="totalAmount">0.00</span>
+            Total: <span id="summaryTotal">$0.00</span>
           </div>
           
           <div class="d-grid gap-2 mt-4">
@@ -1103,12 +808,6 @@
             </a>
             {% endif %}
 
-            <a href="{{ url_for('bookings') }}" class="btn btn-outline-light">
-            <button type="submit" class="btn btn-primary btn-primary-custom">
-              <i class="fas fa-save me-2"></i>
-              {% if booking %}Update Booking{% else %}Create Booking{% endif %}
-            </button>
-            
             <a href="{{ url_for('bookings.bookings') }}" class="btn btn-outline-light">
               <i class="fas fa-times me-2"></i>Cancel
             </a>
@@ -2158,12 +1857,22 @@ document.addEventListener('DOMContentLoaded', function() {
         let total = 0;
         
         document.querySelectorAll('.pricing-item').forEach(item => {
-            const quantity = parseFloat(item.querySelector('.item-quantity').value) || 0;
-            const price = parseFloat(item.querySelector('.item-price').value) || 0;
+            const quantity = parseFloat(item.querySelector('.item-quantity')?.value) || 0;
+            const price = parseFloat(item.querySelector('.item-price')?.value) || 0;
             total += quantity * price;
         });
         
-        document.getElementById('totalAmount').textContent = total.toFixed(2);
+        // Update both summaryTotal and summarySubtotal
+        const formattedTotal = `$${total.toFixed(2)}`;
+        const summaryTotalElement = document.getElementById('summaryTotal');
+        const summarySubtotalElement = document.getElementById('summarySubtotal');
+        
+        if (summaryTotalElement) {
+            summaryTotalElement.textContent = formattedTotal;
+        }
+        if (summarySubtotalElement) {
+            summarySubtotalElement.textContent = formattedTotal;
+        }
     }
     
     // Attach listeners to existing items
